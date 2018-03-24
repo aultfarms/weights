@@ -1,0 +1,15 @@
+{
+  "name": "aultfarms-lib",
+  "version": "0.0.1",
+  "description": "Libraries for mapping data models in Ault Farms",
+  "main": "cardMappers.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.5",
+    "moment": "^2.21.0"
+  }
+}
