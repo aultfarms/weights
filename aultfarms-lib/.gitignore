@@ -1,6 +1,7 @@
 # since babel has to output transpiled files at top level, we don't
 # add them to git.  All the original source files are in src/.
 **/node_modules
+index.*
 cardMappers.*
 cattleInventory/
 dead/
