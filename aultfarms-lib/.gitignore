@@ -2,11 +2,11 @@
 # add them to git.  All the original source files are in src/.
 **/node_modules
 cardMappers.*
-cattleInventory
-dead
-google
-incoming
-treatments
-trello
-util
-window
+cattleInventory/
+dead/
+google/
+incoming/
+treatments/
+trello/
+util/
+window/
