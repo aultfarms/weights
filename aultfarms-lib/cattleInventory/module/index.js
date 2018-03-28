@@ -9,7 +9,7 @@ export default Module({
     out: [],
     buyContracts: [],
     sellContracts: [],
-    dead: [],
-  },
+    dead: []
+  }
 });
-
+//# sourceMappingURL=index.js.map

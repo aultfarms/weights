@@ -15,7 +15,8 @@ export default Module({
       //   cardName: '2018-03-17: ORANGE123', // original card, for debugging
       //   dateLastActivity: '2018-03-17',    // for sorting by "recent"-ness
       // },
-    ],
-  },
+    ]
+  }
 
 });
+//# sourceMappingURL=index.js.map

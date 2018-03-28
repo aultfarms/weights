@@ -11,12 +11,12 @@ export default Module(m => {
         //   id: 'kdj20fi32jld',
         //   cards: { ... },  // the regular trello list of cards
         // }
-      },
+      }
     },
-  
-    signals,
+
+    signals
 
     // assumes global 'trello' provider exists in controller
   };
 });
-
+//# sourceMappingURL=index.js.map

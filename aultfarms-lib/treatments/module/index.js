@@ -17,7 +17,8 @@ export default Module({
       //     { number: 123, color: 'ORANGE' }
       //   ]
       // },
-    ],
-  },
+    ]
+  }
 
 });
+//# sourceMappingURL=index.js.map

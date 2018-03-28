@@ -1,2 +1,12 @@
+# since babel has to output transpiled files at top level, we don't
+# add them to git.  All the original source files are in src/.
 **/node_modules
-dist
+cardMappers.*
+cattleInventory
+dead
+google
+incoming
+treatments
+trello
+util
+window

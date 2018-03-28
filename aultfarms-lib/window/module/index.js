@@ -3,9 +3,10 @@ import * as signals from './sequences';
 
 export default Module({
   signals,
-  state: { 
+  state: {
     isSmall: true, // changes to true for mobile, false for computer
-    orientation: 'portrait', // portrait | landscape
-  },
-  
+    orientation: 'portrait' // portrait | landscape
+  }
+
 });
+//# sourceMappingURL=index.js.map

@@ -5,13 +5,12 @@ export default Module(m => {
   return {
     state: {
       authorized: false,
-      sheets: {
-      },
+      sheets: {}
     },
-  
-    signals,
+
+    signals
 
     // assumes global 'google' provider exists in controller
   };
 });
-
+//# sourceMappingURL=index.js.map

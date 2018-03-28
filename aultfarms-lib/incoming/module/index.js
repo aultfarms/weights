@@ -23,7 +23,8 @@ export default Module({
       //   idList: '29ifjkl', // ID of Incoming list in Trello
       //   cardName: '2018-03-17: MICH:MAR18-1; Head: 250; Weight: 274.35; Tags: ORANGE123-ORANGE372;',
       // },
-    ],
-  },
+    ]
+  }
 
 });
+//# sourceMappingURL=index.js.map
