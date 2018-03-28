@@ -3,7 +3,7 @@ import { set } from 'cerebral/operators';
 import { sequence, CerebralError } from 'cerebral';
 
 import { tagStrToObj } from '../../util/tagHelpers';
-import * as trello from '../trello/sequences';
+import * as trello from '../../trello/module/sequences';
 
 
 //---------------------------------------------------------------------

@@ -1,7 +1,6 @@
 
 import { Module } from 'cerebral';
 
-import { treatmentCodes, colors } from './defaults';
 import * as signals from './sequences';
 
 export default Module({
