@@ -6,12 +6,13 @@
   "scripts": {
     "build": "babel --source-maps --out-dir . src/",
     "build-watch": "babel --source-maps --watch --out-dir . src/",
-    "dev": "cpx \"**!(src|node_modules)\" ../apps/treatments/node_modules/aultfarms-lib --watch --verbose",
+    "dev": "cpx --watch --verbose './**' ../apps/treatments/node_modules/aultfarms-lib",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Aaron Ault <aultac@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
+    "cpx": "^1.5.0",
     "lodash": "^4.17.5",
     "moment": "^2.21.0"
   },
@@ -19,11 +20,24 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.2",
-    "babel-preset-env": "^1.6.1",
-    "cpx": "^1.5.0"
+    "babel-preset-env": "^1.6.1"
   },
   "peerDependencies": {
     "cerebral": "^4.1.0",
     "bluebird": "^3.5.1"
+  },
+  "babel": {
+    "presets": [
+      [
+        "env",
+        {
+          "targets": {
+            "browsers": [
+              "last 2 versions"
+            ]
+          }
+        }
+      ]
+    ]
   }
 }

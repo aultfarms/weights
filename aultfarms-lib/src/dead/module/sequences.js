@@ -50,11 +50,12 @@ const deadCardToRecord = c => {
   };
 };
 
-export const fetch = [
+export const fetch = sequence('dead.fetch', [
+  () => ({ boardName: 'Livestock', listName: 'Dead', key: 'dead' }),
   // get the cards
-  trello.loadList({ board: 'Livestock', list: 'Dead', key: 'dead' }),
+  trello.loadList,
   // convert all props.cards to records:
   ({props,state}) => state.set('dead.records', _.map(props.cards, deadCardToRecord)),
-];
+]);
 
 

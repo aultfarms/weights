@@ -11,7 +11,7 @@ const waitUntilLoaded = () => Promise.try(() => {
   const check = () => {
     if (window.Trello) return true;
     if (count++ > 50) throw TrelloClientLoadError('Could not load Trello client library');
-    return Promse.delay(250).then(check);
+    return Promise.delay(250).then(check);
   };
   return Promise.try(check);
 });
@@ -22,7 +22,8 @@ export default Provider({
 
   //-------------------------------------------------
   // call authorize first before any other functions in this provider:
-  authorize: () => waitUntilLoaded()
+  authorize() {
+    return waitUntilLoaded()
     .then(() => new Promise((resolve,reject) => {
       window.Trello.authorize({
         type: 'redirect',
@@ -35,11 +36,13 @@ export default Provider({
       });
       return null;
     })
-  ),
+  )},
 
-  deauthorize: () => new Promise((resolve,reject) => { window.Trello.deauthorize(); resolve(); }),
-   get: (path,params) => new Promise((resolve,reject) => window.Trello.get( path,params||{},resolve,err => { console.log('Trello.get ERROR: ', err); reject(err); })),
-   put: (path,params) => new Promise((resolve,reject) => window.Trello.put( path,params    ,resolve,err => { console.log('Trello.put ERROR: ', err); reject(err); })),
-  post: (path,params) => new Promise((resolve,reject) => window.Trello.post(path,params    ,resolve,err => { console.log('Trello.post ERROR: ',err); reject(err); })),
+  deauthorize() {
+    return new Promise((resolve,reject) => { window.Trello.deauthorize(); resolve(); })
+  },
+   get(path,params) { return new Promise((resolve,reject) => window.Trello.get( path,params||{},resolve,err => { console.log('Trello.get ERROR: ', err); reject(err); }))},
+   put(path,params) { return new Promise((resolve,reject) => window.Trello.put( path,params    ,resolve,err => { console.log('Trello.put ERROR: ', err); reject(err); }))},
+  post(path,params) { return new Promise((resolve,reject) => window.Trello.post(path,params    ,resolve,err => { console.log('Trello.post ERROR: ',err); reject(err); }))},
 })
 

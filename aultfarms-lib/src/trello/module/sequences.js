@@ -16,7 +16,7 @@ Promise.config({
 //-----------------------------------------------
 // authorize and deauthorize
 export const authorize = [
-  ({trello}) => trello.authorize().catch(e => { throw errors.TrelloAuthorizeError(e) }),
+  ({trello}) => trello.authorize().catch(e => { throw new errors.TrelloAuthorizeError(e) }),
   set(state`trello.authorized`, true),
 ];
 
@@ -30,50 +30,59 @@ export const deauthorize = [
 // loadList sequence: given a board and list name in props, 
 // load it into the state from Trello
 // props = { boardName, listName, key } the list's data will be put at trello.lists.<key>
-let initialized = false; // this is false until it is a promise that will resolve when first attempt finished initialization
-export const loadList = [
+
+// We will keep a promise for each board/list that we need to verify exists
+// in order to prevent simulataneous accesses from creating duplicate boards/lists
+// when they see that a board doesn't exist yet.
+let initialized = { boards: {}, lists: {} }; 
+export const loadList = sequence('trello.loadList', [
   ({props,trello}) => {
-    if (initialized) return initialized; // if this is a promise, then someone else is initializing or it's done already
-    let ret = {};
+    let ret = {}; 
 
-    // Start by getting board, create if doesn't exist, save promise in "initialized":
-    initialized = trello.get('members/me/boards', { fields: 'name,id,closed' })
-    .filter(b => b && !b.closed)
-    .then(result => {
-      const board = _.find(result, b => b.name === props.boardName);
-      if (!board) {
+    // First get the board
+    return Promise.try(() => {
+      if (initialized.boards[props.boardName]) return initialized.boards[props.boardName]; // if this is a promise, then someone else is initializing or it's done already
+
+      // Start by getting board, create if doesn't exist, save promise in "initialized":
+      return initialized.boards[props.boardName] = trello.get('members/me/boards', { fields: 'name,id,closed' })
+      .filter(b => b && !b.closed)
+      .then(result => {
+        const board = _.find(result, b => b.name === props.boardName);
+        if (board) return board;
         console.log('Could not find board '+props.boardName+', creating it.');
-        return trello.post('boards', { name: props.boardName})
-        .then(result => { ret.board = board; });
-      }
-      ret.board = board;
+        return trello.post('boards', { name: props.boardName}); // the result of this call is the board object itself
+      });
+    }).then(board => { ret.board = board })
 
-    // then get the labels:
-    }).then(() => trello.get(`boards/${props.board.id}/labels`, { fields: 'id,name,color' }))
+    // Then get the labels:
+    .then(() => trello.get(`boards/${ret.board.id}/labels`, { fields: 'id,name,color' }))
     .then(labels => { ret.labels = labels; })
 
-    // then get the list info:
-    .then(() => trello.get('boards/'+props.board.id+'/lists', {fields:'name,id,closed'}))
-    .filter(l => l && !l.closed)
-    .then(result => {
-      const list = _.find(result, l => l.name === props.listName);
-      if (!list) {
-        console.log('Could not find list '+props.list+', creating it.');
-        return trello.post('boards/'+props.board.id+'/lists', { name: props.listName})
-        .then(list => { ret.list = list; });
-      }
-      ret.list = list;
-    }).then(() => ret)
-    .catch(error => { throw new TrelloGetError('Failed during list initialization: '+error); });
-    // Don't forget to return the actual promise so cerebral waits:
-    return initialized;
+    // Then get the list info:
+    .then(() => {
+      if (initialized.lists[props.listName]) return initialized.lists[props.listName];
+      return initialized.lists[props.listName] = trello.get(`boards/${ret.board.id}/lists`, {fields:'name,id,closed'})
+      .filter(l => l && !l.closed)
+      .then(result => {
+        const list = _.find(result, l => l.name === props.listName);
+        if (list) return list;
+        console.log('Could not find list '+props.listName+', creating it.');
+        return trello.post(`boards/${ret.board.id}/lists`, { name: props.listName}); // resolves to the list object itself
+      });
+    }).then(list => { ret.list = list })
+
+    // Now setup the final return statement and catch:
+    .then(() => ret)
+    .catch(error => { error.message = 'Failed to get list '+props.listName+': '+error.message; throw new errors.TrelloGetError(error); });
   },
 
   // Now get the cards for this list:
-  ({props,trello}) => trello.get('lists/'+props.list.id+'/cards', { fields: 'name,id,closed,desc,dateLastActivity,labels' })
+  ({props,trello}) => {
+    return trello.get('lists/'+props.list.id+'/cards', { fields: 'name,id,closed,desc,dateLastActivity,labels' })
     .filter(c => c && !c.closed)
     .then(result => ({ cards: result }))
-    .catch(error => { throw TrelloGetError('Failed to get cards for list '+list+': '+error) }),
+    .catch(error => { error.message = 'Failed to get cards for list '+props.listName+': '+error.message; throw new errors.TrelloGetError(error); })
+  },
 
   // Put everything into state:
   ({props,state}) => {
@@ -86,22 +95,20 @@ export const loadList = [
     });
   },
 
-];
+]);
 
 // props.card = {
 //   id: 'only use if this card already exists',
 //   name: 'the name to put',
 //   idList: 'id of list for card, required no matter what',
 // }
-export const putCard = [
-  ({trello,props}) => {
-    let method = trello.post;
+export const putCard = sequence('trello.putCard', [
+  ({trello,props}) => Promise.try(() => {
     let url = 'cards/';
-    if (props.card.id) { // card already exists, put instead of post
-      method = trello.put; 
-      url += props.card.id+'/';
+    if (!props.card.id) { // card does not exist, do a post
+      return trello.post(url, { name: props.card.name, idList: props.card.idList })
     }
-    return method(url, { name: props.card.name, idList: props.card.idList })
-    .catch(err => { throw errors.TrelloSaveError(err) });
-  }
-];
+    url += props.card.id+'/'; // card already exists, do a put to that card
+    return trello.put(url, { name: props.card.name, idList: props.card.idList })
+  }).catch(err => { throw new errors.TrelloSaveError('Failed to save to card', err) }),
+]);

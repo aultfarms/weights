@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { set } from 'cerebral/operators';
 import { sequence, CerebralError } from 'cerebral';
 
-import { tagStrToObj } from '../../util/tagHelpers';
+import { tagStrToObj, rangeContainsTag } from '../../util/tagHelpers';
 import * as trello from '../../trello/module/sequences';
 
 
@@ -43,11 +43,42 @@ const incomingCardToRecord = c => {
   return ret;
 };
 
-export const fetch = [
+export const fetch = sequence('incoming.fetch', [
+  () => ({ boardName: 'Livestock', listName: 'Incoming', key: 'incoming' }),
   // get the cards
-  trello.loadList({ board: 'Livestock', list: 'Incoming', key: 'incoming' }),
+  trello.loadList,
   // convert all props.cards to records:
   ({props,state}) => state.set('incoming.records', _.map(props.cards, incomingCardToRecord)),
-];
+]);
 
 
+export const computeStats = sequence('incoming.computeStats', [
+  ({state}) => {
+    // check if we have both dead and incoming records:
+    const deadrecords = state.get('dead.records');
+    const incoming = state.get('incoming.records');
+
+    // Organize the dead by tag color:
+    const dead = _.reduce(deadrecords, (acc,d) => {
+      if (!d.tags) console.log('incoming.computeStats: WARNING: dead record has no tags.  Card name = ', d.cardName);
+      _.each(d.tags, t => {
+        if (!acc[t.color]) acc[t.color] = [];
+        acc[t.color].push({ date: d.date, tag: t });
+      });
+      return acc;
+    },{});
+
+    // Walk through each incoming group to push dead ones onto it's dead list:
+    _.each(incoming, (group,index) => {
+      if (!group.tag_ranges) return;
+      state.set(`incoming.records.${index}.dead`, _.reduce(group.tag_ranges, (acc,r) => {
+        _.each(dead[r.start.color], deadone => {
+          if (!rangeContainsTag(r, deadone.tag)) return;
+          acc.push(deadone); // otherwise, it's in the range so count it
+        });
+        return acc;
+      },[]));
+    });
+    // Done organizing dead into incoming groups
+  },
+]);

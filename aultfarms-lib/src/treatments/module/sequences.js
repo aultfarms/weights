@@ -13,31 +13,37 @@ export const saveTreatment = [
 
   // find existing card that matches this date and treatment (if it exists):
   ({props,state}) => {
-    const cards = state.get('trello.lists.treatments.cards');
-    const existing = _.find(cards, c => {
-      const info = treatmentCardToRecord(c);
-      return info.date === props.record.date && info.treatment === props.record.treatment;
+    let ret = false;
+    const records = state.get('treatments.records');
+    const existing = _.find(records, r => {
+      return r.date === props.record.date && r.treatment === props.record.treatment;
     });
-    if (!existing) return; // existing record is fine as-is in props
+    if (!existing) {
+      ret = _.cloneDeep(props.record);
+      ret.tags = [ ret.tag ];
+      return { record: ret }; // existing record is fine as-is in props, just needed array of tags instead of just one
+    }
+
     // Otherwise, check if this tag is already in the list:
     const alreadyInList = _.find(existing.tags, t => 
-      (record.tag.color === t.color && record.tag.number === t.number)
+      (props.record.tag.color === t.color && props.record.tag.number === t.number)
     );
     if (alreadyInList) return { record: existing }; // replace record in props with existing record
-    // And finally, add it to the list of existing tags since it's not already there
-    const ret = _.cloneDeep(existing);
-    ret.tags.push(record.tag);
+
+    // Otherwise, add record to the list of existing tags since it's not already there
+    ret = _.cloneDeep(existing);
+    ret.tags.push(props.record.tag);
     // replace record in props with this new one:
     return { record: ret };
   },
 
   // convert record to card
-  ({props}) => ({
+  ({props,state}) => ({
     card: {
       id: props.record.id,
       idList: props.record.idList || state.get('trello.lists.treatments.id'),
       name: props.record.date+': '+props.record.treatment+': '
-            +_.join(_.map(r.tags, t=>t.color+t.number), ' '),
+            +_.join(_.map(props.record.tags, t=>t.color+t.number), ' '),
     },
   }),
 
@@ -71,28 +77,30 @@ const treatmentCardToRecord = c => {
   };
 };
 
-export const fetch = [
+export const fetch = sequence('treatments.fetch', [
   // get the cards
-  trello.loadList({ board: 'Livestock', list: 'Treatments', key: 'treatments' }),
+  () => ({ boardName: 'Livestock', listName: 'Treatments', key: 'treatments' }),
+  trello.loadList,
   // convert all props.cards to records:
   ({props,state}) => state.set('treatments.records', _.map(props.cards, treatmentCardToRecord)),
-];
+]);
 
 
 //---------------------------------------------------------------------
 // fetch the config cards (colors, treatmentCodes)
-const colorsCardToRecord = c => c ? JSON.parse(c.name) : null;
-const  codesCardToRecord = c => c ? JSON.parse(c.name) : null;
-export const fetchConfig = [
+const colorsCardToRecord = c => c ? JSON.parse(c.desc) : null;
+const  codesCardToRecord = c => c ? JSON.parse(c.desc) : null;
+export const fetchConfig = sequence('treatments.fetchConfig', [
+  () => ({ boardName: 'Livestock', listName: 'Config', key: 'livestockConfig' }),
   // get the colors and codes cards:
-  trello.loadList({ board: 'Livestock', list: 'Config', key: 'livestockConfig' }),
+  trello.loadList,
 
   // save colors in state:
-  ({props,state}) => state.set('treatments.colors',        colorsCardToRecord(_.find(props.cards, c => c.name === 'Tag Colors'     ))),
+  sequence('saveColors', [({props,state}) => state.set('treatments.colors',        colorsCardToRecord(_.find(props.cards, c => c.name === 'Tag Colors'     )))]),
 
   // save treatment codes in state:
-  ({props,state}) => state.set('treatments.treatmentCodes', codesCardToRecord(_.find(props.cards, c => c.name === 'Treatment Types'))),
-];
+  sequence('saveCodes', [({props,state}) => state.set('treatments.treatmentCodes', codesCardToRecord(_.find(props.cards, c => c.name === 'Treatment Types')))]),
+]);
 
 
 
