@@ -28,7 +28,7 @@ export default connect({
   trelloAuthorized: state`trello.authorized`,
   googleAuthorized: state`google.authorized`,
     livestockReady: state`livestock.ready`,
-  init: signal`init`,
+              init: signal`init`,
 
 }, withStyles(styles, { withTheme: true })(class App extends Component {
 

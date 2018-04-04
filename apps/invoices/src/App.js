@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import _ from 'lodash';
 import { connect } from '@cerebral/react';
 import { state, signal } from 'cerebral/tags';
 
@@ -6,10 +7,12 @@ import { MuiThemeProvider, Card, CardContent,
          AppBar, Toolbar, IconButton, Typography,
          Drawer } from 'material-ui';
 import { Menu as MenuIcon } from 'material-ui-icons';
+import { ListItem, ListItemText } from 'material-ui/List';
+import List from 'material-ui/List';
 import createMuiTheme from 'material-ui/styles/createMuiTheme';
 import { withStyles } from 'material-ui/styles';
 
-import InvoiceTabs from './InvoiceTabs';
+import InvoiceGroup from './InvoiceGroup';
 
 import './App.css';
 
@@ -17,14 +20,18 @@ const muitheme = createMuiTheme({});
 
 //-----------------------------------------
 // Styles:
-const styles = {
+const styles = theme => ({
   root: { flexGrow: 1, },
   flex: { flex: 1 },
   menuButton: { 
     marginLeft: -12,
     marginRight: 20,
   },
-};
+  drawerPaper: {
+    position: 'relative',
+    width: 240,
+  },
+});
 
 export default connect({
   authorized: state`trello.authorized`,
@@ -32,6 +39,7 @@ export default connect({
         page: state`page`,
           init: signal`init`,
   drawerToggle: signal`drawerToggle`,
+   changeGroup: signal`changeGroup`,
 }, withStyles(styles, { withTheme: true })(class App extends Component {
 
   componentWillMount() {
@@ -50,15 +58,43 @@ export default connect({
     }
   }
 
+  invoiceGroupClicked(group) {
+    return () => this.props.changeGroup({group});
+  }
+  renderDrawer() {
+    const props = this.props;
+    //if (!props.page.drawer.open) return '';
+    return (
+      <Drawer variant="persistent" anchor='left' classes={{ paper: props.classes.drawerPaper }} open={props.page.drawer.open}>
+        <List>
+          { 
+            _.map({notInvoiced: 'Not Invoiced', notPaidFor: 'Not Paid For', truckingNotPaid: 'Trucking Not Paid', }, (display,key) => 
+              <ListItem button key={key} onClick={this.invoiceGroupClicked(key)}>
+                <ListItemText primary={display}/>
+              </ListItem>
+            )
+          }
+        </List>
+      </Drawer>
+    );
+  }
+
+  renderInvoiceGroup() {
+    const props = this.props;
+    if (!props.authorized) return '';
+    if (!props.feedReady) return '';
+    return <InvoiceGroup/>
+  }
+
   render() {
     const props = this.props;
-    const titleClicked = () => props.drawerToggle();
+    const hamburgerClicked = () => props.drawerToggle();
     return (
       <MuiThemeProvider theme={muitheme}>
         <div className="App">
           <AppBar position="static">
             <Toolbar>
-              <IconButton onClick={titleClicked} className={props.classes.menuButton} color="inherit" aria-label="Menu">
+              <IconButton onClick={hamburgerClicked} className={props.classes.menuButton} color="inherit" aria-label="Menu">
                 <MenuIcon />
               </IconButton>
               <Typography variant="title" color="inherit" className={props.classes.flex}>
@@ -66,10 +102,10 @@ export default connect({
               </Typography>
             </Toolbar>
           </AppBar>
+          
+          { this.renderDrawer() }
 
-          <Drawer variant="persistent" anchor='left' open={props.page.drawer.open}>
-            
-          </Drawer>
+          { this.renderInvoiceGroup() }
 
           { this.renderAuthorized() }
           { this.renderFeedReady() }

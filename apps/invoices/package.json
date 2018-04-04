@@ -20,7 +20,8 @@
     "react-scripts": "1.0.17",
     "spawn-sync": "^1.0.15",
     "thread-sleep": "^2.0.0",
-    "try-thread-sleep": "^1.0.2"
+    "try-thread-sleep": "^1.0.2",
+    "aultfarms-lib": "^0.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
