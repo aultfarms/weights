@@ -1,0 +1,4 @@
+.tagpane {
+  display: flex;
+  flex-direction: column;
+}
