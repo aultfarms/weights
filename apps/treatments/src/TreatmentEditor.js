@@ -1,20 +1,21 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
+
+import {connect} from '@cerebral/react';
+import {signal,state} from 'cerebral/tags';
 
 import './TreatmentEditor.css';
 
 export default connect({
-  record: 'app.record',
-  treatmentCodes: 'app.treatmentCodes',
-  treatmentRecords: 'app.records.treatments',
-},{
-  recordUpdateRequested: 'app.recordUpdateRequested',
-  hideTreatmentEditor: 'app.hideTreatmentEditor',
-}, props => {
+            record: state`record`,
+    treatmentCodes: state`treatments.treatmentCodes`,
+  treatmentRecords: state`treatments.records`,
+         changeRecord: signal`changeRecord`,
+  hideTreatmentEditor: signal`hideTreatmentEditor`,
+}, function TreatmentEditor(props) {
   const treatmentTextChanged = evt => {
     evt.preventDefault();
-    props.recordUpdateRequested({ treatment: evt.target.value() });
+    props.changeRecord({ treatment: evt.target.value() });
   };
 
 
@@ -36,7 +37,7 @@ export default connect({
     const thiscode = _.findIndex(list,c=>c.code===code);
     if (thiscode<0) return;
     list[thiscode].on = !list[thiscode].on;
-    props.recordUpdateRequested({ treatment: textFromCodelist(list) });
+    props.changeRecord({ treatment: textFromCodelist(list) });
   };
 
   const recentCodesFromRecords = () => {
@@ -48,7 +49,7 @@ export default connect({
       return acc;
     },[]);
   }
-  const recentTreatmentClicked = t => evt => props.recordUpdateRequested({treatment: t});
+  const recentTreatmentClicked = t => evt => props.changeRecord({treatment: t});
 
   const treatmentEditorDoneClicked = evt => props.hideTreatmentEditor();
   const codesOn = _.keyBy(codelistFromText(props.record.treatment),c=>c.code);

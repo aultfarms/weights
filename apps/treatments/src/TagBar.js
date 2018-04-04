@@ -1,23 +1,23 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
+import {connect} from '@cerebral/react';
+import {state,signal} from 'cerebral/tags';
 
 import './TagBar.css';
 
 export default connect({
-  record: 'app.record',
-  colors: 'app.colors',
-     msg: 'app.msg',
-},{
-  recordUpdateRequested: 'app.recordUpdateRequested',
-}, props => {
+  record: state`record`,
+  colors: state`treatments.colors`,
+     msg: state`msg`,
+  changeRecord: signal`changeRecord`,
+}, function TagBar(props) {
   const colorTextChanged = evt => {
     evt.preventDefault();
-    props.recordUpdateRequested({tag: { color: evt.target.value} });
+    props.changeRecord({tag: { color: evt.target.value} });
   };
 
   const tagNumberTextChanged = evt => {
     evt.preventDefault();
-    props.recordUpdateRequested({tag: { number: +(evt.target.value)} });
+    props.changeRecord({tag: { number: +(evt.target.value)} });
   };
 
   const color = props.colors[props.record.tag.color];

@@ -1,12 +1,11 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
+
+import {connect} from '@cerebral/react';
 
 import './Keypad.css';
 
 export default connect({
-  window: 'window',
-},{
 }, class Keypad extends React.Component {
 
   keypressed(evt) {

@@ -1,18 +1,18 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
 import numeral from 'numeral';
 import { extendMoment } from 'moment-range';
 import Moment from 'moment';
 const moment = extendMoment(Moment);
 
+import {connect} from '@cerebral/react';
+import {state} from 'cerebral/tags';
 
 export default connect({
-  historySelector: 'app.historySelector',
-  deadRecords: 'app.records.dead',
-  record: 'app.record',
-},{
-}, props => {
+  historySelector: state`historySelector`,
+      deadRecords: state`dead.records`,
+           record: state`record`,
+}, function HistoryDead(props) {
 
   const today = moment();
   const lastmonth = moment.range(today.clone().subtract(1,'months'),today);

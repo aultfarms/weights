@@ -1,5 +1,6 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
+import {connect} from '@cerebral/react';
+import {state,signal} from 'cerebral/tags';
 
 import TagPane from './TagPane';
 import RecordInput from './RecordInput';
@@ -8,28 +9,18 @@ import TreatmentEditor from './TreatmentEditor';
 import './App.css';
 
 export default connect({
-  treatmentEditorActive: 'app.treatmentEditorActive',
-  window: 'window',
-  trello: 'app.trello',
-},{
-  windowResized: 'window.resized',
-  authorizationNeeded: 'app.authorizationNeeded'
+  treatmentEditorActive: state`treatmentEditorActive`,
+             windowSize: state`windowSize`,
+                 trello: state`trello`,
+  init: signal`init`,
 }, class App extends React.Component {
 
-  updateDimensions() {
-    this.props.windowResized({ width: window.innerWidth, height: window.innerHeight});
-  }
-  componentDidMount() {
-    window.addEventListener("resize", this.updateDimensions.bind(this));
-    this.updateDimensions();
-    if (!this.props.trello.authorized) this.props.authorizationNeeded();
-  }
-  componentWillUnmount() {
-    window.removeEventListener("resize", this.updateDimensions.bind(this));
+  componentWillMount() {
+    this.props.init();
   }
 
   render() {
-    const dir = this.props.window.orientation === 'landscape' ? 'row' : 'column';
+    const dir = this.props.windowSize.orientation === 'landscape' ? 'row' : 'column';
 
     if (this.props.treatmentEditorActive) {
       return (

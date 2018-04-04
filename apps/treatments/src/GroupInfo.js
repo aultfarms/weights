@@ -1,13 +1,13 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
 import numeral from 'numeral';
+
+import {connect} from '@cerebral/react';
 
 import './GroupInfo.css';
 
 export default connect({
-},{
-}, props => {
+}, function GroupInfo(props) {
 
   if (!props.group) props.group = { 
     name: 'Unknown', 

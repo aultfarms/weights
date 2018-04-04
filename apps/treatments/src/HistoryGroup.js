@@ -1,21 +1,23 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
-import {groupForTag} from './lib/records';
 import numeral from 'numeral';
 import moment from 'moment';
+
+import {connect} from '@cerebral/react';
+import {state,signal} from 'cerebral/tags';
+
+import {groupForTag} from 'aultfarms-lib/util/tagHelpers';
 
 import './HistoryGroup.css';
 
 export default connect({
-  historySelector: 'app.historySelector',
-  groups: 'app.records.incoming',
-  treatments: 'app.records.treatments',
-  record: 'app.record',
-  sortBy: 'app.historyGroup.sort',
-},{
-  sortBySignal: 'app.historyGroupSortClicked',
-}, props => {
+  historySelector: state`historySelector`,
+           groups: state`incoming.records`,
+       treatments: state`treatments.records`,
+           record: state`record`,
+           sortBy: state`historyGroup.sort`,
+  sortBySignal: signal`historyGroupSortClicked`,
+}, function HistoryGroup(props) {
   let all_groups = props.groups;
   const group = groupForTag(props.groups, props.record.tag);
   if (group) all_groups = [ group ]; // just show group for current tag

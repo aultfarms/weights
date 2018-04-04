@@ -1,4 +1,7 @@
+import moment from 'moment';
 import { Module } from 'cerebral';
+import { set } from 'cerebral/operators';
+import { state } from 'cerebral/tags';
 
 import treatmentsModule from 'aultfarms-lib/treatments/module';
 import   incomingModule from 'aultfarms-lib/incoming/module';
@@ -9,7 +12,7 @@ import windowSizeModule from 'aultfarms-lib/windowSize/module';
 import     trelloProvider from 'aultfarms-lib/trello/provider';
 import windowSizeProvider from 'aultfarms-lib/windowSize/provider';
 
-import * as trelloErrors from 'aultfarms-lib/trello/errors';
+import * as trelloErrors from 'aultfarms-lib/trello/module/errors';
 
 import * as signals from './sequences';
 
@@ -40,15 +43,6 @@ export default Module({
       is_saved: true,
     },
 
-    treatmentCodes,
-    colors,
-
-    records: {
-      treatments: [],
-      dead: [],
-      incoming: [],
-    },
-
   },
   modules: {
     treatments: treatmentsModule,
@@ -62,9 +56,9 @@ export default Module({
     windowSize: windowSizeProvider,
   },
   catch: [
-    [ trello.TrelloSaveError,      [ set(state`msg`, 'ERROR: failed to save in Trello'      ] ],
-    [ trello.TrelloGetError,       [ set(state`msg`, 'ERROR: failed to get in Trello'       ] ],
-    [ trello.TrelloAuthorizeError, [ set(state`msg`, 'ERROR: failed to authorize in Trello' ] ],
+    [ trelloErrors.TrelloSaveError,      [ set(state`msg`, 'ERROR: failed to save in Trello')      ] ],
+    [ trelloErrors.TrelloGetError,       [ set(state`msg`, 'ERROR: failed to get in Trello')       ] ],
+    [ trelloErrors.TrelloAuthorizeError, [ set(state`msg`, 'ERROR: failed to authorize in Trello') ] ],
   ],
 });
 

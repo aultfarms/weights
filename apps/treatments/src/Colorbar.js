@@ -1,14 +1,15 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
+
+import {connect} from '@cerebral/react';
+import {state,signal} from 'cerebral/tags';
 
 import './Colorbar.css';
 
 export default connect({
-  record: 'app.record',
-  colors: 'app.colors',
-},{
-  recordUpdateRequested: 'app.recordUpdateRequested',
+  record: state`record`,
+  colors: state`treatments.colors`,
+  changeRecord: signal`changeRecord`,
 }, class Colorbar extends React.Component {
 
   keypressed(evt) {
@@ -24,7 +25,7 @@ export default connect({
       default: return;
     }
     evt.preventDefault();
-    this.props.recordUpdateRequested({tag: { color: color } });
+    this.props.changeRecord({tag: { color: color } });
   }
   componentDidMount() {
     document.addEventListener('keypress', this.keypressed.bind(this));
@@ -37,7 +38,7 @@ export default connect({
     const props = this.props;
     return evt => {
       evt.preventDefault();
-      props.recordUpdateRequested({tag: { color: color } });
+      props.changeRecord({tag: { color: color } });
     };
   }
 

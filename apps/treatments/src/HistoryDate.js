@@ -1,14 +1,16 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
+
+import {connect} from '@cerebral/react';
+import {state} from 'cerebral/tags';
+
 import TreatmentCard from './TreatmentCard';
 
 export default connect({
-  historySelector: 'app.historySelector',
-  treatmentRecords: 'app.records.treatments',
-  record: 'app.record',
-},{
-}, props => {
+   historySelector: state`historySelector`,
+  treatmentRecords: state`treatments.records`,
+            record: state`record`,
+}, function HistoryDate(props) {
   // Show cards for current date:
   let recordsfordate = _.filter(props.treatmentRecords, r=>(r.date === props.record.date));
   recordsfordate = _.reverse(_.sortBy(recordsfordate,r=>r.dateLastActivity));
@@ -22,7 +24,7 @@ export default connect({
       </div>
       {_.map(recordsfordate, (r,i) => 
         <TreatmentCard key={'treatmentcard'+i}
-                       record={r}
+                       record={_.clone(r)}
                        recordindex={i} />
       )}
     </div>

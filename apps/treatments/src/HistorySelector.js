@@ -1,14 +1,15 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import FontAwesome from 'react-fontawesome';
+
+import {connect} from '@cerebral/react';
+import {state,signal} from 'cerebral/tags';
 
 import './HistorySelector.css';
 
 export default connect({
-  historySelector: 'app.historySelector',
-},{
-  historySelectionChangeRequested: 'app.historySelectionChangeRequested',
-}, props => {
+  historySelector: state`historySelector`,
+  historySelectionChangeRequested: signal`historySelectionChangeRequested`,
+}, function HistorySelector(props) {
   const prefsClicked = evt => props.historySelectionChangeRequested({ active: 'prefs' });
   const  dateClicked = evt => props.historySelectionChangeRequested({ active: 'date' });
   const   tagClicked = evt => props.historySelectionChangeRequested({ active: 'tag' });

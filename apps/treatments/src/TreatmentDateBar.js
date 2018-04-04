@@ -1,20 +1,21 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
+
+import {connect} from '@cerebral/react';
+import {state,signal} from 'cerebral/tags';
 
 import './TreatmentDateBar.css';
 
 export default connect({
-  record: 'app.record',
-  treatmentCodes: 'app.treatmentCodes',
-},{
-  recordUpdateRequested: 'app.recordUpdateRequested',
-  showTreatmentEditor: 'app.showTreatmentEditor',
-}, function RecordInput(props) {
+          record: state`record`,
+  treatmentCodes: state`treatments.treatmentCodes`,
+         changeRecord: signal`changeRecord`,
+  showTreatmentEditor: signal`showTreatmentEditor`,
+}, function TreatmentDateBar(props) {
 
   const dateChanged = evt => {
     evt.preventDefault();
-    props.recordUpdateRequested({date: evt.target.value});
+    props.changeRecord({date: evt.target.value});
   };
 
   const treatmentTextClicked = evt => {

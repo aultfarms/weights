@@ -1,15 +1,15 @@
 import React from 'react';
-import {connect} from 'cerebral-view-react';
 import _ from 'lodash';
 import moment from 'moment';
 
+import {connect} from '@cerebral/react';
+import {state} from 'cerebral/tags';
 
 export default connect({
-  historySelector: 'app.historySelector',
-  treatmentRecords: 'app.records.treatments',
-  record: 'app.record',
-},{
-}, props => {
+   historySelector: state`historySelector`,
+  treatmentRecords: state`treatments.records`,
+            record: state`record`,
+}, function HistoryTag(props) {
   // find all records with this tag in it:
   let recordsfortag = _.filter(props.treatmentRecords, r =>{
     return _.find(r.tags, t => 
