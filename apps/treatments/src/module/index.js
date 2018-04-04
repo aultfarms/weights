@@ -9,11 +9,14 @@ import windowSizeModule from 'aultfarms-lib/windowSize/module';
 import     trelloProvider from 'aultfarms-lib/trello/provider';
 import windowSizeProvider from 'aultfarms-lib/windowSize/provider';
 
+import * as trelloErrors from 'aultfarms-lib/trello/errors';
+
 import * as signals from './sequences';
 
 export default Module({
   signals,
   state: { 
+    recordsValid: false,
     treatmentEditorActive: false,
     historySelector: {
       active: 'date', // date/tag/group/dead
@@ -58,36 +61,10 @@ export default Module({
         trello: trelloProvider,
     windowSize: windowSizeProvider,
   },
+  catch: [
+    [ trello.TrelloSaveError,      [ set(state`msg`, 'ERROR: failed to save in Trello'      ] ],
+    [ trello.TrelloGetError,       [ set(state`msg`, 'ERROR: failed to get in Trello'       ] ],
+    [ trello.TrelloAuthorizeError, [ set(state`msg`, 'ERROR: failed to authorize in Trello' ] ],
+  ],
 });
 
-
-
-  module.addSignals({
-
-    recordSaveClicked: [ 
-      recordToTreatmentCardOutput,
-      set('state:app.trello.treatmentcardsValid', false),
-      [ // async:
-        putTreatmentCardName, {
-          fail: [ msgFail('Could not put card to Trello!') ],
-          success: [ 
-            set('state:app.record.is_saved', true),
-            set('state:app.record.tag.number', ''),
-            set('state:app.historySelector.active', 'date'),
-            msgSuccess('Saved card - wait for card list refresh'),
-            chainFetchCards('treatments'),
-          ],
-        },
-      ],
-    ],
-
-    authorizationNeeded: [ chainDoAuthorization ], // async, so don't ...expand
-    logoutClicked: [ 
-      ({state,services}) => { state.set('app.trello.authorized', false); services.trello.deauthorize(); },
-      chainDoAuthorization,
-    ],
-
-    historyGroupSortClicked: [ copy('input:sort', 'state:app.historyGroup.sort') ],
-
-  });
-}
