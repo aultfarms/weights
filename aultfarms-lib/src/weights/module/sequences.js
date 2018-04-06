@@ -98,7 +98,7 @@ export const fetch = sequence('weights.fetch', [
     haveHeader: [],
     addHeader: [
       ({props}) => ({id: props.id, worksheetName: props.worksheetName, key: props.key,
-        row: 0, 
+        row: -1,  // putRow will increment expecting to move past header
         cols: [ 'color', 'number', 'weight', 'adj_wt', 'group', 'in_date', 'days', 'lbs_gain', 'rog' ],
       }),
       putRow,

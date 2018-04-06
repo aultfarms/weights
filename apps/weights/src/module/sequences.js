@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import moment from 'moment';
-import { set, increment } from 'cerebral/operators';
+import { set } from 'cerebral/operators';
 import { state,props } from 'cerebral/tags';
 import { sequence, parallel } from 'cerebral';
 
@@ -12,6 +12,19 @@ import * as trello     from 'aultfarms-lib/trello/module/sequences';
 import * as google     from 'aultfarms-lib/google/module/sequences';
 import * as windowSize from 'aultfarms-lib/windowSize/module/sequences';
 import { groupForTag } from 'aultfarms-lib/util/tagHelpers';
+
+
+//------------------------------------------------------
+// Help for scrolling:
+const scrollToTag = () => {
+  const el = document.getElementById('tagScrollToMe');
+  if (el) el.scrollIntoView();
+};
+const scrollToWeight = () => {
+  const el = document.getElementById('weightScrollToMe');
+  if (el) el.scrollIntoView();
+};
+
 
 //-------------------------------------------------------
 // Misc view functions
@@ -31,11 +44,14 @@ export const loadWeightsForDate = sequence('loadWeightsForDate', [
   weights.clearCache,
   weights.fetch,
 ]);
-export const changeWeight = sequence('changeWeight',[ set(state`weightInput.weight`, props`weight`) ]);
-export const    changeTag = sequence('changeTag',   [ ({props,state}) => {
-  if (props.tag.number) state.set(`tagInput.tag.number`, +(props.tag.number));
-  if (props.tag.color)  state.set(`tagInput.tag.color`, props.tag.color);
-}]); // tag, number
+export const changeWeight = sequence('changeWeight',[ set(state`weightInput.weight`, props`weight`), scrollToWeight ]);
+export const    changeTag = sequence('changeTag',   [ 
+  ({props,state}) => {
+    if (props.tag.number) state.set(`tagInput.tag.number`, +(props.tag.number));
+    if (props.tag.color)  state.set(`tagInput.tag.color`, props.tag.color);
+  }, 
+  scrollToTag
+]); // tag, number
 function loadInputFromRow({state,props}) {
   const row = state.get(`${props.whichInput}.row`);
   const numrows = state.get('weights.records').length;
@@ -62,7 +78,8 @@ export const moveInput = sequence('moveTagInput', [
     state.set(`${props.whichInput}.row`, row);
     return { row };
   },
-  loadInputFromRow
+  loadInputFromRow,
+  ({props}) => { if (props.whichInput === 'tagInput') return scrollToTag(); return scrollToWeight(); },
 ]);
  
 export const moveInputUp = sequence('moveInputUp', [ 
@@ -186,4 +203,5 @@ export const init = sequence('init', [
   },
   set(state`recordsValid`, true),
   set(state`msg`, { type: 'good', text: 'Loaded successfully.'}),
+  scrollToTag,
 ]);

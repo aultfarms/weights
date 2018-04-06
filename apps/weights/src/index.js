@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import registerServiceWorker from './registerServiceWorker';
+//import registerServiceWorker from './registerServiceWorker';
 import { Controller } from 'cerebral';
 import { Container } from '@cerebral/react';
 import devtools from 'cerebral/devtools';
