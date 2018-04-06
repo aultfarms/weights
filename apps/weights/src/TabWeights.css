@@ -1,0 +1,43 @@
+.tabweights {
+}
+
+.tabweightstable {
+  width: 100%;
+}
+
+.tabweightstablerow {
+  box-sizing: border-box;
+  padding: 3px 3px 3px 3px;
+  border-width: 1px;
+  border-color: #CCCCCC;
+  border-style: solid;
+}
+.tabweightstablecol {
+  box-sizing: border-box;
+  padding: 3px 3px 3px 3px;
+  border-width: 1px;
+  border-color: #CCCCCC;
+  border-style: solid;
+}
+
+
+.tagactive {
+  background-color: #CCCCFF;
+}
+.weightactive {
+  background-color: #CCFFCC;
+}
+
+.tabweightstagtext {
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 3px;
+  /*padding: 3px 3px 3px 3px */;
+  margin-left: 3px;
+  margin-right: 3px;
+  border-width: 2px;
+  border-style: solid;
+  font-weight: bold;
+  text-shadow: 1px 1px rgba(0,0,0,.3);
+  font-size: 1.5em;
+}

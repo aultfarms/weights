@@ -1,0 +1,80 @@
+.weightinput {
+  display: flex;
+  flex-direction: column;
+  /*flex-grow: 1;
+  flex-shrink: 0; */
+}
+
+.weightinputdisplay {
+  display: flex;
+  flex-direction: row;
+  text-align: center;
+  align-items: center;
+  border: 0px;
+  font-weight: bold;
+  font-size: 1.5em;
+}
+.weightinputdisplayinput {
+  display: flex;
+  flex-direction: row;
+  text-align: right;
+  border: 0px;
+  font-weight: bold;
+  font-size: 1.5em;
+}
+
+
+.weightinputbuttonscontainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.weightinputrowbutton {
+  background: linear-gradient(to bottom, #cdeb8e 0%,#a5c956 100%);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  flex-grow: 0;
+  min-width: 30px;
+  min-height: 2em;
+  border: 1px solid #CCCCCC;
+  border-radius: 5px;
+  font-size: 1.8em;
+  font-weight: bold;
+}
+
+.weightinputrowbuttonleft {
+  margin-right: 10px;
+}
+.weightinputrowbuttonright {
+  margin-left: 10px;
+}
+
+
+.weightsavebuttonenabled {
+  color: white;
+  background: linear-gradient(to bottom, #cdeb8e 0%,#a5c956 100%);
+}
+.weightsavebuttondisabled {
+  color: #888888;
+  background: #CCCCCC;
+}
+
+.weightsavebutton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 5px;
+  min-height: 2em;
+  border: 1px solid #CCCCCC;
+  border-radius: 5px;
+  font-size: 1.8em;
+  font-weight: bold;
+  padding-left: 5px;
+  padding-right: 5px;
+}

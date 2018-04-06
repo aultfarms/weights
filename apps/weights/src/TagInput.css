@@ -1,0 +1,59 @@
+.taginput {
+  display: flex;
+  flex-direction: column;
+  /*flex-grow: 1;
+  flex-shrink: 0; */
+}
+
+.taginputbuttonscontainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.taginputrowbutton {
+  background: linear-gradient(to bottom, #7abcff 0%,#60abf8 44%,#4096ee 100%);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  flex-grow: 0;
+  min-width: 30px;
+  min-height: 2em;
+  border: 1px solid #CCCCCC;
+  border-radius: 5px;
+  font-size: 1.8em;
+  font-weight: bold;
+}
+
+.taginputrowbuttonleft {
+  margin-right: 10px;
+}
+.taginputrowbuttonright {
+  margin-left: 10px;
+}
+
+.savebuttonenabled {
+  color: white;
+  background: linear-gradient(to bottom, #7abcff 0%,#60abf8 44%,#4096ee 100%);
+}
+.savebuttondisabled {
+  color: #888888;
+  background: #CCCCCC;
+}
+
+.savebutton {
+  display: flex;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: center;
+  margin-top: 5px;
+  min-height: 2em;
+  border: 1px solid #CCCCCC;
+  border-radius: 5px;
+  font-size: 1.8em;
+  font-weight: bold;
+}
