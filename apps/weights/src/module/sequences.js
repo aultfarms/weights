@@ -151,6 +151,7 @@ function saveRecord({props,state}) {
   return { record: state.get(`weights.records.${props.row}`) };
 }
 export const saveTag = sequence('saveTag', [ 
+  set(state`msg`, { type: 'bad', text: 'Saving tag...' }),
   ({state}) => state.get('tagInput'), // put row and tag into props
   loadGroup,
   loadWeight,
@@ -164,6 +165,7 @@ export const saveTag = sequence('saveTag', [
 
 
 export const saveWeight = sequence('saveWeight', [
+  set(state`msg`, { type: 'bad', text: 'Saving weight...' }),
   ({state}) => state.get('weightInput'), // put row and weight into props
   ({props}) => ({ weight: props.weight * 10 }),
   loadTag, // pull tag into props if it exists

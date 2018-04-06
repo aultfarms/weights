@@ -3,6 +3,7 @@
   flex-direction: row;
   align-items: stretch;
   min-height: 2.2em;
+  box-sizing: border-box;
 }
 
 .weightdatebarinput {
@@ -10,9 +11,11 @@
   border: 1px solid #CCCCCC;
   border-radius: 3px;
   margin-left: 5px;
+  box-sizing: border-box;
 }
 
 .weightdatebarfilter {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   text-align: center;
@@ -27,6 +30,7 @@
 }
 
 .weightdatebarinput{
+  box-sizing: border-box;
   text-align: center;
   font-weight: bold;
   border: 1px solid #CCCCCC;

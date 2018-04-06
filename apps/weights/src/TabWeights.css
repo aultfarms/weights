@@ -1,9 +1,11 @@
 .tabweights {
   overflow-y: scroll;
+  box-sizing: border-box;
 }
 
 .tabweightstable {
   width: 100%;
+  box-sizing: border-box;
 }
 
 .tabweightstablerow {
