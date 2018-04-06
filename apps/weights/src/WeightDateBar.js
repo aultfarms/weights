@@ -30,7 +30,7 @@ export default connect({
     acc.days += r.days || 0; 
     acc.adjWeight += acc.adjWeight || 0; 
     acc.outs += r.out ? 1 : 0;
-    if (acc.adjWeight) acc.count++;  
+    if (r.adjWeight) acc.count++;  
     return acc; 
   },{lbsGain: 0, days: 0, adjWeight: 0, count: 0, outs: 0});
   const averog = avestats.days ? avestats.lbsGain / avestats.days : 0;

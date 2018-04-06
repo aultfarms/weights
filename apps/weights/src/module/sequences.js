@@ -47,7 +47,7 @@ export const loadWeightsForDate = sequence('loadWeightsForDate', [
 export const changeWeight = sequence('changeWeight',[ set(state`weightInput.weight`, props`weight`), scrollToWeight ]);
 export const    changeTag = sequence('changeTag',   [ 
   ({props,state}) => {
-    if (props.tag.number) state.set(`tagInput.tag.number`, +(props.tag.number));
+    if (typeof props.tag.number !== 'undefined') state.set(`tagInput.tag.number`, +(props.tag.number));
     if (props.tag.color)  state.set(`tagInput.tag.color`, props.tag.color);
   }, 
   scrollToTag
