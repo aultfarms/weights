@@ -52,6 +52,13 @@ export const    changeTag = sequence('changeTag',   [
   }, 
   scrollToTag
 ]); // tag, number
+export const changeOut = sequence('changeOut', [
+  set(state`msg`, { type: 'bad', text: 'Saving out change...' }),
+  ({props,state}) => state.set(`weights.records.${props.row}.out`, props.checked),
+  weights.saveRecordRow, // props: row, will pull record from state
+  set(state`msg`, { type: 'good', text: 'Out change saved' }),
+]);
+
 function loadInputFromRow({state,props}) {
   const row = state.get(`${props.whichInput}.row`);
   const numrows = state.get('weights.records').length;

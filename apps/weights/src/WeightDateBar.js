@@ -25,8 +25,17 @@ export default connect({
   const totalhead = props.records.length;
   const lighthead = _.filter(props.records, r => r.weight && r.weight < props.limits.light).length;
   const heavyhead = _.filter(props.records, r => r.weight && r.weight > props.limits.heavy).length;
-  const avestats = _.reduce(props.records, (acc,r) => { acc.lbsGain += r.lbsGain || 0; acc.days += r.days || 0; return acc; },{lbsGain: 0, days: 0});
+  const avestats = _.reduce(props.records, (acc,r) => { 
+    acc.lbsGain += r.lbsGain || 0; 
+    acc.days += r.days || 0; 
+    acc.adjWeight += acc.adjWeight || 0; 
+    acc.outs += r.out ? 1 : 0;
+    if (acc.adjWeight) acc.count++;  
+    return acc; 
+  },{lbsGain: 0, days: 0, adjWeight: 0, count: 0, outs: 0});
   const averog = avestats.days ? avestats.lbsGain / avestats.days : 0;
+  const avewt = avestats.count ? avestats.adjWeight / avestats.count : 0;
+  const totalouts = avestats.outs;
 
   return (
     <div className="weightdatebar">
@@ -56,6 +65,14 @@ export default connect({
       <div className='weightdatebarfilter'>
         { numeral(averog).format('0.00') } RoG
       </div>
+      <div className='weightdatebarfilter'>
+        { numeral(avewt).format('0.00') } lbs
+      </div>
+      <div className='weightdatebarfilter'>
+        { totalouts ? totalouts : '0' } out
+      </div>
+
+
 
       <div className="spacer"></div>
        

@@ -13,6 +13,7 @@ export default connect({
      tagInput: state`tagInput`,
   weightInput: state`weightInput`,
     moveInput: signal`moveInput`,
+    changeOut: signal`changeOut`,
 }, class TabWeights extends React.Component {
 
   render() {
@@ -28,9 +29,10 @@ export default connect({
             <tr>
               <th width="30%">Tag</th>
               <th width="10%">Weight</th>
-              <th width="40%">Group</th>
+              <th width="35%">Group</th>
               <th width="10%">Days</th>
               <th width="10%">RoG</th>
+              <th width="5%">Out</th>
             </tr>
           </thead>
           <tbody>
@@ -60,6 +62,9 @@ export default connect({
             </td>
             <td className='tabweightstablecol'>
               {r.rog ? numeral(r.rog).format('0.00') : '' }
+            </td>
+            <td className='tabweightstablecol'>
+              <input type='checkbox' checked={!!r.out} onClick={(evt) => props.changeOut({row: i, checked: evt.target.checked})} />
             </td>
   
           </tr>})
