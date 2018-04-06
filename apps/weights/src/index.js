@@ -23,5 +23,5 @@ ReactDOM.render(
   </Container>, document.getElementById('root')
 );
 
-registerServiceWorker();
+//registerServiceWorker();
 
