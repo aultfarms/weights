@@ -22,20 +22,20 @@ export const putRow = sequence('weights.putRow', [
     id: props.id || state.get(`weights.sheet.id`),
     worksheetName: props.worksheetName || state.get(`weights.sheet.worksheetName`),
   }),
+  increment(props`row`),    // move to Google's 1-index
   google.putRow, // save to google, then update our copy from resulting props.values
+  increment(props`row`,-1), // move back to our zero-index 
   ({state,props}) => {
-    const record = weightRowToRecordMapper(props.values,props.row-1);
+    const record = weightRowToRecordMapper(props.values,props.row);
     if (!record) return; // header row
-    return state.set(`weights.records.${props.row}`, weightRowToRecordMapper(props.values,props.row-1))
+    return state.set(`weights.records.${props.row}`, weightRowToRecordMapper(props.values,props.row))
   },
 ]);
 
 // need props.row, will fill in the rest from the state
 export const saveRecordRow = sequence('weights.saveRecordRow', [
   ({props,state}) => ({ cols: weightRecordToRowMapper(state.get(`weights.records.${props.row}`)) }),
-  increment(props`row`), // increment to account for header row when putting
   putRow,
-  increment(props`row`,-1), // move back to zero-index in case we forget and add stuff here someday
 ]);
 
 

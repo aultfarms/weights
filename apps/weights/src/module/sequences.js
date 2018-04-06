@@ -49,7 +49,7 @@ function loadInputFromRow({state,props}) {
   if (row === numrows)
     return state.set('weightInput.weight', '');
   const weight = state.get(`weights.records.${row}.weight`);
-  if (weight) state.set('weightInput.weight', _.clone(weight)/10);
+  state.set('weightInput.weight', _.clone(weight)/10);
 }
 export const moveInput = sequence('moveTagInput', [
   ({state,props}) => { 
@@ -140,17 +140,8 @@ export const saveTag = sequence('saveTag', [
   computeDaysRoG,
   saveRecord,
   weights.saveRecordRow, // props: row, will pull record from state
-  increment(state`tagInput.row`),
-  // Clear the tag input only if we are past the end of the known records, otherwise load:
-  ({state}) => {
-    const inputrow = state.get(`tagInput.row`);
-console.log('saveTag: tagInput.row = ', inputrow);
-    const record = state.get(`weight.records.${inputrow}`);
-    if (record && record.tag) 
-      state.set(`tagInput.tag`, _.clone(record.tag));
-    else 
-      state.set(`tagInput.tag.number`, '');
-  },
+  () => ({whichInput: 'tagInput'}),
+  moveInputDown,
   set(state`msg`, { type: 'good', text: 'Tag Saved' }),
 ]);
 
@@ -163,15 +154,8 @@ export const saveWeight = sequence('saveWeight', [
   computeDaysRoG,
   saveRecord,
   weights.saveRecordRow, // props: row, will pull record from state
-  increment(state`weightInput.row`),
-  ({state}) => {
-    const inputrow = state.get(`weightInput.row`);
-    const record = state.get(`weight.records.${inputrow}`);
-    if (record && record.weight)
-      state.set(`weightInput.weight`, record.weight);
-    else
-      state.set(`weightInput.weight`, '')
-  },
+  () => ({whichInput: 'weightInput'}),
+  moveInputDown,
   set(state`msg`, { type: 'good', text: 'Weight Saved' }),
 ]);
 

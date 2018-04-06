@@ -1,4 +1,5 @@
 .tabweights {
+  overflow-y: scroll;
 }
 
 .tabweightstable {
