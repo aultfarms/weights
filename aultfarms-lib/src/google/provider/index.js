@@ -1,6 +1,6 @@
 import { Provider, CerebralError } from 'cerebral';
 import Promise from 'bluebird';
-import { findFileAtPath } from './util';
+import { findFileAtPath, arrayToLetterRange } from './util';
 
 let isAuthorized = false;
 
@@ -39,19 +39,35 @@ export default Provider({
     isAuthorized = false;
   },
 
-  idFromPath: (path) => findFileAtPath({path}).then(id => {
-    if (!id) throw new GoogleFileNotFoundError('Could not find file at path '+path);
-    return {id};
+  idFromPath: ({path,createIfNotExist=false,worksheetName=false}) => findFileAtPath({path,createIfNotExist,worksheetName}).then(result => {
+    console.log('returned from findFileAtPath, result = ', result);
+    if (!result || !result.id) throw new GoogleFileNotFoundError('Could not find file at path '+path);
+    return {id:result.id};
   }),
 
-  getAllRows: ({id,worksheetName}) => window.gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: worksheetName+'!A:ZZ' })
-              .then(res => ({ values: res.result.values })),
+  getAllRows: ({id,worksheetName}) => window.gapi.client.sheets.spreadsheets.values.get({ 
+    spreadsheetId: id, 
+    range: worksheetName+'!A:ZZ',
+  }).then(res => { 
+    console.log('getAllRows finished, result = ', res); return res;
+  }).then(res => ({ values: res.result.values })),
 
-/*
-   get: (path,params) => new Promise((resolve,reject) => window.Trello.get( path,params||{},resolve,err => { console.log('Trello.get ERROR: ', err); reject(err); })),
-   put: (path,params) => new Promise((resolve,reject) => window.Trello.put( path,params    ,resolve,err => { console.log('Trello.put ERROR: ', err); reject(err); })),
-  post: (path,params) => new Promise((resolve,reject) => window.Trello.post(path,params    ,resolve,err => { console.log('Trello.post ERROR: ',err); reject(err); })),
-*/
+  putRow: ({id,row,cols,worksheetName}) => {
+    const range = worksheetName+'!'+arrayToLetterRange(row,cols);
+    const params = {
+      spreadsheetId: id,
+      range: worksheetName+'!'+arrayToLetterRange(row,cols),
+      valueInputOption: 'RAW', //'USER_ENTERED',
+      includeValuesInResponse: true,
+    };
+    const data = {
+      range: worksheetName+'!'+arrayToLetterRange(row,cols),
+      majorDimension: 'ROWS',
+      values: [ cols ],
+    };
+    return window.gapi.client.sheets.spreadsheets.values.update(params, data)
+    .then(result => result.result.updatedData.values[0]);
+  },
 
 })
 

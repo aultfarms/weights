@@ -16,7 +16,7 @@ Promise.config({
 //-----------------------------------------------
 // authorize and deauthorize
 export const authorize = [
-  ({trello}) => trello.authorize().catch(e => { throw new errors.TrelloAuthorizeError(e) }),
+  ({trello}) => trello.authorize().catch(e => { e.message = 'Failed to authorize trello: '+e.message+JSON.stringify(e.stack); throw new errors.TrelloAuthorizeError(e) }),
   set(state`trello.authorized`, true),
 ];
 

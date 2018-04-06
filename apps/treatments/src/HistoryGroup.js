@@ -49,7 +49,7 @@ export default connect({
           return (
             <tr className={ perc < .05 ? 'historygroupgood' : perc < 0.1 ? 'historygroupmeh' : 'historygroupbad' } key={'historygrouprow'+i}>
               <td className="historygroupname"><span name="historygroupnamepill">{ name }</span></td>
-              <td className="historygroupdate"> { moment(g.day,'YYYY-MM-DD').format('M/DD/YY') }</td>
+              <td className="historygroupdate"> { moment(g.date,'YYYY-MM-DD').format('M/DD/YY') }</td>
               <td className="historygroupdead">{ g.dead ? g.dead.length : 0 }</td>
               <td className="historygroupperc">{ perc > 0 ? '('+numeral(perc).format('0.00%')+')' : '' }</td>
             </tr>
