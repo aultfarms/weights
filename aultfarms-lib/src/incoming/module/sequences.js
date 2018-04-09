@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { set } from 'cerebral/operators';
 import { sequence, CerebralError } from 'cerebral';
 
-import { tagStrToObj, rangeContainsTag } from '../../util/tagHelpers';
+import { tagStrToObj, groupForTag /*rangeContainsTag*/ } from '../../util/tagHelpers';
 import * as trello from '../../trello/module/sequences';
 
 
@@ -68,17 +68,23 @@ export const computeStats = sequence('incoming.computeStats', [
       return acc;
     },{});
 
+   
     // Walk through each incoming group to push dead ones onto it's dead list:
     _.each(incoming, (group,index) => {
       if (!group.tag_ranges) return;
       state.set(`incoming.records.${index}.dead`, _.reduce(group.tag_ranges, (acc,r) => {
         _.each(dead[r.start.color], deadone => {
-          if (!rangeContainsTag(r, deadone.tag)) return;
-          acc.push(deadone); // otherwise, it's in the range so count it
+          // if (!rangeContainsTag(r, deadone.tag)) return;
+          // Had to adjust this from the simpler "rangeContainsTag" to the more complex "groupForTag" because
+          // we had to account for historically repeating tags
+          const tagsGroup = groupForTag(incoming, deadone.tag, deadone.date);
+          if (tagsGroup.groupname !== group.groupname) return; // not in this group
+          acc.push(deadone); // otherwise, it's in the range for this tag, so count it
         });
         return acc;
       },[]));
     });
+
     // Done organizing dead into incoming groups
   },
 ]);
