@@ -78,6 +78,7 @@ export const computeStats = sequence('incoming.computeStats', [
           // Had to adjust this from the simpler "rangeContainsTag" to the more complex "groupForTag" because
           // we had to account for historically repeating tags
           const tagsGroup = groupForTag(incoming, deadone.tag, deadone.date);
+          if (!tagsGroup) return; // don't have a group for this one, likely because it is old
           if (tagsGroup.groupname !== group.groupname) return; // not in this group
           acc.push(deadone); // otherwise, it's in the range for this tag, so count it
         });

@@ -40,9 +40,6 @@ export const groupForTag = (groups,tag,asOfDate=false) => {
   const allfound = _.filter(groups, g => groupContainsTag(g,tag));
   // if none, return false:
   if (!allfound || allfound.length < 1) return false;
-  // if one, return that one:
-  if (allfound.length === 1) return allfound[0];
-  // if more than one, figure out by date
   if (!asOfDate) asOfDate = moment(); // default to today
   else asOfDate = moment(asOfDate, 'YYYY-MM-DD');
   const filteredToDate = _.filter(allfound, g => !moment(g.date,'YYYY-MM-DD').isAfter(asOfDate)); // !isAfter = equal or before
