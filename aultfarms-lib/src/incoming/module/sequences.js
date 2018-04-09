@@ -58,34 +58,23 @@ export const computeStats = sequence('incoming.computeStats', [
     const deadrecords = state.get('dead.records');
     const incoming = state.get('incoming.records');
 
-    // Organize the dead by tag color:
-    const dead = _.reduce(deadrecords, (acc,d) => {
+
+    // group all deads into the appropriate incoming group, keyed by groupname
+    const groupdeads = _.reduce(deadrecords, (acc,d) => {
       if (!d.tags) console.log('incoming.computeStats: WARNING: dead record has no tags.  Card name = ', d.cardName);
       _.each(d.tags, t => {
-        if (!acc[t.color]) acc[t.color] = [];
-        acc[t.color].push({ date: d.date, tag: t });
+        const g = groupForTag(incoming, t, d.date);
+        if (!g) return; // this is likely an old tag that has no known group, or a notag
+        if (!acc[g.groupname]) acc[g.groupname] = [];
+        acc[g.groupname].push({ date: d.date, tag: t });
       });
       return acc;
-    },{});
+    }, {});
 
-   
-    // Walk through each incoming group to push dead ones onto it's dead list:
-    _.each(incoming, (group,index) => {
-      if (!group.tag_ranges) return;
-      state.set(`incoming.records.${index}.dead`, _.reduce(group.tag_ranges, (acc,r) => {
-        _.each(dead[r.start.color], deadone => {
-          // if (!rangeContainsTag(r, deadone.tag)) return;
-          // Had to adjust this from the simpler "rangeContainsTag" to the more complex "groupForTag" because
-          // we had to account for historically repeating tags
-          const tagsGroup = groupForTag(incoming, deadone.tag, deadone.date);
-          if (!tagsGroup) return; // don't have a group for this one, likely because it is old
-          if (tagsGroup.groupname !== group.groupname) return; // not in this group
-          acc.push(deadone); // otherwise, it's in the range for this tag, so count it
-        });
-        return acc;
-      },[]));
+    // walk through all incoming records and add a "dead" key with the list of dead
+    _.each(incoming, (g,index) => {
+      state.set(`incoming.records.${index}.dead`, groupdeads[g.groupname] || []);
     });
 
-    // Done organizing dead into incoming groups
   },
 ]);
