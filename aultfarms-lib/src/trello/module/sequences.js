@@ -61,7 +61,7 @@ export const loadList = sequence('trello.loadList', [
     // Then get the list info:
     .then(() => {
       if (initialized.lists[props.listName]) return initialized.lists[props.listName];
-      return initialized.lists[props.listName] = trello.get(`boards/${ret.board.id}/lists`, {fields:'name,id,closed'})
+      return initialized.lists[props.listName] = trello.get(`boards/${ret.board.id}/lists`, {fields:'name,id,closed,cards'})
       .filter(l => l && !l.closed)
       .then(result => {
         const list = _.find(result, l => l.name === props.listName);
