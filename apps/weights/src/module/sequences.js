@@ -58,6 +58,20 @@ export const changeOut = sequence('changeOut', [
   weights.saveRecordRow, // props: row, will pull record from state
   set(state`msg`, { type: 'good', text: 'Out change saved' }),
 ]);
+export const changeOut2 = sequence('changeOut2', [
+  set(state`msg`, { type: 'bad', text: 'Saving out2 change...' }),
+  ({props,state}) => state.set(`weights.records.${props.row}.out2`, props.checked),
+  weights.saveRecordRow, // props: row, will pull record from state
+  set(state`msg`, { type: 'good', text: 'Out2 change saved' }),
+]);
+export const changeOut3 = sequence('changeOut3', [
+  set(state`msg`, { type: 'bad', text: 'Saving out3 change...' }),
+  ({props,state}) => state.set(`weights.records.${props.row}.out3`, props.checked),
+  weights.saveRecordRow, // props: row, will pull record from state
+  set(state`msg`, { type: 'good', text: 'Out3 change saved' }),
+]);
+
+
 
 function loadInputFromRow({state,props}) {
   const row = state.get(`${props.whichInput}.row`);

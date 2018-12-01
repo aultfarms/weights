@@ -21,11 +21,12 @@
   align-items: center;
   text-align: center;
   flex-grow: 0;
+  margin-top: 5px;
   min-width: 30px;
-  min-height: 2em;
+  min-height: 1.5em;
   border: 1px solid #CCCCCC;
   border-radius: 5px;
-  font-size: 1.8em;
+  font-size: 1.2em;
   font-weight: bold;
 }
 
@@ -51,9 +52,9 @@
   justify-content: center;
   align-items: center;
   margin-top: 5px;
-  min-height: 2em;
+  min-height: 1.5em;
   border: 1px solid #CCCCCC;
   border-radius: 5px;
-  font-size: 1.8em;
+  font-size: 1.2em;
   font-weight: bold;
 }

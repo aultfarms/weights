@@ -30,9 +30,11 @@ export default connect({
     acc.days += r.days || 0; 
     acc.adjWeight += r.adjWeight || 0; 
     acc.outs += r.out ? 1 : 0;
+    acc.outs2 += r.out2 ? 1 : 0;
+    acc.outs3 += r.out3 ? 1 : 0;
     if (r.adjWeight) acc.count++;  
     return acc; 
-  },{lbsGain: 0, days: 0, adjWeight: 0, count: 0, outs: 0});
+  },{lbsGain: 0, days: 0, adjWeight: 0, count: 0, outs: 0, outs2: 0, outs3: 0});
   const averog = avestats.days ? avestats.lbsGain / avestats.days : 0;
   const avewt = avestats.count ? avestats.adjWeight / avestats.count : 0;
   const totalouts = avestats.outs;
@@ -69,9 +71,8 @@ export default connect({
         { numeral(avewt).format('0') } lbs
       </div>
       <div className='weightdatebarfilter'>
-        { totalouts ? totalouts : '0' } out
+        ({ totalouts ? totalouts : '0' },{ avestats.outs2 ? avestats.outs2 : '0' },{ avestats.outs3 ? avestats.outs3 : '0' }) out
       </div>
-
 
 
       <div className="spacer"></div>

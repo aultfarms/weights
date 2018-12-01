@@ -14,6 +14,8 @@ export default connect({
   weightInput: state`weightInput`,
     moveInput: signal`moveInput`,
     changeOut: signal`changeOut`,
+   changeOut2: signal`changeOut2`,
+   changeOut3: signal`changeOut3`,
 }, class TabWeights extends React.Component {
 
   render() {
@@ -27,12 +29,14 @@ export default connect({
         <table className="tabweightstable">
           <thead>
             <tr>
-              <th width="30%">Tag</th>
+              <th width="25%">Tag</th>
               <th width="10%">Weight</th>
-              <th width="35%">Group</th>
-              <th width="10%">Days</th>
-              <th width="10%">RoG</th>
-              <th width="5%">Out</th>
+              <th width="25%">Group</th>
+              <th width="8%">Days</th>
+              <th width="8%">RoG</th>
+              <th width="8%">O</th>
+              <th width="8%">O2</th>
+              <th width="8%">O3</th>
             </tr>
           </thead>
           <tbody>
@@ -66,6 +70,12 @@ export default connect({
             <td className='tabweightstablecol'>
               <input type='checkbox' checked={!!r.out} onClick={(evt) => props.changeOut({row: i, checked: evt.target.checked})} />
             </td>
+            <td className='tabweightstablecol'>
+              <input type='checkbox' checked={!!r.out2} onClick={(evt) => props.changeOut2({row: i, checked: evt.target.checked})} />
+            </td>
+            <td className='tabweightstablecol'>
+              <input type='checkbox' checked={!!r.out3} onClick={(evt) => props.changeOut3({row: i, checked: evt.target.checked})} />
+            </td>
   
           </tr>})
         }
@@ -85,6 +95,12 @@ export default connect({
               onClick={() => props.moveInput({ whichInput: 'weightInput', row: props.records.length })}
               id={extrarowweightactive ? 'weightScrollToMe' : false}>
               { extrarowweightactive ? props.weightInput.weight * 10 : '' }
+            </td>
+            <td className={'tabweightstablecol'}>
+            </td>
+            <td className={'tabweightstablecol'}>
+            </td>
+            <td className={'tabweightstablecol'}>
             </td>
             <td className={'tabweightstablecol'}>
             </td>
