@@ -12,9 +12,9 @@ import * as trello from '../../trello/module/sequences';
 export const saveTreatment = [
 
   // find existing card that matches this date and treatment (if it exists):
-  ({props,state}) => {
+  ({props,store}) => {
     let ret = false;
-    const records = state.get('treatments.records');
+    const records = store.get('treatments.records');
     const existing = _.find(records, r => {
       return r.date === props.record.date && r.treatment === props.record.treatment;
     });
@@ -38,10 +38,10 @@ export const saveTreatment = [
   },
 
   // convert record to card
-  ({props,state}) => ({
+  ({props,store}) => ({
     card: {
       id: props.record.id,
-      idList: props.record.idList || state.get('trello.lists.treatments.id'),
+      idList: props.record.idList || store.get('trello.lists.treatments.id'),
       name: props.record.date+': '+props.record.treatment+': '
             +_.join(_.map(props.record.tags, t=>t.color+t.number), ' '),
     },
@@ -82,7 +82,7 @@ export const fetch = sequence('treatments.fetch', [
   () => ({ boardName: 'Livestock', listName: 'Treatments', key: 'treatments' }),
   trello.loadList,
   // convert all props.cards to records:
-  ({props,state}) => state.set('treatments.records', _.map(props.cards, treatmentCardToRecord)),
+  ({props,store}) => store.set('treatments.records', _.map(props.cards, treatmentCardToRecord)),
 ]);
 
 
@@ -96,10 +96,10 @@ export const fetchConfig = sequence('treatments.fetchConfig', [
   trello.loadList,
 
   // save colors in state:
-  sequence('saveColors', [({props,state}) => state.set('treatments.colors',        colorsCardToRecord(_.find(props.cards, c => c.name === 'Tag Colors'     )))]),
+  sequence('saveColors', [({props,store}) => store.set('treatments.colors',        colorsCardToRecord(_.find(props.cards, c => c.name === 'Tag Colors'     )))]),
 
   // save treatment codes in state:
-  sequence('saveCodes', [({props,state}) => state.set('treatments.treatmentCodes', codesCardToRecord(_.find(props.cards, c => c.name === 'Treatment Types')))]),
+  sequence('saveCodes', [({props,store}) => store.set('treatments.treatmentCodes', codesCardToRecord(_.find(props.cards, c => c.name === 'Treatment Types')))]),
 ]);
 
 

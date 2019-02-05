@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { set } from 'cerebral/operators';
+import { set } from 'cerebral/factories';
 import { sequence, CerebralError } from 'cerebral';
 
 import { tagStrToObj, groupForTag /*rangeContainsTag*/ } from '../../util/tagHelpers';
@@ -48,15 +48,15 @@ export const fetch = sequence('incoming.fetch', [
   // get the cards
   trello.loadList,
   // convert all props.cards to records:
-  ({props,state}) => state.set('incoming.records', _.map(props.cards, incomingCardToRecord)),
+  ({props,state}) => store.set('incoming.records', _.map(props.cards, incomingCardToRecord)),
 ]);
 
 
 export const computeStats = sequence('incoming.computeStats', [
   ({state}) => {
     // check if we have both dead and incoming records:
-    const deadrecords = state.get('dead.records');
-    const incoming = state.get('incoming.records');
+    const deadrecords = store.get('dead.records');
+    const incoming = store.get('incoming.records');
 
 
     // group all deads into the appropriate incoming group, keyed by groupname
@@ -73,7 +73,7 @@ export const computeStats = sequence('incoming.computeStats', [
 
     // walk through all incoming records and add a "dead" key with the list of dead
     _.each(incoming, (g,index) => {
-      state.set(`incoming.records.${index}.dead`, groupdeads[g.groupname] || []);
+      store.set(`incoming.records.${index}.dead`, groupdeads[g.groupname] || []);
     });
 
   },

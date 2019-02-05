@@ -1,8 +1,7 @@
 import _ from 'lodash';
 import moment from 'moment';
-import { state } from 'cerebral/tags';
-import { set } from 'cerebral/operators';
-import { sequence } from 'cerebral';
+import { set } from 'cerebral/factories';
+import { state, sequence } from 'cerebral';
 
 import { loadList } from '../../trello/module/sequences';
 
@@ -10,9 +9,9 @@ import { loadList } from '../../trello/module/sequences';
 // Example cards:
 // 2017-01-26: Df pellets 1-26-17 209366.  48.620 lbs - Home - Brock
 // 2017-01-24: North Central Pallets46470.  8 lbs - Home - Andrew.  Note: some info
-function processCards({state}) {
+function processCards({store}) {
   // First parse the cards, then later determine invoiced list, non-invoiced list, etc.
-  const cards = state.get('trello.lists.feedDeliveries.cards');
+  const cards = store.get('trello.lists.feedDeliveries.cards');
   const records = _.map(cards, c => {
     if (!c.name) { return { error: 'card name does not exist', card: c } }
     // Date on front:
@@ -51,29 +50,29 @@ function processCards({state}) {
 
     return { date, source, loadNumber, weight, destination, driver, note, invoiced, paidFor, truckingPaid, card: c };
   });
-  state.set('feed.records', _.sortBy(records, d => d.date));
+  store.set('feed.records', _.sortBy(records, d => d.date));
 
   //---------------------------------------------------------
   // Before grouping/filtering, eliminate cards older than we care about:
-  const ignoreBefore = moment(state.get('feed.ignoreBefore'), 'YYYY-MM-DD');
+  const ignoreBefore = moment(store.get('feed.ignoreBefore'), 'YYYY-MM-DD');
   const recentDeliveries = _.filter(records, d => ignoreBefore.isBefore(d.date));
 
   //----------------------------------------------------------
   // Find loads not billed, group by destination
   let notInvoiced = _.filter(recentDeliveries, d => !(d.invoiced));
   notInvoiced = _.filter(notInvoiced, d => d.destination.toUpperCase() !== 'HOME');
-  state.set('feed.notInvoiced', _.groupBy(notInvoiced, n => n.destination));
+  store.set('feed.notInvoiced', _.groupBy(notInvoiced, n => n.destination));
 
   //---------------------------------------------------------
   // Find loads not paid for by us, group by source:
   let notPaidFor = _.filter(recentDeliveries, d => !(d.paidFor));
-  state.set('feed.notPaidFor', _.groupBy(notPaidFor, p => p.source));
+  store.set('feed.notPaidFor', _.groupBy(notPaidFor, p => p.source));
 
   //----------------------------------------------------------------------------------
   // Find loads that Brad hauled which we have not been billed for, group by source:
   let truckingNotPaid = _.filter(recentDeliveries, d => d.driver.toUpperCase() === 'BRAD');
   truckingNotPaid = _.filter(truckingNotPaid, d => !(d.truckingPaid));
-  state.set('feed.truckingNotPaid', _.groupBy(truckingNotPaid, t => t.source));
+  store.set('feed.truckingNotPaid', _.groupBy(truckingNotPaid, t => t.source));
 }
 
 

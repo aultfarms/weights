@@ -1,17 +1,11 @@
-import { Module } from 'cerebral';
-import * as signals from './sequences';
+import * as sequences from './sequences';
 
-export default Module(m => {
-  return {
-    state: {
-      authorized: false,
-      sheets: {
-      },
+export default {
+  sequences,
+  state: {
+    authorized: false,
+    sheets: {
     },
-  
-    signals,
-
-    // assumes global 'google' provider exists in controller
-  };
-});
+  },
+};
 

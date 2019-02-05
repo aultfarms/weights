@@ -1,17 +1,17 @@
-import { Provider } from 'cerebral';
+import { sequences } from 'cerebral';
 
 const dimensions = () => ({width: window.innerWidth, height: window.innerHeight });
 
-export default Provider({
+export default {
   dimensions() { return dimensions(); },
   orientation() {
     const d = dimensions();
     return (d.width > d.height ? 'landscape' : 'portrat');
   },
-  init(signalpath) {
-    window.addEventListener('resize', () => this.context.controller.getSignal(signalpath)(dimensions()));
+  init(sequencepath) {
+    window.addEventListener('resize', () => this.context.get(sequences`sequencepath`)(dimensions()));
     // compute it the first time:
-    this.context.controller.getSignal(signalpath)(dimensions());
+    this.context.get(sequences`${sequencepath}`)(dimensions());
   },
-});
+};
 

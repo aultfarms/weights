@@ -15,9 +15,7 @@ var _moment = require('moment');
 
 var _moment2 = _interopRequireDefault(_moment);
 
-var _tags = require('cerebral/tags');
-
-var _operators = require('cerebral/operators');
+var _factories = require('cerebral/factories');
 
 var _cerebral = require('cerebral');
 
@@ -31,10 +29,10 @@ function _taggedTemplateLiteral(strings, raw) { return Object.freeze(Object.defi
 // 2017-01-26: Df pellets 1-26-17 209366.  48.620 lbs - Home - Brock
 // 2017-01-24: North Central Pallets46470.  8 lbs - Home - Andrew.  Note: some info
 function processCards(_ref) {
-  var state = _ref.state;
+  var store = _ref.store;
 
   // First parse the cards, then later determine invoiced list, non-invoiced list, etc.
-  var cards = state.get('trello.lists.feedDeliveries.cards');
+  var cards = store.get('trello.lists.feedDeliveries.cards');
   var records = _lodash2.default.map(cards, function (c) {
     if (!c.name) {
       return { error: 'card name does not exist', card: c };
@@ -81,13 +79,13 @@ function processCards(_ref) {
 
     return { date: date, source: source, loadNumber: loadNumber, weight: weight, destination: destination, driver: driver, note: note, invoiced: invoiced, paidFor: paidFor, truckingPaid: truckingPaid, card: c };
   });
-  state.set('feed.records', _lodash2.default.sortBy(records, function (d) {
+  store.set('feed.records', _lodash2.default.sortBy(records, function (d) {
     return d.date;
   }));
 
   //---------------------------------------------------------
   // Before grouping/filtering, eliminate cards older than we care about:
-  var ignoreBefore = (0, _moment2.default)(state.get('feed.ignoreBefore'), 'YYYY-MM-DD');
+  var ignoreBefore = (0, _moment2.default)(store.get('feed.ignoreBefore'), 'YYYY-MM-DD');
   var recentDeliveries = _lodash2.default.filter(records, function (d) {
     return ignoreBefore.isBefore(d.date);
   });
@@ -100,7 +98,7 @@ function processCards(_ref) {
   notInvoiced = _lodash2.default.filter(notInvoiced, function (d) {
     return d.destination.toUpperCase() !== 'HOME';
   });
-  state.set('feed.notInvoiced', _lodash2.default.groupBy(notInvoiced, function (n) {
+  store.set('feed.notInvoiced', _lodash2.default.groupBy(notInvoiced, function (n) {
     return n.destination;
   }));
 
@@ -109,7 +107,7 @@ function processCards(_ref) {
   var notPaidFor = _lodash2.default.filter(recentDeliveries, function (d) {
     return !d.paidFor;
   });
-  state.set('feed.notPaidFor', _lodash2.default.groupBy(notPaidFor, function (p) {
+  store.set('feed.notPaidFor', _lodash2.default.groupBy(notPaidFor, function (p) {
     return p.source;
   }));
 
@@ -121,12 +119,12 @@ function processCards(_ref) {
   truckingNotPaid = _lodash2.default.filter(truckingNotPaid, function (d) {
     return !d.truckingPaid;
   });
-  state.set('feed.truckingNotPaid', _lodash2.default.groupBy(truckingNotPaid, function (t) {
+  store.set('feed.truckingNotPaid', _lodash2.default.groupBy(truckingNotPaid, function (t) {
     return t.source;
   }));
 }
 
 var fetch = exports.fetch = (0, _cerebral.sequence)('feed.fetch', [function () {
   return { boardName: 'Feed', listName: 'Feed Delivered', key: 'feedDeliveries' };
-}, _sequences.loadList, processCards, (0, _operators.set)((0, _tags.state)(_templateObject), true)]);
+}, _sequences.loadList, processCards, (0, _factories.set)((0, _cerebral.state)(_templateObject), true)]);
 //# sourceMappingURL=sequences.js.map

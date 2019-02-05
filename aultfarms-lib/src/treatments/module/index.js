@@ -1,10 +1,7 @@
+import * as sequences from './sequences';
 
-import { Module } from 'cerebral';
-
-import * as signals from './sequences';
-
-export default Module({
-  signals,
+export default {
+  sequences,
   state: {
     treatmentCodes: [
       { "code": "Z", "name": "Zuprevo" },
@@ -42,4 +39,4 @@ export default Module({
     ],
   },
 
-});
+};

@@ -1,8 +1,7 @@
-import { Module } from 'cerebral';
-import * as signals from './sequences';
+import * as sequences from './sequences';
 
-export default Module({
-  signals,
+export default {
+  sequences,
   state: {
     ready: false,
     in: [],
@@ -11,5 +10,5 @@ export default Module({
     sellContracts: [],
     dead: [],
   },
-});
+};
 

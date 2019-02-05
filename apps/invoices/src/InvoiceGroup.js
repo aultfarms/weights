@@ -1,10 +1,11 @@
 import React from 'react';
 import _ from 'lodash';
 import { connect } from '@cerebral/react';
-import { state,signal } from 'cerebral/tags';
-import { Compute } from 'cerebral';
+import { Compute, state } from 'cerebral';
 
-import Tabs, { Tab } from 'material-ui/Tabs';
+import Typography from '@material-ui/core/Typography';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
 
 const groupData = Compute(
   state`invoicegroups.curgroup`,
@@ -14,15 +15,23 @@ const groupData = Compute(
 export default connect({
   curgroup: state`invoicegroups.curgroup`,
   groupData, // computed value for current group
-  newTabRequested: signal`newTabRequested`,
 }, function InvoiceGroup(props) {
-  return <Tabs 
-    className="invoice-group" 
-    value={props.curtab} 
-    onChange={val => props.newTabRequested({val})}
-  >
+  return (
+    <div className="invoice-group">
+      <Typography variant="h1" gutterBottom>
+        {props.curgroup}
+      </Typography>
 
-    { _.map(props.groupData, (d,name) => <Tab key={'grouptab_'+name} value={name} label={name}/> )}
-
-  </Tabs>
+      { _.map(_.keys(props.groupData), name => 
+          <Card>
+            <CardContent>
+              <Typography gutterBottom>
+                {name}
+              </Typography>
+            </CardContent>
+          </Card>
+        )
+      }
+    </div> 
+  );
 });

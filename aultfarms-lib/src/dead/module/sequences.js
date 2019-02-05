@@ -1,6 +1,6 @@
 import moment from 'moment';
 import _ from 'lodash';
-import { set } from 'cerebral/operators';
+import { set } from 'cerebral/factories';
 import { sequence, CerebralError } from 'cerebral';
 
 import { tagStrToObj } from '../../util/tagHelpers';
@@ -55,7 +55,7 @@ export const fetch = sequence('dead.fetch', [
   // get the cards
   trello.loadList,
   // convert all props.cards to records:
-  ({props,state}) => state.set('dead.records', _.map(props.cards, deadCardToRecord)),
+  ({props,store}) => store.set('dead.records', _.map(props.cards, deadCardToRecord)),
 ]);
 
 

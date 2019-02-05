@@ -1,11 +1,9 @@
-import { Module } from 'cerebral';
-import * as signals from './sequences';
+import * as sequences from './sequences';
 
-export default Module({
-  signals,
+export default {
+  sequences,
   state: { 
     isSmall: true, // changes to true for mobile, false for computer
     orientation: 'portrait', // portrait | landscape
   },
-  
-});
+};

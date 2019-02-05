@@ -1,6 +1,5 @@
-import { set, toggle } from 'cerebral/operators';
-import { state, props } from 'cerebral/tags';
-import { sequence } from 'cerebral';
+import { set, toggle } from 'cerebral/factories';
+import { state, props, sequence } from 'cerebral';
 
 import * as       feed from 'aultfarms-lib/feed/module/sequences';
 import * as     trello from 'aultfarms-lib/trello/module/sequences';
@@ -18,7 +17,7 @@ export const drawerToggle = sequence('drawerToggle', [
 ]);
 
 export const changeGroup = sequence('changeGroup', [ 
-  set(state`invoicegroupss.curgroup`, props`group`) 
+  set(state`invoicegroups.curgroup`, props`group`) 
 ]);
 
 

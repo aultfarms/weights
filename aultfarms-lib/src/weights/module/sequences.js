@@ -1,8 +1,7 @@
 import moment from 'moment';
 import _ from 'lodash';
-import { set,increment } from 'cerebral/operators';
-import { state,props } from 'cerebral/tags';
-import { sequence } from 'cerebral';
+import { set,increment } from 'cerebral/factories';
+import { sequence,state,props } from 'cerebral';
 
 import { tagStrToObj } from '../../util/tagHelpers';
 import * as google from '../../google/module/sequences';
@@ -17,24 +16,24 @@ export const clearCache = sequence('weights.clearCache', [
 // set a row in the spreadsheet and update the cache from the response
 // need to have at least props.row, props.cols
 export const putRow = sequence('weights.putRow', [
-  ({props,state}) => ({
-    key: props.key || state.get(`weights.sheet.key`),
-    id: props.id || state.get(`weights.sheet.id`),
-    worksheetName: props.worksheetName || state.get(`weights.sheet.worksheetName`),
+  ({props,store}) => ({
+    key: props.key || store.get(`weights.sheet.key`),
+    id: props.id || store.get(`weights.sheet.id`),
+    worksheetName: props.worksheetName || store.get(`weights.sheet.worksheetName`),
   }),
   increment(props`row`),    // move to Google's 1-index
   google.putRow, // save to google, then update our copy from resulting props.values
   increment(props`row`,-1), // move back to our zero-index 
-  ({state,props}) => {
+  ({store,props}) => {
     const record = weightRowToRecordMapper(props.values,props.row);
     if (!record) return; // header row
-    return state.set(`weights.records.${props.row}`, weightRowToRecordMapper(props.values,props.row))
+    return store.set(`weights.records.${props.row}`, weightRowToRecordMapper(props.values,props.row))
   },
 ]);
 
 // need props.row, will fill in the rest from the state
 export const saveRecordRow = sequence('weights.saveRecordRow', [
-  ({props,state}) => ({ cols: weightRecordToRowMapper(state.get(`weights.records.${props.row}`)) }),
+  ({props,store}) => ({ cols: weightRecordToRowMapper(store.get(`weights.records.${props.row}`)) }),
   putRow,
 ]);
 
@@ -92,11 +91,11 @@ export const fetch = sequence('weights.fetch', [
   // get everything from Google
   google.loadSheetRows,
   // keep track of sheet meta info
-  ({props,state}) => state.set(`weights.sheet`, { id: props.id, key: props.key, worksheetName: props.worksheetName }),
+  ({props,store}) => store.set(`weights.sheet`, { id: props.id, key: props.key, worksheetName: props.worksheetName }),
 
   // check if we have at least a header row.  If not, make one:
-  ({props,state,path}) => {
-    const sheet = state.get(`google.sheets.${props.key}`);
+  ({props,store,path}) => {
+    const sheet = store.get(`google.sheets.${props.key}`);
     if (sheet.rows && sheet.rows.length > 0) return path.haveHeader();
     return path.addHeader({id: sheet.id, worksheetName: sheet.worksheetName});
   },
@@ -113,8 +112,8 @@ export const fetch = sequence('weights.fetch', [
   },
 
   // convert the google sheets rows to records and store in state for weights
-  ({props,state}) => state.set('weights.records', 
-    _.reduce(state.get(`google.sheets.${props.key}.rows`), weightRowToRecordReducer, [])
+  ({props,store}) => store.set('weights.records', 
+    _.reduce(store.get(`google.sheets.${props.key}.rows`), weightRowToRecordReducer, [])
   ),
 ]);
 

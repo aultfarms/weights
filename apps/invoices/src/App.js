@@ -1,46 +1,32 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import { connect } from '@cerebral/react';
-import { state, signal } from 'cerebral/tags';
+import { state, sequences } from 'cerebral';
 
-import { MuiThemeProvider, Card, CardContent, 
-         AppBar, Toolbar, IconButton, Typography,
-         Drawer } from 'material-ui';
-import { Menu as MenuIcon } from 'material-ui-icons';
-import { ListItem, ListItemText } from 'material-ui/List';
-import List from 'material-ui/List';
-import createMuiTheme from 'material-ui/styles/createMuiTheme';
-import { withStyles } from 'material-ui/styles';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Drawer from '@material-ui/core/Drawer';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import IconButton from '@material-ui/core/IconButton';
+import Typography from '@material-ui/core/Typography';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import MenuIcon from '@material-ui/icons/Menu';
 
 import InvoiceGroup from './InvoiceGroup';
 
 import './App.css';
 
-const muitheme = createMuiTheme({});
-
-//-----------------------------------------
-// Styles:
-const styles = theme => ({
-  root: { flexGrow: 1, },
-  flex: { flex: 1 },
-  menuButton: { 
-    marginLeft: -12,
-    marginRight: 20,
-  },
-  drawerPaper: {
-    position: 'relative',
-    width: 240,
-  },
-});
-
 export default connect({
   authorized: state`trello.authorized`,
    feedReady: state`feed.ready`,
         page: state`page`,
-          init: signal`init`,
-  drawerToggle: signal`drawerToggle`,
-   changeGroup: signal`changeGroup`,
-}, withStyles(styles, { withTheme: true })(class App extends Component {
+          init: sequences`init`,
+  drawerToggle: sequences`drawerToggle`,
+   changeGroup: sequences`changeGroup`,
+}, class App extends Component {
 
   componentWillMount() {
     this.props.init();
@@ -63,9 +49,8 @@ export default connect({
   }
   renderDrawer() {
     const props = this.props;
-    //if (!props.page.drawer.open) return '';
     return (
-      <Drawer variant="persistent" anchor='left' classes={{ paper: props.classes.drawerPaper }} open={props.page.drawer.open}>
+      <Drawer variant="persistent" anchor='left' open={props.page.drawer.open}>
         <List>
           { 
             _.map({notInvoiced: 'Not Invoiced', notPaidFor: 'Not Paid For', truckingNotPaid: 'Trucking Not Paid', }, (display,key) => 
@@ -87,32 +72,31 @@ export default connect({
   }
 
   render() {
+    //return <div></div>;
     const props = this.props;
     const hamburgerClicked = () => props.drawerToggle();
     return (
-      <MuiThemeProvider theme={muitheme}>
-        <div className="App">
-          <AppBar position="static">
-            <Toolbar>
-              <IconButton onClick={hamburgerClicked} className={props.classes.menuButton} color="inherit" aria-label="Menu">
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="title" color="inherit" className={props.classes.flex}>
-                Feed - {props.page.name}
-              </Typography>
-            </Toolbar>
-          </AppBar>
-          
-          { this.renderDrawer() }
+      <div className="App">
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton onClick={hamburgerClicked} color="inherit" aria-label="Menu">
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="title" color="inherit" >
+              Feed - {props.page.name}
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        
+        { this.renderDrawer() }
 
-          { this.renderInvoiceGroup() }
+        { this.renderInvoiceGroup() }
 
-          { this.renderAuthorized() }
-          { this.renderFeedReady() }
+        { this.renderAuthorized() }
+        { this.renderFeedReady() }
 
-        </div>
-      </MuiThemeProvider>
+      </div>
     );
   }
-}));
+});
 

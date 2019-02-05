@@ -1,9 +1,7 @@
-import { Module } from 'cerebral';
+import * as sequences from './sequences';
 
-import * as signals from './sequences';
-
-export default Module({
-  signals,
+export default {
+  sequences,
   state: {
     ignoreBefore: '2017-11-01', // ignore all deliveries before this date for checking paid/invoiced/trucking status
     ready: false,
@@ -12,5 +10,5 @@ export default Module({
     notInvoiced: {},
     truckingNotPaid: {},
   },
-});
+};
 

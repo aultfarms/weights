@@ -1,8 +1,7 @@
 import _ from 'lodash';
 //import moment from 'moment';
-import { state } from 'cerebral/tags';
-import { set } from 'cerebral/operators';
-import { sequence, parallel } from 'cerebral';
+import { set } from 'cerebral/factories';
+import { state, sequence, parallel } from 'cerebral';
 
 import { loadList } from '../trello/sequences';
 import { loadSheetRows } from '../google/sequences';
@@ -49,7 +48,7 @@ export const init = [
         worksheetName: 'Beef_Inventory' }),
       sequence(loadSheetRows),
       // load each row as an object (keyed from header row) into the state:
-      ({props,state}) => state.set('livestock.inventory', _.reduce(props.values, (acc,row,i) => {
+      ({props,store}) => store.set('livestock.inventory', _.reduce(props.values, (acc,row,i) => {
         if (i===0) return acc;
         const header = props.values[0];
         acc.push(_.zipObject(header, row));
