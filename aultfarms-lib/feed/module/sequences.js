@@ -5,7 +5,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fetch = undefined;
 
-var _templateObject = _taggedTemplateLiteral(['feed.ready'], ['feed.ready']);
+var _templateObject = _taggedTemplateLiteral(['trello.lists.feedDeliveries.cards'], ['trello.lists.feedDeliveries.cards']),
+    _templateObject2 = _taggedTemplateLiteral(['feed.records'], ['feed.records']),
+    _templateObject3 = _taggedTemplateLiteral(['feed.ignoreBefore'], ['feed.ignoreBefore']),
+    _templateObject4 = _taggedTemplateLiteral(['feed.notInvoiced'], ['feed.notInvoiced']),
+    _templateObject5 = _taggedTemplateLiteral(['feed.notPaidFor'], ['feed.notPaidFor']),
+    _templateObject6 = _taggedTemplateLiteral(['feed.truckingNotPaid'], ['feed.truckingNotPaid']),
+    _templateObject7 = _taggedTemplateLiteral(['feed.ready'], ['feed.ready']);
 
 var _lodash = require('lodash');
 
@@ -29,10 +35,12 @@ function _taggedTemplateLiteral(strings, raw) { return Object.freeze(Object.defi
 // 2017-01-26: Df pellets 1-26-17 209366.  48.620 lbs - Home - Brock
 // 2017-01-24: North Central Pallets46470.  8 lbs - Home - Andrew.  Note: some info
 function processCards(_ref) {
-  var store = _ref.store;
+  var store = _ref.store,
+      get = _ref.get;
 
   // First parse the cards, then later determine invoiced list, non-invoiced list, etc.
-  var cards = store.get('trello.lists.feedDeliveries.cards');
+  var cards = get((0, _cerebral.state)(_templateObject));
+  console.log('processCards: got cards = ', cards);
   var records = _lodash2.default.map(cards, function (c) {
     if (!c.name) {
       return { error: 'card name does not exist', card: c };
@@ -79,13 +87,13 @@ function processCards(_ref) {
 
     return { date: date, source: source, loadNumber: loadNumber, weight: weight, destination: destination, driver: driver, note: note, invoiced: invoiced, paidFor: paidFor, truckingPaid: truckingPaid, card: c };
   });
-  store.set('feed.records', _lodash2.default.sortBy(records, function (d) {
+  store.set((0, _cerebral.state)(_templateObject2), _lodash2.default.sortBy(records, function (d) {
     return d.date;
   }));
 
   //---------------------------------------------------------
   // Before grouping/filtering, eliminate cards older than we care about:
-  var ignoreBefore = (0, _moment2.default)(store.get('feed.ignoreBefore'), 'YYYY-MM-DD');
+  var ignoreBefore = (0, _moment2.default)(get((0, _cerebral.state)(_templateObject3)), 'YYYY-MM-DD');
   var recentDeliveries = _lodash2.default.filter(records, function (d) {
     return ignoreBefore.isBefore(d.date);
   });
@@ -98,7 +106,7 @@ function processCards(_ref) {
   notInvoiced = _lodash2.default.filter(notInvoiced, function (d) {
     return d.destination.toUpperCase() !== 'HOME';
   });
-  store.set('feed.notInvoiced', _lodash2.default.groupBy(notInvoiced, function (n) {
+  store.set((0, _cerebral.state)(_templateObject4), _lodash2.default.groupBy(notInvoiced, function (n) {
     return n.destination;
   }));
 
@@ -107,7 +115,7 @@ function processCards(_ref) {
   var notPaidFor = _lodash2.default.filter(recentDeliveries, function (d) {
     return !d.paidFor;
   });
-  store.set('feed.notPaidFor', _lodash2.default.groupBy(notPaidFor, function (p) {
+  store.set((0, _cerebral.state)(_templateObject5), _lodash2.default.groupBy(notPaidFor, function (p) {
     return p.source;
   }));
 
@@ -119,12 +127,12 @@ function processCards(_ref) {
   truckingNotPaid = _lodash2.default.filter(truckingNotPaid, function (d) {
     return !d.truckingPaid;
   });
-  store.set('feed.truckingNotPaid', _lodash2.default.groupBy(truckingNotPaid, function (t) {
+  store.set((0, _cerebral.state)(_templateObject6), _lodash2.default.groupBy(truckingNotPaid, function (t) {
     return t.source;
   }));
 }
 
 var fetch = exports.fetch = (0, _cerebral.sequence)('feed.fetch', [function () {
   return { boardName: 'Feed', listName: 'Feed Delivered', key: 'feedDeliveries' };
-}, _sequences.loadList, processCards, (0, _factories.set)((0, _cerebral.state)(_templateObject), true)]);
+}, _sequences.loadList, processCards, (0, _factories.set)((0, _cerebral.state)(_templateObject7), true)]);
 //# sourceMappingURL=sequences.js.map

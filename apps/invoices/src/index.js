@@ -13,7 +13,6 @@ const controller = CerebralApp(AppModule, {
   devtools: process.env.NODE_ENV === 'production' ? null : devtools({host: 'localhost:8000', reconnect: true }),
 });
 
-
 // Render the root node:
 ReactDOM.render(
   <Container app={controller}>

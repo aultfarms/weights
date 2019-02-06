@@ -20,4 +20,6 @@ export const changeGroup = sequence('changeGroup', [
   set(state`invoicegroups.curgroup`, props`group`) 
 ]);
 
-
+export const handleError = sequence('handleError', [
+  ({props}) => console.log('Caught an Error props = !', props),
+]);

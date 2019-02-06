@@ -1,12 +1,12 @@
-import { moduleState } from 'cerebral';
+import { state } from 'cerebral';
 
 export const resized = [ 
   ({windowSize,props,store,get}) => { 
-    if (get(moduleState`orientation`) !== windowSize.orientation()) {
-      store.set(moduleState`orientation`, windowSize.orientation());
+    if (get(state`windowSize.orientation`) !== windowSize.orientation()) {
+      store.set(state`windowSize.orientation`, windowSize.orientation());
     }
     const isSmall = (windowSize.orientation() === 'portrait' ? (props.width < 767) : (props.height < 500));
-    if (get(moduleState`isSmall`) !== isSmall) store.set(moduleState`isSmall`, isSmall);
+    if (get(state`windowSize.isSmall`) !== isSmall) store.set(state`windowSize.isSmall`, isSmall);
   } 
 ];
 

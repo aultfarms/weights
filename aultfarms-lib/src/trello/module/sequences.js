@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { moduleState, sequence, CerebralError } from 'cerebral';
+import { state, sequence, CerebralError } from 'cerebral';
 import { set } from 'cerebral/factories';
 import Promise from 'bluebird';
 import * as errors from './errors';
@@ -16,11 +16,11 @@ Promise.config({
 // authorize and deauthorize
 export const authorize = [
   ({trello}) => trello.authorize().catch(e => { e.message = 'Failed to authorize trello: '+e.message+JSON.stringify(e.stack); throw new errors.TrelloAuthorizeError(e) }),
-  set(moduleState`authorized`, true),
+  set(state`trello.authorized`, true),
 ];
 
 export const deauthorize = [
-  set(moduleState`authorized`, false),
+  set(state`trello.authorized`, false),
   sequence('deauthorize->authorize', authorize),
 ];
 
@@ -84,8 +84,8 @@ export const loadList = sequence('trello.loadList', [
   },
 
   // Put everything into state:
-  ({props,store}) => {
-    store.set(moduleState`lists.${props.key}`, { 
+  ({props,store,get}) => {
+    store.set(state`trello.lists.${props.key}`, { 
       id: props.list.id, 
       name: props.list.name, 
       cards: props.cards,

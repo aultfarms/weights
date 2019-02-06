@@ -1,3 +1,5 @@
+import  { CerebralError } from 'cerebral';
+
 import       feedModule from 'aultfarms-lib/feed/module';
 import     trelloModule from 'aultfarms-lib/trello/module';
 import windowSizeModule from 'aultfarms-lib/windowSize/module';
@@ -9,6 +11,9 @@ import * as sequences from './sequences';
 
 export default {
   sequences,
+  catch: [
+    [ CerebralError, sequences.handleError ],
+  ],
   state: { 
     invoicegroups: {
       curgroup: '',
