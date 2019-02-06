@@ -3,7 +3,7 @@ import _ from 'lodash';
 import numeral from 'numeral';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import './WeightDateBar.css';
 
@@ -11,10 +11,10 @@ export default connect({
           date: state`date`,
        records: state`weights.records`,
         limits:  state`limits`,
-          changeDate: signal`changeDate`,
-  loadWeightsForDate: signal`loadWeightsForDate`,
-    changeLightLimit: signal`changeLightLimit`,
-    changeHeavyLimit: signal`changeHeavyLimit`,
+          changeDate: sequences`changeDate`,
+  loadWeightsForDate: sequences`loadWeightsForDate`,
+    changeLightLimit: sequences`changeLightLimit`,
+    changeHeavyLimit: sequences`changeHeavyLimit`,
 }, function WeightDateBar(props) {
 
   const dateChanged = evt => {

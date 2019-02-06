@@ -3,10 +3,11 @@ import _ from 'lodash';
 import numeral from 'numeral';
 import { extendMoment } from 'moment-range';
 import Moment from 'moment';
-const moment = extendMoment(Moment);
 
 import {connect} from '@cerebral/react';
 import {state} from 'cerebral/tags';
+
+const moment = extendMoment(Moment);
 
 export default connect({
       deadRecords: state`dead.records`,

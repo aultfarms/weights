@@ -2,13 +2,13 @@ import React from 'react';
 import FontAwesome from 'react-fontawesome';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import './TabSelector.css';
 
 export default connect({
   tabSelector: state`tabSelector`,
-  changeTab: signal`changeTab`,
+  changeTab: sequences`changeTab`,
 }, function TabSelector(props) {
   const   prefsClicked = evt => props.changeTab({ active: 'prefs' });
   const weightsClicked = evt => props.changeTab({ active: 'weights' });

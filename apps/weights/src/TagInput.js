@@ -1,8 +1,7 @@
 import React from 'react';
-import _ from 'lodash';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import Keypad from './Keypad.js';
 import Colorbar from './Colorbar.js';
@@ -13,10 +12,10 @@ import './TagInput.css';
 export default connect({
   recordsValid: state`recordsValid`,
       tagInput: state`tagInput`,
-     changeTag: signal`changeTag`,
-       saveTag: signal`saveTag`,
-        moveUp: signal`moveInputUp`,
-      moveDown: signal`moveInputDown`,
+     changeTag: sequences`changeTag`,
+       saveTag: sequences`saveTag`,
+        moveUp: sequences`moveInputUp`,
+      moveDown: sequences`moveInputDown`,
 }, function TagInput(props) {
 
   const numberClicked = num => {

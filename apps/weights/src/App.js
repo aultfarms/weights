@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import WeightsPane from './WeightsPane';
 import TagInput from './TagInput';
@@ -10,7 +10,7 @@ import './App.css';
 
 export default connect({
   windowSize: state`windowSize`,
-  init: signal`init`,
+  init: sequences`init`,
 }, class App extends React.Component {
 
   componentWillMount() {

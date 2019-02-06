@@ -4,7 +4,7 @@ import numeral from 'numeral';
 import moment from 'moment';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import './TabGroup.css';
 
@@ -12,7 +12,7 @@ export default connect({
      groups: state`incoming.records`,
  treatments: state`treatments.records`,
      sortBy: state`historyGroup.sort`,
- sortBySignal: signal`tabGroupSortClicked`,
+ sortBySignal: sequences`tabGroupSortClicked`,
 }, function TabGroup(props) {
   let all_groups = props.groups;
   all_groups = _.sortBy(all_groups, g => {

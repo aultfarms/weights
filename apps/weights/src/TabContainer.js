@@ -1,8 +1,7 @@
 import React from 'react';
-import _ from 'lodash';
 
 import {connect} from '@cerebral/react';
-import {state} from 'cerebral/tags';
+import {state} from 'cerebral';
 
 import  TabWeights from './TabWeights';
 import      TabTag from './TabTag';

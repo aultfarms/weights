@@ -40,7 +40,7 @@ function processCards(_ref) {
 
   // First parse the cards, then later determine invoiced list, non-invoiced list, etc.
   var cards = get((0, _cerebral.state)(_templateObject));
-  console.log('processCards: got cards = ', cards);
+
   var records = _lodash2.default.map(cards, function (c) {
     if (!c.name) {
       return { error: 'card name does not exist', card: c };

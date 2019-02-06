@@ -3,7 +3,7 @@ import _ from 'lodash';
 import numeral from 'numeral';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import './TabWeights.css';
 
@@ -12,10 +12,10 @@ export default connect({
        colors: state`treatments.colors`,
      tagInput: state`tagInput`,
   weightInput: state`weightInput`,
-    moveInput: signal`moveInput`,
-    changeOut: signal`changeOut`,
-   changeOut2: signal`changeOut2`,
-   changeOut3: signal`changeOut3`,
+    moveInput: sequences`moveInput`,
+    changeOut: sequences`changeOut`,
+   changeOut2: sequences`changeOut2`,
+   changeOut3: sequences`changeOut3`,
 }, class TabWeights extends React.Component {
 
   render() {

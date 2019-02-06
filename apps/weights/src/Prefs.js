@@ -1,11 +1,11 @@
 import React from 'react';
 import { connect } from '@cerebral/react';
-import { signal } from 'cerebral/tags';
+import { sequences } from 'cerebral';
 
 import './Prefs.css';
 
 export default connect({
-  logout: signal`logout`,
+  logout: sequences`logout`,
 }, function Prefs(props) {
 
   const logoutClicked = evt => {
@@ -15,7 +15,7 @@ export default connect({
 
   return (
     <div className="prefs">
-      <a className="prefslink" onClick={logoutClicked}>Change Trello Account</a>
+      <a href="#top" className="prefslink" onClick={logoutClicked}>Change Trello Account</a>
     </div>
   );
 });

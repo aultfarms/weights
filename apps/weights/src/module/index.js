@@ -1,6 +1,5 @@
 import moment from 'moment';
-import { Module } from 'cerebral';
-import { set } from 'cerebral/operators';
+import { set } from 'cerebral/factories';
 import { state } from 'cerebral/tags';
 
 import treatmentsModule from 'aultfarms-lib/treatments/module';
@@ -17,10 +16,10 @@ import windowSizeProvider from 'aultfarms-lib/windowSize/provider';
 
 import * as trelloErrors from 'aultfarms-lib/trello/module/errors';
 
-import * as signals from './sequences';
+import * as sequences from './sequences';
 
-export default Module({
-  signals,
+export default {
+  sequences,
   state: { 
     recordsValid: false,
     date: moment().format('YYYY-MM-DD'),
@@ -66,5 +65,5 @@ export default Module({
     [ trelloErrors.TrelloGetError,       [ set(state`msg`, 'ERROR: failed to get in Trello')       ] ],
     [ trelloErrors.TrelloAuthorizeError, [ set(state`msg`, 'ERROR: failed to authorize in Trello') ] ],
   ],
-});
+};
 

@@ -1,13 +1,13 @@
 import React from 'react';
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import './TagBar.css';
 
 export default connect({
      tag: state`tagInput.tag`,
   colors: state`treatments.colors`,
-  changeTag: signal`changeTag`,
+  changeTag: sequences`changeTag`,
 }, function TagBar(props) {
   const colorTextChanged = evt => {
     evt.preventDefault();

@@ -27,7 +27,7 @@ export const putRow = sequence('google.putRow', [
     cols: props.cols, 
     worksheetName: props.worksheetName 
   }).then(values => { // update the row in our cache with this copy
-    store.set(`google.sheets.${props.key}.rows.${props.row}`, values);
+    store.set(state`google.sheets.${props.key}.rows.${props.row}`, values);
     return { values };
   }),
 ]);
@@ -37,16 +37,16 @@ export const putRow = sequence('google.putRow', [
 // load it's rows into the state 
 // props = { drivePath, key, worksheetName } the sheet's data will be put at google.sheets.<key>
 export const loadSheetRows = sequence('google.loadSheetRows', [
-  ({store,props,google}) => {
+  ({store,props,google,get}) => {
     if (props.id) return; // if we already have a sheetid in props, no need to look for one
-    const id = store.get(`google.knownPaths.${props.path}`);
+    const id = get(state`google.knownPaths.${props.path}`);
     if (id) return {id}; // otherwise, check store, add to props
     return google.idFromPath({  // otherwise, we need to go ask google about it
       path: props.path, 
       createIfNotExist: props.createIfNotExist || false,
       worksheetName: props.worksheetName || false
     }).then(({id}) => {
-      store.set(`google.knownPaths.${props.path}`, id);
+      store.set(state`google.knownPaths.${props.path}`, id);
       return {id};
     });
   },
@@ -56,7 +56,7 @@ export const loadSheetRows = sequence('google.loadSheetRows', [
     worksheetName: props.worksheetName 
   }), // goes into props.values
 
-  ({store,props}) => store.set(`google.sheets.${props.key}`, {
+  ({store,props}) => store.set(state`google.sheets.${props.key}`, {
     worksheetName: props.worksheetName,
     id: props.id,
     key: props.key,

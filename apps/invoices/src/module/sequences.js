@@ -17,7 +17,7 @@ export const drawerToggle = sequence('drawerToggle', [
 ]);
 
 export const changeGroup = sequence('changeGroup', [ 
-  set(state`invoicegroups.curgroup`, props`group`) 
+  set(state`invoicegroups.curgroupname`, props`group`) 
 ]);
 
 export const handleError = sequence('handleError', [

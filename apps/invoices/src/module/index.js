@@ -1,4 +1,4 @@
-import  { CerebralError } from 'cerebral';
+import  { CerebralError, state } from 'cerebral';
 
 import       feedModule from 'aultfarms-lib/feed/module';
 import     trelloModule from 'aultfarms-lib/trello/module';
@@ -16,7 +16,11 @@ export default {
   ],
   state: { 
     invoicegroups: {
-      curgroup: '',
+      curgroupname: '',
+      curgroup: get => {
+        const c = get(state`invoicegroups.curgroupname`);
+        return get(state`feed.${c}`);
+      },
     },
     page: {
       name: 'invoices', // invoices, payments, trucking

@@ -1,9 +1,8 @@
 import React from 'react';
-import _ from 'lodash';
 import numeral from 'numeral';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral';
 
 import Keypad from './Keypad.js';
 
@@ -12,10 +11,10 @@ import './WeightInput.css';
 export default connect({
   recordsValid: state`recordsValid`,
    weightInput: state`weightInput`,
-  changeWeight: signal`changeWeight`,
-    saveWeight: signal`saveWeight`,
-        moveUp: signal`moveInputUp`,
-      moveDown: signal`moveInputDown`,
+  changeWeight: sequences`changeWeight`,
+    saveWeight: sequences`saveWeight`,
+        moveUp: sequences`moveInputUp`,
+      moveDown: sequences`moveInputDown`,
 }, function WeightInput(props) {
 
   const numberClicked = num => {

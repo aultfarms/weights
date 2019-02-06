@@ -12,7 +12,7 @@ import { loadList } from '../../trello/module/sequences';
 function processCards({store,get}) {
   // First parse the cards, then later determine invoiced list, non-invoiced list, etc.
   const cards = get(state`trello.lists.feedDeliveries.cards`);
-console.log('processCards: got cards = ', cards);
+
   const records = _.map(cards, c => {
     if (!c.name) { return { error: 'card name does not exist', card: c } }
     // Date on front:
