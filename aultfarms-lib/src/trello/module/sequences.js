@@ -4,6 +4,8 @@ import { set } from 'cerebral/factories';
 import Promise from 'bluebird';
 import * as errors from './errors';
 
+const CARD_FIELDS = 'name,id,closed,desc,dateLastActivity,labels,idList';
+
 // For some reason cerebral seems to trigger these dumb warnings
 Promise.config({
   // Enables all warnings except forgotten return statements.
@@ -77,8 +79,15 @@ export const loadList = sequence('trello.loadList', [
 
   // Now get the cards for this list:
   ({props,trello}) => {
-    return trello.get('lists/'+props.list.id+'/cards', { fields: 'name,id,closed,desc,dateLastActivity,labels' })
+    return trello.get('lists/'+props.list.id+'/cards', { fields: CARD_FIELDS })
     .filter(c => c && !c.closed)
+    // Save the state path for this card inside the card itself so we can easily update later
+    .then(cards => _.keyBy(
+      _.map(cards, c => {
+        c.statePath = `trello.lists.${props.key}.${c.id}`;
+        return c;
+      }), c => c.id)
+    )
     .then(result => ({ cards: result }))
     .catch(error => { error.message = 'Failed to get cards for list '+props.listName+': '+error.message; throw new errors.TrelloGetError(error); })
   },
@@ -96,6 +105,16 @@ export const loadList = sequence('trello.loadList', [
 
 ]);
 
+// All this does is refresh the card object in-place.  It does not check that
+// it is still in the same board.
+export const reloadOneCard = sequence('trello.reloadOneCard', [
+  ({trello,props,store}) => trello.get(`cards/${props.card.id}`, { fields: CARD_FIELDS })
+    .then(card => {
+      card.statePath = props.card.statePath;
+      store.set(state`${props.card.statePath}`, card);
+    }),
+]);
+
 // props.card = {
 //   id: 'only use if this card already exists',
 //   name: 'the name to put',
@@ -110,4 +129,12 @@ export const putCard = sequence('trello.putCard', [
     url += props.card.id+'/'; // card already exists, do a put to that card
     return trello.put(url, { name: props.card.name, idList: props.card.idList })
   }).catch(err => { throw new errors.TrelloSaveError('Failed to save to card', err) }),
+  reloadOneCard,
+]);
+
+// props.id, props.idLabel
+export const addLabelToCard = sequence('trello.addLabelToCard', [
+  ({trello,props}) => { trello.post(`cards/${props.card.id}/idLabels`, { value: props.idLabel }) },
+  // Get the board name that goes with this card
+  reloadOneCard,
 ]);

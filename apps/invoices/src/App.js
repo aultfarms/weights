@@ -16,6 +16,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import MenuIcon from '@material-ui/icons/Menu';
 
 import InvoiceGroup from './InvoiceGroup';
+import CardErrors from './CardErrors';
 
 import './App.css';
 
@@ -64,13 +65,6 @@ export default connect({
     );
   }
 
-  renderInvoiceGroup() {
-    const props = this.props;
-    if (!props.authorized) return '';
-    if (!props.feedReady) return '';
-    return <InvoiceGroup/>
-  }
-
   render() {
     //return <div></div>;
     const props = this.props;
@@ -90,7 +84,9 @@ export default connect({
         
         { this.renderDrawer() }
 
-        { this.renderInvoiceGroup() }
+        { props.feedReady ? <CardErrors /> : '' }
+
+        { props.feedReady ? <InvoiceGroup /> : '' }
 
         { this.renderAuthorized() }
         { this.renderFeedReady() }
