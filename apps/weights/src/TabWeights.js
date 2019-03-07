@@ -15,6 +15,11 @@ function truncateGroupName(str) {
   return _.join(parts, ':');
 }
 
+function truncateColor(str) {
+  if (str.length < 8) return str;
+  return str.slice(0,3)+'..'+str.slice(-3);
+}
+
 export default connect({
       records: state`weights.records`,
        colors: state`treatments.colors`,
@@ -35,9 +40,10 @@ export default connect({
         <table className="tabweightstable">
           <thead>
             <tr>
+              <th width="5%">#</th>
               <th width="25%">Tag</th>
-              <th width="10%">Weight</th>
-              <th width="25%">Group</th>
+              <th width="8%">Weight</th>
+              <th width="22%">Group</th>
               <th width="8%">Days</th>
               <th width="8%">RoG</th>
               <th width="24%">Sort</th>
@@ -50,11 +56,14 @@ export default connect({
           const weightactive = props.weightInput.row === i;
           const tag = tagactive ? props.tagInput.tag : r.tag;
           return <tr key={'tabweightstablerow'+i} className='tabweightstablerow'>
+            <td className='tabweightstablecol' align="center">
+              { (i+1) }
+            </td>
             <td className={'tabweightstablecol ' + (tagactive ? 'tagactive ' : '')} 
                 onClick={() => props.moveInput({ whichInput: 'tagInput', row: i })}
                 id={tagactive ? 'tagScrollToMe' : 'tagDoNotScrollToMe' }>
               <div className="tabweightstagtext" style={{ color, borderColor: color }}>
-                {(tag && tag.color) ? tag.color : '' } {(tag && tag.number) ? tag.number : ''}
+                {(tag && tag.color) ? truncateColor(tag.color) : '' } {(tag && tag.number) ? tag.number : ''}
               </div>
             </td>
             <td className={'tabweightstablecol ' + (weightactive ? 'weightactive' : '') }
@@ -89,12 +98,15 @@ export default connect({
         }
         {
           <tr key="extrarow" className='tabweightstablerow'>
+            <td className='tabweightstablecol' align="center">
+              { (props.records.length+1) }
+            </td>
             <td className={'tabweightstablecol ' + (extrarowtagactive ? 'tagactive' : '') }
               onClick={() => props.moveInput({ whichInput: 'tagInput', row: props.records.length })}
-              id={extrarowtagactive ? 'tagScrollToMe' : false}>
+              id={extrarowtagactive ? 'tagScrollToMe' : 'tagDoNotScrollToMe' }>
               { extrarowtagactive ? 
                   <div className="tabweightstagtext" style={{ color: extrarowcolor, borderColor: extrarowcolor }}>
-                    {(props.tagInput.tag && props.tagInput.tag.color) ? props.tagInput.tag.color : '' } {(props.tagInput.tag && props.tagInput.tag.number) ? props.tagInput.tag.number : ''}
+                    {(props.tagInput.tag && props.tagInput.tag.color) ? truncateColor(props.tagInput.tag.color) : '' } {(props.tagInput.tag && props.tagInput.tag.number) ? props.tagInput.tag.number : ''}
                   </div>
                 : ' '
               }

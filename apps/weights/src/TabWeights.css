@@ -1,7 +1,7 @@
 .tabweights {
-  overflow-y: scroll;
   margin-top: 10px;
   border-top: 1px solid #CCCCCC;
+  overflow-y: scroll;
 }
 
 .tabweightstable {

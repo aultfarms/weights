@@ -4,8 +4,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
-  margin-bottom: 15px;
+  min-height: 200px; /* not sure why this has to be here */
 }
 
 .weightdatebarcardtitle {

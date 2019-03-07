@@ -26,7 +26,7 @@ export default connect({
 
   const heavyhead = _.filter(props.records, r => r.weight && r.weight > props.limits.heavy).length;
   const stats = _.reduce(props.records, (acc,r) => { 
-    if (!r.sort || !r.adjWeight || !r.tag) { console.log('invalid record, r = ', r); return acc; }
+    if (!r.sort || !r.adjWeight || !r.tag) return acc;
 
     const which = acc[r.sort]; // SELL, KEEP, HEAVY, JUNK
     which.lbsGain += r.lbsGain || 0; 
