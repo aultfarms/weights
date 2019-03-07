@@ -52,26 +52,12 @@ export const    changeTag = sequence('changeTag',   [
   }, 
   scrollToTag
 ]); // tag, number
-export const changeOut = sequence('changeOut', [
-  set(state`msg`, { type: 'bad', text: 'Saving out change...' }),
-  ({props,store}) => store.set(state`weights.records.${props.row}.out`, props.checked),
+export const changeSort = sequence('changeSort', [
+  set(state`msg`, { type: 'bad', text: 'Saving sort type change...' }),
+  ({props,store}) => store.set(state`weights.records.${props.row}.sort`, props.value),
   weights.saveRecordRow, // props: row, will pull record from state
-  set(state`msg`, { type: 'good', text: 'Out change saved' }),
+  set(state`msg`, { type: 'good', text: 'Sort type change saved' }),
 ]);
-export const changeOut2 = sequence('changeOut2', [
-  set(state`msg`, { type: 'bad', text: 'Saving out2 change...' }),
-  ({props,store}) => store.set(state`weights.records.${props.row}.out2`, props.checked),
-  weights.saveRecordRow, // props: row, will pull record from state
-  set(state`msg`, { type: 'good', text: 'Out2 change saved' }),
-]);
-export const changeOut3 = sequence('changeOut3', [
-  set(state`msg`, { type: 'bad', text: 'Saving out3 change...' }),
-  ({props,store}) => store.set(`weights.records.${props.row}.out3`, props.checked),
-  weights.saveRecordRow, // props: row, will pull record from state
-  set(state`msg`, { type: 'good', text: 'Out3 change saved' }),
-]);
-
-
 
 function loadInputFromRow({store,props,get}) {
   const row = get(state`${props.whichInput}.row`);

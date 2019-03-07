@@ -9,9 +9,7 @@ export default {
       //   tag: { color: 'ORANGE', number: 2, },
       //   weight: 1470,
       //   group: 'MICH:OCT17-1',
-      //   out: true,
-      //   out2: true,
-      //   out3: true,
+      //   sort: SELL | HEAVY | KEEP | JUNK | SPECIAL1
       // },
     ],
   },

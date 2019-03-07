@@ -7,15 +7,21 @@ import {state,sequences} from 'cerebral';
 
 import './TabWeights.css';
 
+function truncateGroupName(str) {
+  const parts = _.split(str, ':');
+  if (parts[0].length > 6) {
+    parts[0] = parts[0].substr(0,3)+'...'+parts[0].substr(-3);
+  }
+  return _.join(parts, ':');
+}
+
 export default connect({
       records: state`weights.records`,
        colors: state`treatments.colors`,
      tagInput: state`tagInput`,
   weightInput: state`weightInput`,
     moveInput: sequences`moveInput`,
-    changeOut: sequences`changeOut`,
-   changeOut2: sequences`changeOut2`,
-   changeOut3: sequences`changeOut3`,
+   changeSort: sequences`changeSort`,
 }, class TabWeights extends React.Component {
 
   render() {
@@ -34,9 +40,7 @@ export default connect({
               <th width="25%">Group</th>
               <th width="8%">Days</th>
               <th width="8%">RoG</th>
-              <th width="8%">O</th>
-              <th width="8%">O2</th>
-              <th width="8%">O3</th>
+              <th width="24%">Sort</th>
             </tr>
           </thead>
           <tbody>
@@ -48,33 +52,37 @@ export default connect({
           return <tr key={'tabweightstablerow'+i} className='tabweightstablerow'>
             <td className={'tabweightstablecol ' + (tagactive ? 'tagactive ' : '')} 
                 onClick={() => props.moveInput({ whichInput: 'tagInput', row: i })}
-                id={tagactive ? 'tagScrollToMe' : false}>
+                id={tagactive ? 'tagScrollToMe' : 'tagDoNotScrollToMe' }>
               <div className="tabweightstagtext" style={{ color, borderColor: color }}>
                 {(tag && tag.color) ? tag.color : '' } {(tag && tag.number) ? tag.number : ''}
               </div>
             </td>
             <td className={'tabweightstablecol ' + (weightactive ? 'weightactive' : '') }
                 onClick={() => props.moveInput({ whichInput: 'weightInput', row: i })}
-                id={weightactive ? 'weightScrollToMe' : false}>
+                id={weightactive ? 'weightScrollToMe' : 'weightDoNotScrollToMe' }
+                align="center">
               { weightactive ? props.weightInput.weight * 10 : r.weight }
             </td>
-            <td className='tabweightstablecol'>
-              { r.group ? r.group : 'none' }
+            <td className='tabweightstablecol' align="center">
+              { r.group ? truncateGroupName(r.group) : 'none' }
             </td>
-            <td className='tabweightstablecol'>
+            <td className='tabweightstablecol' align="center">
               {r.days ? r.days : '' }
             </td>
-            <td className='tabweightstablecol'>
+            <td className='tabweightstablecol' align="center">
               {r.rog ? numeral(r.rog).format('0.00') : '' }
             </td>
-            <td className='tabweightstablecol'>
-              <input type='checkbox' checked={!!r.out} onClick={(evt) => props.changeOut({row: i, checked: evt.target.checked})} />
-            </td>
-            <td className='tabweightstablecol'>
-              <input type='checkbox' checked={!!r.out2} onClick={(evt) => props.changeOut2({row: i, checked: evt.target.checked})} />
-            </td>
-            <td className='tabweightstablecol'>
-              <input type='checkbox' checked={!!r.out3} onClick={(evt) => props.changeOut3({row: i, checked: evt.target.checked})} />
+            <td className='tabweightstablecol' align="center">
+              <select 
+                onChange={(evt) => props.changeSort({ row: i, value: evt.target.value })}
+                value={ r.sort || 'SELL' }
+              >
+                <option value='SELL'>SELL</option>
+                <option value='HEAVY'>HEAVY</option>
+                <option value='KEEP'>KEEP</option>
+                <option value='JUNK'>JUNK</option>
+                <option value='SPECIAL1'>SPECIAL1</option>
+              </select>
             </td>
   
           </tr>})
@@ -104,10 +112,7 @@ export default connect({
             </td>
             <td className={'tabweightstablecol'}>
             </td>
-            <td className={'tabweightstablecol'}>
-            </td>
-            <td className={'tabweightstablecol'}>
-            </td>
+
           </tr>
         }
         </tbody>

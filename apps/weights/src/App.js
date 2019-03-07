@@ -20,7 +20,7 @@ export default connect({
   render() {
     const dir = this.props.windowSize.orientation === 'landscape' ? 'row' : 'column';
     const inputdir = dir === 'row' ? 'column' : 'row'; // arrange input opposite main layout
-    const maxinputwidth = inputdir === 'row' ? '100%' : '250px';
+    const maxinputwidth = inputdir === 'row' ? '100%' : '300px';
 
     return (
       <div className="App" style={{ flexDirection: dir }}>

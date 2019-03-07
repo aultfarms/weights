@@ -5,6 +5,8 @@ import numeral from 'numeral';
 import {connect} from '@cerebral/react';
 import {state,sequences} from 'cerebral';
 
+import Card from '@material-ui/core/Card';
+
 import './WeightDateBar.css';
 
 export default connect({
@@ -22,61 +24,91 @@ export default connect({
     props.changeDate({date: evt.target.value});
   };
 
-  const totalhead = props.records.length;
-  const lighthead = _.filter(props.records, r => r.weight && r.weight < props.limits.light).length;
   const heavyhead = _.filter(props.records, r => r.weight && r.weight > props.limits.heavy).length;
-  const avestats = _.reduce(props.records, (acc,r) => { 
-    acc.lbsGain += r.lbsGain || 0; 
-    acc.days += r.days || 0; 
-    acc.adjWeight += r.adjWeight || 0; 
-    acc.outs += r.out ? 1 : 0;
-    acc.outs2 += r.out2 ? 1 : 0;
-    acc.outs3 += r.out3 ? 1 : 0;
-    if (r.adjWeight) acc.count++;  
-    return acc; 
-  },{lbsGain: 0, days: 0, adjWeight: 0, count: 0, outs: 0, outs2: 0, outs3: 0});
-  const averog = avestats.days ? avestats.lbsGain / avestats.days : 0;
-  const avewt = avestats.count ? avestats.adjWeight / avestats.count : 0;
-  const totalouts = avestats.outs;
+  const stats = _.reduce(props.records, (acc,r) => { 
+    if (!r.sort || !r.adjWeight || !r.tag) { console.log('invalid record, r = ', r); return acc; }
 
+    const which = acc[r.sort]; // SELL, KEEP, HEAVY, JUNK
+    which.lbsGain += r.lbsGain || 0; 
+    which.days += r.days || 0; 
+    which.adjWeight += r.adjWeight;
+    which.count++;
+    const all = acc.ALL;
+    all.lbsGain += r.lbsGain || 0; 
+    all.days += r.days || 0; 
+    all.adjWeight += r.adjWeight;
+    all.count++;
+
+    return acc; 
+  }, {
+         ALL: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+        SELL: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+       HEAVY: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+        KEEP: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+        JUNK: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+    SPECIAL1: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+  });
+
+  function renderStatsObj(name, obj) {
+    return <Card key={'weightdatebarstats'+name} className="weightdatebarcardouter">
+      <div className="weightdatebarcardtitle">
+        { name }
+      </div>
+      <div className="weightdatebarcardinner">
+        <div className='weightdatebarfilter'>
+          { obj.count + ' head' }
+        </div>
+        <div className='weightdatebarfilter'>
+          { obj.days ? numeral(obj.lbsGain / obj.days).format('0.00') : 0 } RoG
+        </div>
+        <div className='weightdatebarfilter'>
+          { obj.count ? numeral(obj.adjWeight / obj.count).format('0') : 0 } lbs
+        </div>
+      </div>
+    </Card>
+
+  }
+
+  function renderStats(which) {
+    return renderStatsObj(which, stats[which]);
+  }
+
+  function renderCombinedStats(arr) {
+    const obj = _.cloneDeep(stats[arr[0]]);
+    _.each(arr.slice(1), which => {
+      const s = stats[which];
+      obj.count += s.count;
+      obj.lbsGain += s.lbsGain;
+      obj.adjWeight += s.adjWeight;
+    });
+    return renderStatsObj(_.join(arr, '+'), obj);
+  }
+  
   return (
     <div className="weightdatebar">
-      <input className='weightdatebarinput'
-             value={props.date}
-             type="date"
-             onChange={dateChanged}
-             onBlur={() => props.loadWeightsForDate()}/>
-      <div className='weightdatebarfilter'>
-        { totalhead + ' total' }
-      </div>
-      <div className='weightdatebarfilter'>
-        { lighthead } &lt; 
-        <input className='weightdatebarinput' 
-             label='Light'  size='5'
-             value={props.limits.light} onChange={evt => { evt.preventDefault(); props.changeLightLimit({ light: evt.target.value})} } />
-        lbs
-      </div>
-      <div className='weightdatebarfilter'>
-        { heavyhead } &gt;
-        <input className='weightdatebarinput' 
-             label='Heavy' 
-             size='5'
-             value={props.limits.heavy} onChange={evt => { evt.preventDefault(); props.changeHeavyLimit({ heavy: evt.target.value})} } />
-        lbs
-      </div>
-      <div className='weightdatebarfilter'>
-        { numeral(averog).format('0.00') } RoG
-      </div>
-      <div className='weightdatebarfilter'>
-        { numeral(avewt).format('0') } lbs
-      </div>
-      <div className='weightdatebarfilter'>
-        ({ totalouts ? totalouts : '0' },{ avestats.outs2 ? avestats.outs2 : '0' },{ avestats.outs3 ? avestats.outs3 : '0' }) out
-      </div>
+      <Card className="weightdatebarcardouter">
+        <div className="weightdatebarcardtitle">
+          Date / Heavy Filter
+        </div>
+        <div className="weightdatebarcardinner">
+          <input className='weightdatebarinput'
+                   value={props.date}
+                   type="date"
+                   onChange={dateChanged}
+                   onBlur={() => props.loadWeightsForDate()}/>
+          <div className='weightdatebarfilter'>
+            { heavyhead } &gt;
+              <input className='weightdatebarinput' 
+                 label='Heavy' 
+                 size='5'
+                 value={props.limits.heavy} onChange={evt => { evt.preventDefault(); props.changeHeavyLimit({ heavy: evt.target.value})} } />
+            lbs
+          </div>
+        </div>
+      </Card>
+      { _.map(['ALL', 'SELL', 'HEAVY', 'KEEP', 'JUNK' ], renderStats) }
+      { renderCombinedStats(['SELL', 'HEAVY']) }
 
-
-      <div className="spacer"></div>
-       
     </div>
   );
 });

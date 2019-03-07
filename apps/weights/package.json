@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@cerebral/react": "^4.0.4",
+    "@material-ui/core": "^3.9.2",
     "aultfarms-lib": "^0.0.1",
     "bluebird": "^3.5.1",
     "cerebral": "^5.0.4",

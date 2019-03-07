@@ -13,6 +13,7 @@
   border-radius: 5px;
   border: 1px solid #CCCCCC;
   box-shadow: 1px 1px grey;
+  min-width: 25px;
 }
 .colorbutton:hover {
   cursor: pointer;

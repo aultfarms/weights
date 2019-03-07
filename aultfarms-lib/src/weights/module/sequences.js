@@ -51,9 +51,7 @@ function weightRecordToRowMapper(record) {
     record.days ? record.days : '',
     record.lbsGain ? record.lbsGain : '',
     record.rog ? record.rog : '',
-    record.out ? record.out : '',
-    record.out2 ? record.out2 : '',
-    record.out3 ? record.out3 : '',
+    record.sort ? record.sort : 'SELL',
   ];
 }
 function weightRowToRecordMapper(row,index) {
@@ -70,9 +68,7 @@ function weightRowToRecordMapper(row,index) {
          days: +(row[6]),
       lbsGain: +(row[7]),
           rog: +(row[8]),
-          out: !!(row[9]  && row[9]  === 'TRUE'),
-         out2: !!(row[10] && row[10] === 'TRUE'),
-         out3: !!(row[11] && row[11] === 'TRUE'),
+         sort: row[9],
           row: index,
   };
 }
@@ -104,7 +100,7 @@ export const fetch = sequence('weights.fetch', [
     addHeader: [
       ({props}) => ({id: props.id, worksheetName: props.worksheetName, key: props.key,
         row: -1,  // putRow will increment expecting to move past header
-        cols: [ 'color', 'number', 'weight', 'adj_wt', 'group', 'in_date', 'days', 'lbs_gain', 'rog', 'out', 'out2', 'out3' ],
+        cols: [ 'color', 'number', 'weight', 'adj_wt', 'group', 'in_date', 'days', 'lbs_gain', 'rog', 'sort' ],
       }),
       putRow,
       () => console.log('weights: Added header row to weights sheet'),

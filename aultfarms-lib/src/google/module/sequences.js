@@ -27,7 +27,15 @@ export const putRow = sequence('google.putRow', [
     cols: props.cols, 
     worksheetName: props.worksheetName 
   }).then(values => { // update the row in our cache with this copy
-    store.set(state`google.sheets.${props.key}.rows.${props.row}`, values);
+    store.merge(state`google`, { 
+      sheets: {
+        [props.key]: {
+          rows: {
+            [props.row]: values
+          }
+        }
+      }
+    });
     return { values };
   }),
 ]);
