@@ -134,49 +134,56 @@ function loadTag({props,get}) {
   if (!tag) return;
   return { tag: _.cloneDeep(tag) };
 }
-function loadGroup({props,get}) {
+function loadGroupDays({props,get}) {
   if (props.group) return;
   if (!props.tag) return; // can't find group for null tag
   let group = groupForTag(get(state`incoming.records`),props.tag);
   if (!group) return;
-  return { group: _.cloneDeep(group.groupname) };
+  const days = moment(get(state`date`),'YYYY-MM-DD').diff(moment(group.date,'YYYY-MM-DD'), 'days');
+  return { 
+    group: _.cloneDeep(group.groupname), 
+    days,
+    inDate: group.date,
+  };
 }
-function computeDaysRoG({props,get}) {
+
+function computeRoG({props,get}) {
   if (!props.weight) return; 
   if (!props.group) return;
+  if (!props.days) return;
   if (!props.tag) return; 
   const group = _.find(get(state`incoming.records`), r => r.groupname === props.group);
-  const days = moment(get(state`date`),'YYYY-MM-DD').diff(moment(group.date,'YYYY-MM-DD'), 'days');
+  const days = props.days;
   const adjWeight = props.weight / 0.98; // 2% scale offset
   const lbsGain = adjWeight - group.weight;
   const rog = lbsGain / days;
   return {
     adjWeight,
     lbsGain,
-    days,
     rog,
-    inDate: group.date,
   };
 }
 function saveRecord({props,store,get}) {
   const rec = get(state`weights.records.${props.row}`);
-  if (!rec) store.set(state`weights.records.${props.row}`, { row: props.row, date: state.get('date') });
-  if (props.tag)      store.set(state`weights.records.${props.row}.tag`,      _.clone(props.tag));
-  if (props.weight)   store.set(state`weights.records.${props.row}.weight`,   props.weight);
-  if (props.adjWeight)store.set(state`weights.records.${props.row}.adjWeight`,props.adjWeight);
-  if (props.lbsGain)  store.set(state`weights.records.${props.row}.lbsGain`,  props.lbsGain);
-  if (props.group)    store.set(state`weights.records.${props.row}.group`,    props.group);
-  if (props.days)     store.set(state`weights.records.${props.row}.days`,     props.days);
-  if (props.rog)      store.set(state`weights.records.${props.row}.rog`,      props.rog);
-  if (props.inDate)   store.set(state`weights.records.${props.row}.inDate`,   props.inDate);
+  if (!rec) store.set(state`weights.records.${props.row}`, { row: props.row, date: get(state`date`) });
+  const toMerge = {};
+  if (props.tag)      toMerge.tag       = _.clone(props.tag);
+  if (props.weight)   toMerge.weight    = props.weight;
+  if (props.adjWeight)toMerge.adjWeight = props.adjWeight;
+  if (props.lbsGain)  toMerge.lbsGain   = props.lbsGain;
+  if (props.group)    toMerge.group     = props.group;
+  if (props.days)     toMerge.days      = props.days;
+  if (props.rog)      toMerge.rog       = props.rog;
+  if (props.inDate)   toMerge.inDate    = props.inDate;
+  store.merge(state`weights.records.${props.row}`, toMerge);
   return { record: get(state`weights.records.${props.row}`) };
 }
 export const saveTag = sequence('saveTag', [ 
   set(state`msg`, { type: 'bad', text: 'Saving tag...' }),
   ({get}) => get(state`tagInput`), // put row and tag into props
-  loadGroup,
+  loadGroupDays,
   loadWeight,
-  computeDaysRoG,
+  computeRoG,
   saveRecord,
   weights.saveRecordRow, // props: row, will pull record from state
   () => ({whichInput: 'tagInput'}),
@@ -190,8 +197,8 @@ export const saveWeight = sequence('saveWeight', [
   ({get}) => get(state`weightInput`), // put row and weight into props
   ({props}) => ({ weight: props.weight * 10 }),
   loadTag, // pull tag into props if it exists
-  loadGroup,
-  computeDaysRoG,
+  loadGroupDays,
+  computeRoG,
   saveRecord,
   weights.saveRecordRow, // props: row, will pull record from state
   () => ({whichInput: 'weightInput'}),

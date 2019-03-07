@@ -39,14 +39,16 @@ export const putRow = sequence('google.putRow', [
 export const loadSheetRows = sequence('google.loadSheetRows', [
   ({store,props,google,get}) => {
     if (props.id) return; // if we already have a sheetid in props, no need to look for one
-    const id = get(state`google.knownPaths.${props.path}`);
+    if (!props.path) return; // no path passed!
+    const pathkey = props.path; //props.path.replace(/\//g,'__').replace(/ /g,'_').replace(/-/g,'_'); // cerebral doesn't like forward slashes in key names
+    const id = get(state`google.knownPaths.${pathkey}`);
     if (id) return {id}; // otherwise, check store, add to props
     return google.idFromPath({  // otherwise, we need to go ask google about it
       path: props.path, 
       createIfNotExist: props.createIfNotExist || false,
       worksheetName: props.worksheetName || false
     }).then(({id}) => {
-      store.set(state`google.knownPaths.${props.path}`, id);
+      store.merge(state`google`, { knownPaths: { [pathkey]: id } });
       return {id};
     });
   },

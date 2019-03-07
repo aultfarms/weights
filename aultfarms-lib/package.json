@@ -6,7 +6,7 @@
   "scripts": {
     "build": "babel --source-maps --out-dir . src/",
     "build-watch": "babel --source-maps --watch --out-dir . src/",
-    "dev": "cpx --watch --verbose './**' ../apps/invoices/node_modules/aultfarms-lib",
+    "dev": "cpx --watch --verbose './**' ../apps/weights/node_modules/aultfarms-lib",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Aaron Ault <aultac@gmail.com>",
