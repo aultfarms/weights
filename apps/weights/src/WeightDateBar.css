@@ -4,7 +4,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  min-height: 2.2em;
+  padding-bottom: 10px;
 }
 
 .weightdatebarcardtitle {
@@ -34,11 +34,9 @@
   border: 1px solid #CCCCCC;
   border-radius: 3px;
   margin-left: 5px;
-  box-sizing: border-box;
 }
 
 .weightdatebarfilter {
-  box-sizing: border-box;
   display: flex;
   align-items: center;
   text-align: center;
@@ -53,7 +51,6 @@
 }
 
 .weightdatebarinput{
-  box-sizing: border-box;
   text-align: center;
   font-weight: bold;
   border: 1px solid #CCCCCC;

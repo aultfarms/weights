@@ -22,8 +22,10 @@
   flex-grow: 1;
   flex-shrink: 0;
   min-width: 33%;
+  min-height: 45px;
   display: flex;
   justify-content: center;
+  align-items: center;
   border: 1px solid #CCCCCC;
   border-radius: 2px;
   font-family: sans-serif;
