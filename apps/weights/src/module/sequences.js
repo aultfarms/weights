@@ -41,13 +41,22 @@ export const loadWeightsForDate = sequence('loadWeightsForDate', [
   weights.clearCache,
   weights.fetch,
 ]);
-export const changeWeight = sequence('changeWeight',[ set(state`weightInput.weight`, props`weight`), scrollToWeight ]);
+export const changeWeight = sequence('changeWeight',[ 
+  set(state`weightInput.weight`, props`weight`), 
+  //scrollToWeight 
+]);
 export const    changeTag = sequence('changeTag',   [ 
   ({props,store}) => {
-    if (typeof props.tag.number !== 'undefined') store.set(state`tagInput.tag.number`, +(props.tag.number));
-    if (props.tag.color)  store.set(state`tagInput.tag.color`, props.tag.color);
+    let doscroll = false;
+    if (typeof props.tag.number !== 'undefined') {
+      store.set(state`tagInput.tag.number`, +(props.tag.number));
+    }
+    if (props.tag.color)  {
+      store.set(state`tagInput.tag.color`, props.tag.color);
+      doscroll = true;
+    }
+    if (doscroll) scrollToTag();
   }, 
-  scrollToTag
 ]); // tag, number
 export const changeSort = sequence('changeSort', [
   set(state`msg`, { type: 'bad', text: 'Saving sort type change...' }),
