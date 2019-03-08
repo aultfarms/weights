@@ -34,11 +34,8 @@ export const logout = [ trello.deauthorize, trello.authorize];
 
 //-------------------------------------------------------
 // Changing values
-export const changeLightLimit = sequence('changeLightLimit', [ set(state`limits.light`, props`light`) ]);
-export const changeHeavyLimit = sequence('changeHeavyLimit', [ set(state`limits.heavy`, props`heavy`) ]);
-export const   changeDate = sequence('changeDate',  [ 
-  set(state`date`, props`date`),
-]);
+export const changeDate = sequence('changeDate',  [ set(state`date`, props`date`) ]);
+
 export const loadWeightsForDate = sequence('loadWeightsForDate', [
   set(props`date`, state`date`),
   weights.clearCache,
@@ -151,7 +148,7 @@ function computeRoG({props,get}) {
 }
 function saveRecord({props,store,get}) {
   const rec = get(state`weights.records.${props.row}`);
-  if (!rec) store.set(state`weights.records.${props.row}`, { row: props.row, date: get(state`date`) });
+  if (!rec) store.set(state`weights.records.${props.row}`, { row: props.row, date: get(state`date`), sort: 'SELL' });
   const toMerge = {};
   if (props.tag)      toMerge.tag       = _.clone(props.tag);
   if (props.weight)   toMerge.weight    = props.weight;
@@ -161,6 +158,7 @@ function saveRecord({props,store,get}) {
   if (props.days)     toMerge.days      = props.days;
   if (props.rog)      toMerge.rog       = props.rog;
   if (props.inDate)   toMerge.inDate    = props.inDate;
+  if (props.sort)     toMerge.sort      = props.sort;
   store.merge(state`weights.records.${props.row}`, toMerge);
   return { record: get(state`weights.records.${props.row}`) };
 }

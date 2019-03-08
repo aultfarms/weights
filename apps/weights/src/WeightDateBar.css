@@ -1,10 +1,29 @@
 .weightdatebar{
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  min-height: 200px; /* not sure why this has to be here */
+  min-height: 140px; /* not sure why this has to be here */
+}
+
+.weightdatebarinputcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 3px;
+  margin-right: 3px;
+  margin-top: 3px;
+  padding-bottom: 3px;
+}
+
+.weightdatebarright {
+  display: flex;
+  flex-direction: column;
+}
+.weightdatebarleft {
+  display: flex;
+  flex-direction: column;
 }
 
 .weightdatebarcardtitle {
@@ -12,9 +31,9 @@
   font-size: 1em;
 }
 
-.weightdatebarcardouter {
+.weightdatebarcard {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   margin-left: 3px;
@@ -34,6 +53,7 @@
   border: 1px solid #CCCCCC;
   border-radius: 3px;
   margin-left: 5px;
+  margin-bottom: 5px;
 }
 
 .weightdatebarfilter {

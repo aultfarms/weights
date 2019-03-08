@@ -113,7 +113,7 @@ export default connect({
             </td>
             <td className={'tabweightstablecol ' + (extrarowweightactive ? 'weightactive' : '') }
               onClick={() => props.moveInput({ whichInput: 'weightInput', row: props.records.length })}
-              id={extrarowweightactive ? 'weightScrollToMe' : false}>
+              id={extrarowweightactive ? 'weightScrollToMe' : 'weightDoNotScrollToMe' }>
               { extrarowweightactive ? props.weightInput.weight * 10 : '' }
             </td>
             <td className={'tabweightstablecol'}>

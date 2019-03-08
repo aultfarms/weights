@@ -6,10 +6,48 @@ import { sequence,state,props } from 'cerebral';
 import { tagStrToObj } from '../../util/tagHelpers';
 import * as google from '../../google/module/sequences';
 
+export const computeStats = sequence('weights.computeStats', [
+  ({get,store}) => {
+    const heavylimit = get(state`weights.filters.heavy.limit`);
+    const records = get(state`weights.records`);
+    const heavyhead = _.filter(records, r => r.weight && r.weight > heavylimit).length;
+    store.set(state`weights.filters.heavy.count`, heavyhead);
+console.log('records = ', records);
+    const stats = _.reduce(records, (acc,r) => { 
+      if (!r.sort || !r.adjWeight || !r.tag) return acc;
+
+      const which = acc[r.sort]; // SELL, KEEP, HEAVY, JUNK
+      which.lbsGain += r.lbsGain || 0; 
+      which.days += r.days || 0; 
+      which.adjWeight += r.adjWeight;
+      which.count++;
+      const all = acc.ALL;
+      all.lbsGain += r.lbsGain || 0; 
+      all.days += r.days || 0; 
+      all.adjWeight += r.adjWeight;
+      all.count++;
+
+      return acc; 
+    }, {
+           ALL: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+          SELL: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+         HEAVY: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+          KEEP: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+          JUNK: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+      SPECIAL1: { lbsGain: 0, days: 0, adjWeight: 0, count: 0 },
+    });
+    store.set(state`weights.stats`, stats);
+  },
+
+]);
+
+
+
 //---------------------------------------------------------------------
 // clear the cache of weight records
 export const clearCache = sequence('weights.clearCache', [
   set(state`weights.records`, []),
+  computeStats, // clear stats too
 ]);
 
 //-------------------------------------------------------------------
@@ -29,13 +67,17 @@ export const putRow = sequence('weights.putRow', [
     if (!record) return; // header row
     return store.set(state`weights.records.${props.row}`, weightRowToRecordMapper(props.values,props.row))
   },
+  computeStats,
 ]);
+
 
 // need props.row, will fill in the rest from the state
 export const saveRecordRow = sequence('weights.saveRecordRow', [
   ({props,get}) => ({ cols: weightRecordToRowMapper(get(state`weights.records.${props.row}`)) }),
   putRow,
+  // don't need to computeStats because putRow does that above
 ]);
+
 
 
 //---------------------------------------------------------------------
@@ -111,6 +153,10 @@ export const fetch = sequence('weights.fetch', [
   ({props,store,get}) => store.set(state`weights.records`, 
     _.reduce(get(state`google.sheets.${props.key}.rows`), weightRowToRecordReducer, [])
   ),
+  computeStats,
 ]);
 
-
+export const changeHeavyLimit = sequence('changeHeavyLimit', [ 
+  set(state`weights.filters.heavy.limit`, props`limit`),
+  computeStats,
+]);
