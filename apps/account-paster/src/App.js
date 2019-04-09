@@ -69,6 +69,7 @@ const nameCategoryMapping = {
   'SMITH FARM STORE': 'supplies-general',
   'Safeco Insurance': 'insurance-auto',
   'Sam\'s Club': 'miscellaneous-subscriptions',
+  'Service Sanitation': 'utilities-sanitation',
   'Silver Star Companies, LLC': 'crop-seed-wheat',
   'The Andersons': 'SPLIT',
   'Transfer from Farm Credit': 'transfer-from:FC.RLOC,to:FF.checking',
