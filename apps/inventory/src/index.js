@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
-import AppModule from './modules/app';
+import AppModule from './modules';
 import registerServiceWorker from './registerServiceWorker';
 
 import { Controller } from 'cerebral';

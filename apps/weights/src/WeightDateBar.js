@@ -50,13 +50,14 @@ export default connect({
   function renderCombinedStats(displayName, arr) {
     if (!props.stats || !props.stats[arr[0]]) return;
     const obj = _.cloneDeep(props.stats[arr[0]]);
-    _.each(arr.slice(1), which => {
-      const s = props.stats[which];
+//    _.each(arr.slice(1), which => {
+      const s = props.stats[arr[1]];
       if (!s) return;
       obj.count += s.count;
       obj.lbsGain += s.lbsGain;
       obj.adjWeight += s.adjWeight;
-    });
+      obj.days += s.days;
+//    });
     return renderStatsObj(displayName, obj);
   }
   

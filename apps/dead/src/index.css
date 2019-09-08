@@ -1,0 +1,22 @@
+/* From https://purecss.io/grids/, allows padding and borders without breaking layout */
+.pure-g > div {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.dbg {
+  border: 1px solid red;
+}
+
+.App {
+  height: 99%;
+  width: 99%;
+}
+
+div {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  user-select: none;
+}
+

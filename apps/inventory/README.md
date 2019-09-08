@@ -1,3 +1,17 @@
+2019-07-16 ideas:
+0. Backup original sheet prior to modifications, keep 30 days backups
+1. Keep google sheet of cattle checks and cattle inventory
+2. Script checks all cattle checks against accounting
+3. Script checks all cattle inventory items against trello
+4. If script finds discrepancy before a "settled" date, flag error to fix
+   Else, script should only find new things to add from Trello and accounting sheet
+   - need to match head, $, lbs
+5. Once full inventory sheet is set, compute fifo entries
+6. Could also compute buy/sell contracts done/left from Trello
+
+-------------------------------
+Previous ideas:
+
 Starting "inventory" is JSON saved in this folder, created by parsing a
 spreadsheet and running FIFO on it.  Should be able to update this from website
 at any time if we want to?

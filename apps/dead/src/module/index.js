@@ -35,7 +35,6 @@ export default {
 
     record: {
       date: moment().format('YYYY-MM-DD'),
-      treatment: 'NoExHt',
       tag: {
         color: '',
         number: 0,

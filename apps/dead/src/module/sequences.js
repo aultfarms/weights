@@ -19,13 +19,6 @@ export const updateMsg = sequence('updateMsg', [
   },
 ]);
 
-export const showTreatmentEditor = sequence('app.showTreatmentEditor', [ 
-  set(state`treatmentEditorActive`,true)  
-]);
-export const hideTreatmentEditor = sequence('app.hideTreatmentEditor', [ 
-  set(state`treatmentEditorActive`,false) 
-]);
-
 export const historySelectionChangeRequested = sequence('app.historySelectionChangeRequested', [ 
   set(state`historySelector.active`, props`active`), 
 ]);
@@ -39,9 +32,8 @@ export const changeRecord = sequence('app.changeRecord', [
     // switch the Date/Tag pane to Tag since we're typing a tag now.
     if (state.get('record.is_saved')) state.set('historySelector.active', 'tag');
     // if they are changing a record that has already been saved, go ahead and clear out
-    // the textbox for them
-    if (props.date)                    state.set('record.date', props.date);
-    if (props.treatment)               state.set('record.treatment', props.treatment);
+    // the date box for them
+    if (props.date) state.set('record.date', props.date);
     if (props.tag && typeof props.tag.color === 'string') {
       state.set('record.tag.color', props.tag.color);
       if (props.tag.color === 'NOTAG') state.set('record.tag.number','1');
@@ -59,13 +51,15 @@ export const saveRecord = sequence('app.saveRecord', [
   set(props`record`, state`record`),
   set(state`recordsValid`, false),
   set(state`msg`, { type: 'good', text: 'Saving card...' }),
-  treatments.saveTreatment,
+  dead.saveDead,
   set(state`msg`, { type: 'good', text: 'Refreshing records...' }),
-  treatments.fetch,
+  dead.fetch,
   set(state`recordsValid`, true),
   set(state`record.is_saved`, true),
   set(state`record.tag.number`, ''),
   set(state`historySelector.active`, 'date'),
+  set(state`msg`, { type: 'good', text: 'Recomputing stats...' }),
+  incoming.computeStats,
   updateMsg,
 ]);
 
