@@ -2,16 +2,25 @@ import { sequences } from 'cerebral';
 
 const dimensions = () => ({width: window.innerWidth, height: window.innerHeight });
 
-export default {
+let seq = '';
+
+const _M = {
   dimensions() { return dimensions(); },
   orientation() {
     const d = dimensions();
-    return (d.width > d.height ? 'landscape' : 'portrat');
+    return (d.width > d.height ? 'landscape' : 'portrait');
   },
+
+  windowResized() { 
+    this.context.get(sequences`${seq}`)(dimensions())
+  },
+
   init(sequencepath) {
-    window.addEventListener('resize', () => this.context.get(sequences`sequencepath`)(dimensions()));
-    // compute it the first time:
+    seq = sequencepath;
+    window.addEventListener('resize', _M.windowResized.bind(this));    // compute it the first time:
     this.context.get(sequences`${sequencepath}`)(dimensions());
   },
+
 };
 
+export default _M;

@@ -4,7 +4,7 @@ import numeral from 'numeral';
 import moment from 'moment';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral/tags';
 
 import {groupForTag} from 'aultfarms-lib/util/tagHelpers';
 
@@ -16,7 +16,7 @@ export default connect({
        treatments: state`treatments.records`,
            record: state`record`,
            sortBy: state`historyGroup.sort`,
-  sortBySignal: signal`historyGroupSortClicked`,
+  sortBySequence: sequences`historyGroupSortClicked`,
 }, function HistoryGroup(props) {
   let all_groups = props.groups;
   const group = groupForTag(props.groups, props.record.tag);
@@ -35,10 +35,10 @@ export default connect({
       <table width="100%">
       <tbody>
         <tr>
-          <th onClick={() => props.sortBySignal({ sort: 'name'})}>Name</th>
-          <th onClick={() => props.sortBySignal({ sort: 'date'})}>Date</th>
-          <th onClick={() => props.sortBySignal({ sort: 'dead'})}>Dead</th>
-          <th onClick={() => props.sortBySignal({ sort: 'perc'})}>%</th>
+          <th onClick={() => props.sortBySequence({ sort: 'name'})}>Name</th>
+          <th onClick={() => props.sortBySequence({ sort: 'date'})}>Date</th>
+          <th onClick={() => props.sortBySequence({ sort: 'dead'})}>Dead</th>
+          <th onClick={() => props.sortBySequence({ sort: 'perc'})}>%</th>
         </tr>
       { 
         _.map(all_groups, (g,i) => {

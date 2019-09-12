@@ -12,10 +12,14 @@
   border-radius: 3px;
 }
 
-.datestring {
+.datebarstring {
+  display: flex;
   text-align: center;
   flex-grow: 1;
   font-weight: bold;
   border: 1px solid #CCCCCC;
   border-radius: 3px;
+  color: red;
+  align-items: center;
+  justify-content: center;
 }

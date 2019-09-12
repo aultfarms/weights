@@ -16,7 +16,7 @@ export default connect({
   errors: state`dead.errors`,
 }, function TagPane(props) {
   return (
-    <div className='tagpane' style={{ height: props.windowSize.orientation === 'landscape' ? '100vh' : '100vw' }}>
+    <div className='tagpane'>
       <TagBar />
       <Msg />
       {(!props.errors || props.errors.length < 1) ? '' : 

@@ -12,7 +12,7 @@ export default connect({
   init: sequences`init`,
 }, class App extends React.Component {
 
-  componentWillMount() {
+  componentDidMount() {
     this.props.init();
   }
 

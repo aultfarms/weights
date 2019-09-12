@@ -1,11 +1,11 @@
 import React from 'react';
 import { connect } from '@cerebral/react';
-import { signal } from 'cerebral/tags';
+import { sequences } from 'cerebral/tags';
 
 import './Prefs.css';
 
 export default connect({
-  logout: signal`logout`,
+  logout: sequences`logout`,
 }, function Prefs(props) {
 
   const logoutClicked = evt => {

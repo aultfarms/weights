@@ -9,13 +9,13 @@ import * as trello     from 'aultfarms-lib/trello/module/sequences';
 import * as windowSize from 'aultfarms-lib/windowSize/module/sequences';
 
 export const updateMsg = sequence('updateMsg', [
-  ({props,state}) => {
-    if (props.msg) return state.set('msg', props.msg);
-    if (!state.get('trello.authorized')) 
-      return state.set('msg', { type: 'bad', text: 'You are not logged in to Trello.' });
-    if (state.get('record.is_saved')) 
-      return state.set('msg', { type: 'good', text: 'Treatment record saved.'});
-    state.set('msg', { type: 'bad', text: 'Treatment record not saved'});
+  ({props,store,get}) => {
+    if (props.msg) return store.set(state`msg`, props.msg);
+    if (!get(state`trello.authorized`)) 
+      return store.set(state`msg`, { type: 'bad', text: 'You are not logged in to Trello.' });
+    if (get(state`record.is_saved`)) 
+      return store.set(state`msg`, { type: 'good', text: 'Dead record saved.'});
+    store.set(state`msg`, { type: 'bad', text: 'Dead record not saved'});
   },
 ]);
 
@@ -27,21 +27,26 @@ export const historyGroupSortClicked = sequence('app.historyGroupSortClicked', [
 ]);
 
 export const changeRecord = sequence('app.changeRecord', [ 
-  ({props,state}) => {
+  ({props,store,get}) => {
     // Only the first time that the is_saved gets set to false, automatically
     // switch the Date/Tag pane to Tag since we're typing a tag now.
-    if (state.get('record.is_saved')) state.set('historySelector.active', 'tag');
+    // Different from Treatments app, just changing the date doesn't swap the view
+    if (get(state`record.is_saved`) && props.tag) store.set(state`historySelector.active`, 'tag');
     // if they are changing a record that has already been saved, go ahead and clear out
     // the date box for them
-    if (props.date) state.set('record.date', props.date);
+    if (props.date) store.set(state`record.date`, props.date);
     if (props.tag && typeof props.tag.color === 'string') {
-      state.set('record.tag.color', props.tag.color);
-      if (props.tag.color === 'NOTAG') state.set('record.tag.number','1');
+      store.set(state`record.tag.color`, props.tag.color);
+      if (props.tag.color === 'NOTAG') store.set(state`record.tag.number`,'1');
     }
     if (props.tag && (typeof props.tag.number === 'string' || typeof props.tag.number === 'number')) {
-      state.set('record.tag.number', +(props.tag.number));
+      store.set(state`record.tag.number`, +(props.tag.number));
     }
-    state.set('record.is_saved', false);
+    // if we changed the tag, then mark it as unsaved.  Otherwise, it was just the date
+    // and we don't want that to be equivalent to un-saving the tag.
+    if (props.tag) {
+      store.set(state`record.is_saved`, false);
+    }
   },
   updateMsg,
 ]);

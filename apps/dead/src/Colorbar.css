@@ -1,18 +1,23 @@
 .colorbar {
   display: flex;
   min-height: 2.5em;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
 }
 
 .colorbutton {
-  flex-grow: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-right: 0.5vw;
-  margin-left: 0.5vw;
+  margin-right: 1px;
+  margin-left: 1px;
+  margin-top: 1px;
+  margin-bottom: 1px;
   border-radius: 5px;
   border: 1px solid #CCCCCC;
   box-shadow: 1px 1px grey;
+  width: 2em;
+  height: 2em;
 }
 .colorbutton:hover {
   cursor: pointer;

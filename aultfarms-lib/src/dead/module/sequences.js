@@ -84,16 +84,17 @@ export const fetch = sequence('dead.fetch', [
 ]);
 
 export const saveDead = sequence('dead.saveDead', [
+  // Check if this tag is already in any of the days 14 before or after date
+  // in order to prevent duplicates:
   ({props,store,get}) => {
-    // Check if this tag is already in any of the days 14 before or after date
-    // in order to prevent duplicates:
+    const records = get(state`dead.records`);
     const start = moment(props.record.date).subtract(14, 'days');
     const end = moment(props.record.date).add(14, 'days');
     const alreadyDead = _.find(records, r => {
       // Not within date range?
       if (!start.isBefore(r.date) || !end.isAfter(r.date)) return false;
       // Tag not already in list?
-      if (!_.find(r.tags, t => t.color === r.tag.color && t.number === t.tag.number)) return false;
+      if (!_.find(r.tags, t => t.color === props.record.tag.color && t.number === props.record.tag.number)) return false;
       // In date range and tag already in list
       return true;
     });
@@ -121,7 +122,7 @@ export const saveDead = sequence('dead.saveDead', [
   },
 
   // convert record to card
-  ({props,store}) => {
+  ({props,store,get}) => {
     const card = props.record.card || {};
     card.id = props.record.id;
     card.idList = props.record.idList || get(state`trello.lists.dead.id`),

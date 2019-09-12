@@ -54,7 +54,7 @@ export default connect({
 
       <div className={'savebutton ' + (canSave() ? 'savebuttonenabled':'savebuttondisabled')}
            onClick={recordSaveClicked}>
-        SAVE TREATMENT
+        SAVE DEAD 
       </div>
 
     </div>
