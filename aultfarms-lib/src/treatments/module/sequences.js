@@ -38,7 +38,7 @@ export const saveTreatment = [
   },
 
   // convert record to card
-  ({props,store}) => ({
+  ({props,store,get}) => ({
     card: {
       id: props.record.id,
       idList: props.record.idList || get(state`trello.lists.treatments.id`),
