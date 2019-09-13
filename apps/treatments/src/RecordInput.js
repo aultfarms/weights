@@ -1,8 +1,7 @@
 import React from 'react';
-import _ from 'lodash';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral/tags';
 
 import Keypad from './Keypad.js';
 import Colorbar from './Colorbar.js';
@@ -15,8 +14,8 @@ export default connect({
           colors: state`colors`,
   treatmentCodes: state`treatments.treatmentCodes`,
     recordsValid: state`recordsValid`,
-       changeRecord: signal`changeRecord`,
-         saveRecord: signal`saveRecord`,
+       changeRecord: sequences`changeRecord`,
+         saveRecord: sequences`saveRecord`,
 }, function RecordInput(props) {
 
   const numberClicked = num => {

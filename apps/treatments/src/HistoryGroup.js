@@ -4,7 +4,7 @@ import numeral from 'numeral';
 import moment from 'moment';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral/tags';
 
 import {groupForTag} from 'aultfarms-lib/util/tagHelpers';
 
@@ -16,7 +16,7 @@ export default connect({
        treatments: state`treatments.records`,
            record: state`record`,
            sortBy: state`historyGroup.sort`,
-  sortBySignal: signal`historyGroupSortClicked`,
+  sortBySignal: sequences`historyGroupSortClicked`,
 }, function HistoryGroup(props) {
   let all_groups = props.groups;
   const group = groupForTag(props.groups, props.record.tag);

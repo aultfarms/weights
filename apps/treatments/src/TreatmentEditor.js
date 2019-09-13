@@ -2,7 +2,7 @@ import React from 'react';
 import _ from 'lodash';
 
 import {connect} from '@cerebral/react';
-import {signal,state} from 'cerebral/tags';
+import {sequences,state} from 'cerebral/tags';
 
 import './TreatmentEditor.css';
 
@@ -10,8 +10,8 @@ export default connect({
             record: state`record`,
     treatmentCodes: state`treatments.treatmentCodes`,
   treatmentRecords: state`treatments.records`,
-         changeRecord: signal`changeRecord`,
-  hideTreatmentEditor: signal`hideTreatmentEditor`,
+         changeRecord: sequences`changeRecord`,
+  hideTreatmentEditor: sequences`hideTreatmentEditor`,
 }, function TreatmentEditor(props) {
   const treatmentTextChanged = evt => {
     evt.preventDefault();

@@ -2,14 +2,14 @@ import React from 'react';
 import _ from 'lodash';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral/tags';
 
 import './Colorbar.css';
 
 export default connect({
   record: state`record`,
   colors: state`treatments.colors`,
-  changeRecord: signal`changeRecord`,
+  changeRecord: sequences`changeRecord`,
 }, class Colorbar extends React.Component {
 
   keypressed(evt) {

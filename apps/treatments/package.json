@@ -1,7 +1,7 @@
 {
   "name": "treatments",
-  "homepage": "https://aultac.github.io/treatments/",
-  "version": "0.1.0",
+  "homepage": "https://aultfarms.github.io/treatments/",
+  "version": "1.0.0",
   "private": true,
   "devDependencies": {
     "gh-pages": "^2.1.1",

@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral/tags';
 
 import TagPane from './TagPane';
 import RecordInput from './RecordInput';
@@ -12,10 +12,10 @@ export default connect({
   treatmentEditorActive: state`treatmentEditorActive`,
              windowSize: state`windowSize`,
                  trello: state`trello`,
-  init: signal`init`,
+  init: sequences`init`,
 }, class App extends React.Component {
 
-  componentWillMount() {
+  componentDidMount() {
     this.props.init();
   }
 

@@ -14,7 +14,7 @@ export default connect({
   windowSize: state`windowSize`,
 }, function TagPane(props) {
   return (
-    <div className='tagpane' style={{ height: props.windowSize.orientation === 'landscape' ? '100vh' : '100vw' }}>
+    <div className='tagpane' style={{ maxHeight: props.windowSize.orientation === 'landscape' ? '98vh' : '49vh' }}>
       <TagBar />
       <Msg />
       <HistorySelector />

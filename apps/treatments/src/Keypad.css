@@ -24,6 +24,7 @@
   min-width: 33%;
   display: flex;
   justify-content: center;
+  align-items: center;
   border: 1px solid #CCCCCC;
   border-radius: 2px;
   font-family: sans-serif;

@@ -1,16 +1,15 @@
 import React from 'react';
-import _ from 'lodash';
 
 import {connect} from '@cerebral/react';
-import {state,signal} from 'cerebral/tags';
+import {state,sequences} from 'cerebral/tags';
 
 import './TreatmentDateBar.css';
 
 export default connect({
           record: state`record`,
   treatmentCodes: state`treatments.treatmentCodes`,
-         changeRecord: signal`changeRecord`,
-  showTreatmentEditor: signal`showTreatmentEditor`,
+         changeRecord: sequences`changeRecord`,
+  showTreatmentEditor: sequences`showTreatmentEditor`,
 }, function TreatmentDateBar(props) {
 
   const dateChanged = evt => {
