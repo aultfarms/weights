@@ -102,11 +102,12 @@ export const saveDead = sequence('dead.saveDead', [
   // in order to prevent duplicates:
   ({props,store,get}) => {
     const records = get(state`dead.records`);
-    const start = moment(props.record.date).subtract(14, 'days');
-    const end = moment(props.record.date).add(14, 'days');
+    const start = moment(props.record.date,'YYYY-MM-DD').subtract(14, 'days');
+    const end = moment(props.record.date,'YYYY-MM-DD').add(14, 'days');
     const alreadyDead = _.find(records, r => {
+      const d = moment(r.date,'YYYY-MM-DD');
       // Not within date range?
-      if (!start.isBefore(r.date) || !end.isAfter(r.date)) return false;
+      if (!start.isBefore(d) || !end.isAfter(d)) return false;
       // Tag not already in list?
       if (!_.find(r.tags, t => t.color === props.record.tag.color && t.number === props.record.tag.number)) return false;
       // In date range and tag already in list
@@ -143,7 +144,7 @@ export const saveDead = sequence('dead.saveDead', [
     card.name = props.record.date+': '
                 +_.join(_.map(props.record.tags, t=>t.color+t.number), ' ')
                 +(props.record.note ? 'Note: '+props.record.note : '');
-    return card;
+    return { card };
   },
 
   // Put the card to Trello:
