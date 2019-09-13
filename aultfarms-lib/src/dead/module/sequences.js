@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { set } from 'cerebral/factories';
 import { state, sequence, CerebralError } from 'cerebral';
 
-import { tagStrToObj } from '../../util/tagHelpers';
+import { tagStrToObj, tagObjToStr, groupForTag } from '../../util/tagHelpers';
 import * as trello from '../../trello/module/sequences';
 
 
@@ -71,7 +71,7 @@ export const fetch = sequence('dead.fetch', [
   // get the cards
   trello.loadList,
   // convert all props.cards to records or errors:
-  ({props,store}) => {
+  ({props,store,get}) => {
     const {errors, records} = _.reduce(props.cards, (acc,c) => {
       const r = deadCardToRecord(_.cloneDeep(c));
       if (r.error) acc.errors.push(r);
@@ -80,6 +80,20 @@ export const fetch = sequence('dead.fetch', [
     }, { errors: [], records: [] });
     store.set(state`dead.records`, records);
     store.set(state`dead.errors`, errors);
+    // re-index all dead records as { tagstr: { groupname: date } }
+    const incoming = get(state`incoming.records`);
+    const tagIndex = _.reduce(records, (acc,r) => {
+      if (!r.tags) return acc;
+      _.each(r.tags, t => {
+        const str = tagObjToStr(t);
+        let g = groupForTag(incoming, t, r.date);
+        if (!g) g = { groupname: "NONE" }; // early tags have no group
+        if (!acc[str]) acc[str] = {};
+        acc[str][g.groupname] = r.date;
+      });
+      return acc;
+    }, {});
+    store.set(state`dead.tagIndex`, tagIndex);
   },
 ]);
 

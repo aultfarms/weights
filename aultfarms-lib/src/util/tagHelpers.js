@@ -58,3 +58,5 @@ export const tagStrToObj = str => {
   if (!matches) return { color: 'NOTAG', number: 1 };
   return { color: matches[1], number: +(matches[2]) || 1 };
 }
+
+export const tagObjToStr = t => (!t?'':(t.color||'')+''+(t.number||''));

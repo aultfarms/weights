@@ -3,6 +3,7 @@ import * as sequences from './sequences';
 export default {
   sequences,
   state: {
+    tagIndex: {},
     records: [
       // {
       //   date: 2018-03-17,

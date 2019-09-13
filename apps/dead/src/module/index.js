@@ -34,6 +34,12 @@ export default {
     },
 
     record: {
+      group: {
+        /*date: '2019-09-12', // incoming date
+         *groupname: 'BKTKY:MAR19-C',
+         *...other group things...
+         */
+      },
       date: moment().format('YYYY-MM-DD'),
       tag: {
         color: '',

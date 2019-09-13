@@ -3,6 +3,7 @@
   min-height: 2.5em;
   flex-wrap: wrap;
   margin-bottom: 2px;
+  flex-shrink: 0;
 }
 
 .colorbutton {

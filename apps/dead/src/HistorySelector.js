@@ -14,7 +14,7 @@ export default connect({
   const  dateClicked = evt => props.historySelectionChangeRequested({ active: 'date' });
   const   tagClicked = evt => props.historySelectionChangeRequested({ active: 'tag' });
   const groupClicked = evt => props.historySelectionChangeRequested({ active: 'group' });
-  const  deadClicked = evt => props.historySelectionChangeRequested({ active: 'dead' });
+  const  timeClicked = evt => props.historySelectionChangeRequested({ active: 'time' });
 
   return (
     <div className="historyselector">
@@ -34,9 +34,9 @@ export default connect({
            onClick={groupClicked}>
         Group
       </div>
-      <div className={'historyselectorbutton ' + (props.historySelector.active === 'dead' ? 'historyselectorbuttonactive' : '')}
-           onClick={deadClicked}>
-        Dead
+      <div className={'historyselectorbutton ' + (props.historySelector.active === 'time' ? 'historyselectorbuttonactive' : '')}
+           onClick={timeClicked}>
+        Time
       </div>
 
     </div>
