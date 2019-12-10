@@ -34,11 +34,11 @@ export default connect({
     // [ 0: { dead: [ calves that died with 0 treatments }, alive: [ calves alive with 0 treatments ] }
     // [ 1: { dead: [ calves that died with 1 treatment  }, alive: [ calves alive with 1 treatment ] }
     // ....
-    const indexByNumTreatments = _.reduce(_.keys(treatments.tagIndex), (acc,tagstr) => {
-      const tagobj = treatments.tagIndex[tagstr];
+    const indexByNumTreatments = _.reduce(_.keys(props.treatments.tagIndex), (acc,tagstr) => {
+      const tagobj = props.treatments.tagIndex[tagstr];
       const calf = tagobj[g.groupname];
       if (!calf) return;
-      const isdead = dead.tagIndex[tagstr] ? dead.tagIndex[tagstr][g.groupname] : false;
+      const isdead = props.dead.tagIndex[tagstr] ? props.dead.tagIndex[tagstr][g.groupname] : false;
       const category = "pd"+tagobj.treatments.length; // pd0, pd1, pd2, ...
       const numtrt = tagobj.treatments.length;
       if (!acc[numtrt]) acc[numtrt] = { numdead: [], numalive: [] };

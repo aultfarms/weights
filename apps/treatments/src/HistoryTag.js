@@ -1,6 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import moment from 'moment';
+import { tagHelpers } from 'aultfarms-lib/util'
 
 import {connect} from '@cerebral/react';
 import {state} from 'cerebral/tags';
@@ -9,14 +10,23 @@ export default connect({
    historySelector: state`historySelector`,
   treatmentRecords: state`treatments.records`,
             record: state`record`,
+          incoming: state`incoming`,
 }, function HistoryTag(props) {
   // find all records with this tag in it:
-  let recordsfortag = _.filter(props.treatmentRecords, r =>{
-    return _.find(r.tags, t => 
-      (t.number===props.record.tag.number && t.color===props.record.tag.color)
-    );}
-  );
+  const taggroup = tagHelpers.groupForTag(props.incoming.records, props.record.tag, props.record.date);
+  let recordsfortag = _.filter(props.treatmentRecords, r => {
+    return _.find(r.tags, t => {
+      // must be the same tag color/number
+      if (!(t.number===props.record.tag.number && t.color===props.record.tag.color)) {
+        return false;
+      }
+      // tag number and color matches, check group;
+      const group = tagHelpers.groupForTag(props.incoming.records, t, r.date);
+      return (taggroup.groupname === group.groupname);
+    });
+  });
   recordsfortag = _.reverse(_.sortBy(recordsfortag,r=>r.date));
+console.log('recordsfortag = ', recordsfortag);
   let prevdays = -1; // keeps track of previous days in mapper
   return (
     <div className="historytag">

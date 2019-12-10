@@ -111,6 +111,18 @@ const reloadOneRecord = sequence('dead.reloadOneRecord', [
       // did not find it, push onto end:
       store.push(state`dead.records`, refreshedRecord);
     }
+    // Update the tagindex if necessary
+    const incoming = get(state`incoming`);
+    _.each(refreshedRecord.tags, t => {
+      const str = tagObjToStr(t);
+      let g = groupForTag(incoming, t, refreshedRecord.date);
+      if (!g) g = { groupname: "NONE" }; // early tags have no group
+      const previous = _.clone(get(state`dead.tagIndex.${str}`));
+      let newone = _.clone(previous) || {};
+      newone[g.groupname] = r.date;
+      store.set(state`dead.tagIndex.${str}`, newone);
+    });
+
     return { record: refreshedRecord };
   },
 ]);
