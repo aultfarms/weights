@@ -76,10 +76,11 @@ export const init = sequence('app.init', [
   set(state`msg`, { type: 'good', text: 'Checking trello authorization...' }),
   trello.authorize,
   set(state`msg`, { type: 'good', text: 'Fetching records...' }),
+  // dead and treatments need incoming first to compute tagIndex
+  incoming.fetch,
   parallel('app.init.parallel', [
     treatments.fetch,
     treatments.fetchConfig,
-    incoming.fetch,
     dead.fetch,
   ]),
   set(state`msg`, { type: 'good', text: 'Computing stats...' }),

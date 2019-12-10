@@ -48,7 +48,7 @@ export default connect({
   return (
     <div className="calfcard">
       <div className="calfcardheader">
-        <span style={{fontWeight:'bold', color }}>{r.tag.color}{r.tag.number}:&nbsp;</span>
+        <span className="calfcardcolortext" style={{fontWeight:'bold', color }}>{r.tag.color}{r.tag.number}:&nbsp;</span>
         {r.treatments ? r.treatments.length : '0'} treatments,&nbsp;
         {dayshere} day{dayshere > 1 || dayshere < 1 ? 's' : ''} onsite.
       </div>

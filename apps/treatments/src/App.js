@@ -12,6 +12,7 @@ export default connect({
   treatmentEditorActive: state`treatmentEditorActive`,
              windowSize: state`windowSize`,
                  trello: state`trello`,
+        historySelector: state`historySelector`,
   init: sequences`init`,
 }, class App extends React.Component {
 
@@ -21,6 +22,7 @@ export default connect({
 
   render() {
     const dir = this.props.windowSize.orientation === 'landscape' ? 'row' : 'column';
+    const active = this.props.historySelector.active;
 
     if (this.props.treatmentEditorActive) {
       return (
@@ -32,7 +34,9 @@ export default connect({
     return (
       <div className="App" style={{ flexDirection: dir }}>
         <TagPane />
-        <RecordInput />
+        {active === 'group' || active === 'time' ? '' : 
+          <RecordInput />
+        }
       </div>
     );
   }

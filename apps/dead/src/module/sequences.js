@@ -67,9 +67,9 @@ export const saveRecord = sequence('app.saveRecord', [
   set(props`record`, state`record`),
   set(state`recordsValid`, false),
   set(state`msg`, { type: 'good', text: 'Saving card...' }),
-  dead.saveDead,
+  dead.saveDead, // saveDead now will update the single record in-place without fetching all
   set(state`msg`, { type: 'good', text: 'Refreshing records...' }),
-  dead.fetch,
+//  dead.fetch,
   set(state`recordsValid`, true),
   set(state`record.is_saved`, true),
   set(state`record.tag.number`, ''),

@@ -108,12 +108,18 @@ export const loadList = sequence('trello.loadList', [
 // All this does is refresh the card object in-place.  It does not check that
 // it is still in the same board.
 export const reloadOneCard = sequence('trello.reloadOneCard', [
-  ({trello,props,store}) => {
+  ({trello,props,store,get}) => {
     if (!props.card || !props.card.id) return;
     return trello.get(`cards/${props.card.id}`, { fields: CARD_FIELDS })
     .then(card => {
-      card.statePath = props.card.statePath;
-      store.set(state`${props.card.statePath}`, card);
+      // Find the original place in Trello part of the state:
+      const lists = get(state`trello.lists`);
+      const list = _.find(lists, (list,listname) => (list.id === card.idList) );
+      const statePath = `trello.lists.${list.name.toLowerCase()}.cards.${card.id}`;
+      // Now change it in the state:
+      card.statePath = statePath;
+      store.set(state`${statePath}`, card);
+      return { card };
     });
   },
 ]);

@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { set } from 'cerebral/operators';
 import { state, sequence, CerebralError } from 'cerebral';
 
-import { tagStrToObj } from '../../util/tagHelpers';
+import { tagStrToObj, tagObjToStr, groupForTag } from '../../util/tagHelpers';
 import * as trello from '../../trello/module/sequences';
 
 
@@ -83,6 +83,24 @@ export const fetch = sequence('treatments.fetch', [
   trello.loadList,
   // convert all props.cards to records:
   ({props,store}) => store.set(state`treatments.records`, _.map(props.cards, treatmentCardToRecord)),
+  // compute the tagIndex as { <tag>: { <groupname>: { group: {}, treatments: [ ] } }
+  ({props,get,store}) => {
+    const incoming = get(state`incoming.records`);
+    const records = get(state`treatments.records`);
+    const tagIndex = _.reduce(records, (acc,r) => {
+      if (!r.tags) return acc;
+      _.each(r.tags, t => {
+        const str = tagObjToStr(t);
+        let g = groupForTag(incoming, t, r.date);
+        if (!g) g = { groupname: "NONE" }; // early tags have no group
+        if (!acc[str]) acc[str] = {};
+        if (!acc[str][g.groupname]) acc[str][g.groupname] = { group: g, treatments: [] };
+        acc[str][g.groupname].treatments.push({ date: r.date, treatment: r.treatment });
+      });
+      return acc;
+    }, {});
+    store.set(state`treatments.tagIndex`, tagIndex);
+  }
 ]);
 
 

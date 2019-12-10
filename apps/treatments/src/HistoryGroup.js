@@ -13,7 +13,8 @@ import './HistoryGroup.css';
 export default connect({
   historySelector: state`historySelector`,
            groups: state`incoming.records`,
-       treatments: state`treatments.records`,
+       treatments: state`treatments`,
+             dead: state`dead`,
            record: state`record`,
            sortBy: state`historyGroup.sort`,
   sortBySignal: sequences`historyGroupSortClicked`,
@@ -21,11 +22,35 @@ export default connect({
   let all_groups = props.groups;
   const group = groupForTag(props.groups, props.record.tag);
   if (group) all_groups = [ group ]; // just show group for current tag
+
+  // For each group, compute Prob(dead), Prob(dead | 0 treatments), ...
+  // "0 treatments" could mean either "received at least 0 treatments" or "received exactly  0"
+  // I'm picking the "exactly" one for now
+  _.each(all_groups, g => {
+    const numdead = (g.dead ? g.dead.length : 0);
+    // treatments.tagIndex looks like:
+    // { <tagstr>: { <groupname>: { group: {...}, treatments: [ { treatment: "ExDr", date: "2019-08-07" } ] } }
+    // and the resulting new indexByNumTreatments will look like:
+    // [ 0: { dead: [ calves that died with 0 treatments }, alive: [ calves alive with 0 treatments ] }
+    // [ 1: { dead: [ calves that died with 1 treatment  }, alive: [ calves alive with 1 treatment ] }
+    // ....
+    const indexByNumTreatments = _.reduce(_.keys(treatments.tagIndex), (acc,tagstr) => {
+      const tagobj = treatments.tagIndex[tagstr];
+      const calf = tagobj[g.groupname];
+      if (!calf) return;
+      const isdead = dead.tagIndex[tagstr] ? dead.tagIndex[tagstr][g.groupname] : false;
+      const category = "pd"+tagobj.treatments.length; // pd0, pd1, pd2, ...
+      const numtrt = tagobj.treatments.length;
+      if (!acc[numtrt]) acc[numtrt] = { numdead: [], numalive: [] };
+      
+    }, []);
+  });
+
   all_groups = _.sortBy(all_groups, g => {
     if (props.sortBy === 'date') return g.day; // day string is lexicographic for sorting
     if (props.sortBy === 'name') return g.groupname;
-    if (props.sortBy === 'dead') return g.dead;
-    if (props.sortBy === 'perc') return (g.dead ? g.dead.length : 0) / (g.head ? g.head : 1);
+    if (props.sortBy === 'head') return g.head;
+    if (props.sortBy === 'pd') return (g.dead ? g.dead.length : 0) / (g.head ? g.head : 1);
     return g.day; // default
   });
   all_groups = _.reverse(all_groups); // other way seems better
@@ -36,9 +61,16 @@ export default connect({
       <tbody>
         <tr>
           <th onClick={() => props.sortBySignal({ sort: 'name'})}>Name</th>
-          <th onClick={() => props.sortBySignal({ sort: 'date'})}>Date</th>
-          <th onClick={() => props.sortBySignal({ sort: 'dead'})}>Dead</th>
-          <th onClick={() => props.sortBySignal({ sort: 'perc'})}>%</th>
+          <th onClick={() => props.sortBySignal({ sort: 'days'})}>Days</th>
+          <th onClick={() => props.sortBySignal({ sort: 'head'})}>Head</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd'})}>P(D)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_0'})}>P(D|0T)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_1'})}>P(D|1T)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_2'})}>P(D|2T)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_3'})}>P(D|3T)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_4'})}>P(D|4T)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_5'})}>P(D|5T)</th>
+          <th onClick={() => props.sortBySignal({ sort: 'pd_6'})}>P(D|6+)</th>
         </tr>
       { 
         _.map(all_groups, (g,i) => {

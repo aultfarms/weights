@@ -6,7 +6,7 @@ import {state} from 'cerebral/tags';
 import  HistoryDate from './HistoryDate';
 import   HistoryTag from './HistoryTag';
 import HistoryGroup from './HistoryGroup';
-import  HistoryDead from './HistoryDead';
+import  HistoryTime from './HistoryTime';
 import        Prefs from './Prefs';
 
 import './History.css';
@@ -19,7 +19,7 @@ export default connect({
     case  'date': ret = <HistoryDate />;  break;
     case   'tag': ret = <HistoryTag />;   break;
     case 'group': ret = <HistoryGroup />; break;
-    case  'dead': ret = <HistoryDead />;  break;
+    case  'time': ret = <HistoryTime />;  break;
     case 'prefs': ret = <Prefs />;  break;
     default:
   }

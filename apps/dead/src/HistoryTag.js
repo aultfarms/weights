@@ -21,7 +21,7 @@ export default connect({
   let recordsfortag = _.filter(props.treatmentRecords, r => _.find(r.tags, t => {
       if (!(t.number===record.tag.number && t.color===record.tag.color)) return false;
       const g = tagHelpers.groupForTag(props.incomingRecords, t, r.date);
-      if (g.groupname !== group.groupname) return false;
+      if (!g || !group || g.groupname !== group.groupname) return false;
       return true;
   }));
 

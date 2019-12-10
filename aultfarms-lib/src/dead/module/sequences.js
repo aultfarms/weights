@@ -97,6 +97,24 @@ export const fetch = sequence('dead.fetch', [
   },
 ]);
 
+const reloadOneRecord = sequence('dead.reloadOneRecord', [
+  ({props,store,get}) => {
+    // re-process the card into a record, overwrite the previous record.  If it was
+    // a new card, it will get appended to the records list.
+    const records = get(state`dead.records`);
+    const recordIndex = _.findIndex(records, r => r.id === props.card.id);
+    const refreshedRecord = deadCardToRecord(props.card);
+    if (recordIndex >= 0) {
+      // found it, replace it:
+      store.set(state`dead.records.${recordIndex}`,refreshedRecord);
+    } else {
+      // did not find it, push onto end:
+      store.push(state`dead.records`, refreshedRecord);
+    }
+    return { record: refreshedRecord };
+  },
+]);
+
 export const saveDead = sequence('dead.saveDead', [
   // Check if this tag is already in any of the days 14 before or after date
   // in order to prevent duplicates:
@@ -147,7 +165,12 @@ export const saveDead = sequence('dead.saveDead', [
     return { card };
   },
 
-  // Put the card to Trello:
+  // Put the card to Trello, this reloads that one card into state from Trello afterward
   trello.putCard,
 
+  // Re-process the card into it's approriate record:
+  reloadOneRecord,
+
 ]);
+
+
