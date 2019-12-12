@@ -44,7 +44,7 @@ console.log('processItem: arr = ', arr);
   const confline = dateline+2;
   const checkline = confline+1;
 
-  let matches = arr[amtline].match(/(\$[0-9]+\.[0-9]{2}) +Amount$/);
+  let matches = arr[amtline].match(/(\$[0-9]+\.[0-9]{2}) *Amount$/);
   const amt = matches[1];
   let check = ''; // Electronic ones do not have a check number
   if (!isElectronic) {
