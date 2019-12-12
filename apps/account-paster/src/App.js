@@ -145,7 +145,7 @@ class App extends Component {
       </div>
 
     : <div className="App">
-        Paste stuff from bank here:
+        v1.0: Paste stuff from bank here:
         <br/>
         <textarea rows="40" cols="120" onChange={ evt => this.setState({ pasted_data: evt.target.value }) }>{this.state.pasted_data}</textarea>
         <br/>
