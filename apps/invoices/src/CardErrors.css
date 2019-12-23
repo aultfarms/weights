@@ -1,0 +1,7 @@
+.card-errors{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: #FFAAAA;
+  color: #AA0000;
+}
