@@ -16,7 +16,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import MenuIcon from '@material-ui/icons/Menu';
 
 import InvoiceGroup from './InvoiceGroup';
-import CardErrors from './CardErrors';
+//import CardErrors from './CardErrors';
 
 import './App.css';
 
@@ -84,7 +84,7 @@ export default connect({
         
         { this.renderDrawer() }
 
-        { props.feedReady ? <CardErrors /> : '' }
+        { /* props.feedReady ? <CardErrors /> : '' */ }
 
         { props.feedReady ? <InvoiceGroup /> : '' }
 

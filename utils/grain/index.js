@@ -90,35 +90,45 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
 // Print each list with a running balance total so you can decide what to keep and what to throw away
 .each(lkey => {
   const l = config.lists[lkey];
-  console.log('-----------------------------------------------------');
-  console.log(' List: ',l.name);
-  if (!l.loads || l.loads.length < 1) {
-    console.log('< None >');
-    return lkey;
-  }
-  console.log('Date\t\tBushels\t\tMonth\tMonthTotal\tTotal');
-  const sorted = _.sortBy(l.loads, c => c.date);
-  let total = 0;
-  let monthtotal = 0;
-  let prevmonth = 0;
-  _.each(sorted, c => {
-    const month = c.date.month();
-    const year = c.date.year();
-    // print monthly summaries too
-    if (prevmonth !== month) {
-      monthtotal = 0;
+  // Split each list by the crops found in that list
+  const crops_in_list = _.keys(_.reduce(l.loads, (acc,ld) => {
+    acc[ld.crop] = true;
+    return acc;
+  }, {}));
+  _.each(crops_in_list, crop => {
+
+    console.log('-----------------------------------------------------');
+    console.log(' List: ',l.name, ', CROP: ', crop);
+    if (!l.loads || l.loads.length < 1) {
+      console.log('< None >');
+      return lkey;
     }
-    prevmonth = month;
-    monthtotal += c.bushels;
-    total += c.bushels;
-    console.log(c.date.format('YYYY-MM-DD'), '\t', 
-                c.bushels < 1000 ? '  ' : '',
-                numeral(c.bushels).format('0,0.00'), ' bu\t', 
-                c.date.format('MMMYY'), '\t',
-                monthtotal < 1000 ? '   ' : monthtotal < 10000 ? ' ' : '' ,
-                numeral(monthtotal).format('0,0.00'), 'bu\t',
-                total < 1000 ? '   ' : total < 10000 ? ' ' : '' ,
-                numeral(total).format('0,0.00'));
+    console.log('Date\t\tBushels\t\tMonth\tMonthTotal\tTotal\tCrop');
+    const sorted = _.sortBy(l.loads, c => c.date);
+    let total = 0;
+    let monthtotal = 0;
+    let prevmonth = 0;
+    _.each(sorted, c => {
+      const month = c.date.month();
+      const year = c.date.year();
+      // print monthly summaries too
+      if (prevmonth !== month) {
+        monthtotal = 0;
+        console.log('\t+----  '+year+'-'+numeral(month+1).format('00')+'  ----+');
+      }
+      prevmonth = month;
+      monthtotal += c.bushels;
+      total += c.bushels;
+      console.log(c.date.format('YYYY-MM-DD'), '\t', 
+                  c.bushels < 1000 ? '  ' : '',
+                  numeral(c.bushels).format('0,0.00'), ' bu\t', 
+                  c.date.format('MMMYY'), '\t',
+                  monthtotal < 1000 ? '   ' : monthtotal < 10000 ? ' ' : '' ,
+                  numeral(monthtotal).format('0,0.00'), 'bu\t',
+                  total < 1000 ? '   ' : total < 10000 ? ' ' : '' ,
+                  numeral(total).format('0,0.00'),
+                  crop);
+    });
   });
   return lkey;
 });
