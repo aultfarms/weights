@@ -1,5 +1,6 @@
 {
   "name": "invoices",
+  "homepage": "https://aultfarms.github.io/invoices/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -17,7 +18,6 @@
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "react-dropzone": "^10.2.1",
-    "react-scripts": "3.3.0",
     "spawn-sync": "^2.0.0",
     "thread-sleep": "^2.2.0",
     "try-thread-sleep": "^2.0.0"
@@ -27,12 +27,18 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "postinstall": "node -e \"var s=['../../../aultfarms-lib/src'],d=['node_modules/aultfarms-lib'],fs=require('fs');fs.exists(d[0],function(e){e||fs.symlinkSync(s[0],d[0],'dir')});\" && echo \"Created node_modules/aultfarms-lib for easy requires\""
+    "postinstall": "node -e \"var s=['../../../aultfarms-lib/src'],d=['node_modules/aultfarms-lib'],fs=require('fs');fs.exists(d[0],function(e){e||fs.symlinkSync(s[0],d[0],'dir')});\" && echo \"Created node_modules/aultfarms-lib for easy requires\"",
+    "predeploy": "react-scripts build",
+    "deploy": "gh-pages -d build"
   },
   "browserslist": [
     ">0.2%",
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "devDependencies": {
+    "gh-pages": "^2.1.1",
+    "react-scripts": "^3.3.0"
+  }
 }
