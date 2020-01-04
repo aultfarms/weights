@@ -18,7 +18,7 @@ export default connect({
   return (
     <div className="prefs">
       <p className="prefslink" href="#" onClick={logoutClicked}>Change Trello Account</p>
-      <p className="prefsinfo">Treatments App Version 1.0.0</p>
+      <p className="prefsinfo">Treatments App Version {version}</p>
     </div>
   );
 });
