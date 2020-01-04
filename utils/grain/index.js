@@ -96,27 +96,30 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
     return acc;
   }, {}));
   _.each(crops_in_list, crop => {
+    const crop_loads = _.filter(l.loads, ld => ld.crop === crop);
 
-    console.log('-----------------------------------------------------');
+    console.log('\n\n\n=====================================================');
     console.log(' List: ',l.name, ', CROP: ', crop);
-    if (!l.loads || l.loads.length < 1) {
+    if (!crop_loads || crop_loads.length < 1) {
       console.log('< None >');
       return lkey;
     }
     console.log('Date\t\tBushels\t\tMonth\tMonthTotal\tTotal\tCrop');
-    const sorted = _.sortBy(l.loads, c => c.date);
+    const sorted = _.sortBy(crop_loads, c => c.date);
     let total = 0;
     let monthtotal = 0;
     let prevmonth = 0;
+    let prevyear = 0;
     _.each(sorted, c => {
       const month = c.date.month();
       const year = c.date.year();
       // print monthly summaries too
-      if (prevmonth !== month) {
+      if (prevmonth !== month || prevyear !== year) {
         monthtotal = 0;
-        console.log('\t+----  '+year+'-'+numeral(month+1).format('00')+'  ----+');
+        console.log('\t<--  '+year+'-'+numeral(month+1).format('00')+'  -->');
       }
       prevmonth = month;
+      prevyear = year;
       monthtotal += c.bushels;
       total += c.bushels;
       console.log(c.date.format('YYYY-MM-DD'), '\t', 

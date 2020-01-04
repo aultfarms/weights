@@ -14,6 +14,7 @@ export default connect({
 }, function HistoryTag(props) {
   // find all records with this tag in it:
   const taggroup = tagHelpers.groupForTag(props.incoming.records, props.record.tag, props.record.date);
+console.log('taggroup = ', taggroup, ', tag = ', props.record.tag);
   let recordsfortag = _.filter(props.treatmentRecords, r => {
     return _.find(r.tags, t => {
       // must be the same tag color/number
@@ -22,6 +23,9 @@ export default connect({
       }
       // tag number and color matches, check group;
       const group = tagHelpers.groupForTag(props.incoming.records, t, r.date);
+      if (!taggroup && !group) return true; // both have no group
+      if (!taggroup &&  group) return false;// have one
+      if ( taggroup && !group) return false;// but not the other
       return (taggroup.groupname === group.groupname);
     });
   });

@@ -26,7 +26,8 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "predeploy": "react-scripts build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "postinstall": "node -e \"var s=['../../../aultfarms-lib/src'],d=['node_modules/aultfarms-lib'],fs=require('fs');fs.exists(d[0],function(e){e||fs.symlinkSync(s[0],d[0],'dir')});\" && echo \"Created node_modules/aultfarms-lib for easy requires\""
   },
   "browserslist": {
     "production": [
