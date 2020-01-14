@@ -37,6 +37,9 @@ export const groupContainsTag = (group,tag) => {
 // which is the ballpark date of interest: i.e. it will take the tag number
 // as of that day.
 export const groupForTag = (groups,tag,asOfDate=false) => {
+  // If the tag already has a "groupname" key, just return that:
+  if (tag && tag.groupname) return _.find(groups, g => g.groupname === tag.groupname);
+
   const allfound = _.filter(groups, g => groupContainsTag(g,tag));
   // if none, return false:
   if (!allfound || allfound.length < 1) return false;
@@ -54,9 +57,23 @@ export const groupForTag = (groups,tag,asOfDate=false) => {
 };
 
 export const tagStrToObj = str => {
-  const matches = str.trim().match(/^([A-Za-z]+) ?([0-9]+)?$/);
+  str = str.trim();
+  // First, check if it is group-prefixed tag:
+  const groupmatches = str.match(/^([A-Z]+:[A-Z]{3}[0-9]{2}-[0-9A-Z]):([A-Za-z]+) *([0-9]+)$/);
+  if (groupmatches) {
+    return { groupname: groupmatches[1], color: groupmatches[2], number: +(groupmatches[3] || 1) };
+  }
+  // Otherwise, it is just a color/number combo:
+  const matches = str.match(/^([A-Za-z]+) ?([0-9]+)?$/);
   if (!matches) return { color: 'NOTAG', number: 1 };
   return { color: matches[1], number: +(matches[2]) || 1 };
 }
 
-export const tagObjToStr = t => (!t?'':(t.color||'')+''+(t.number||''));
+export const tagObjToStr = t => {
+  if (!t) return '';
+  let str = '';
+  if (t.groupname) str += t.groupname+':'; // group:colornumber
+  str += (t.color || '');
+  str += (t.number || '');
+  return str;
+}

@@ -1,6 +1,6 @@
 {
-  "name": "treatments",
-  "homepage": "https://aultfarms.github.io/af-monorepo/",
+  "name": "weights",
+  "homepage": "https://aultfarms.github.io/weights/",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
@@ -10,7 +10,6 @@
   "dependencies": {
     "@cerebral/react": "^4.0.4",
     "@material-ui/core": "^3.9.2",
-    "aultfarms-lib": "^0.0.1",
     "bluebird": "^3.5.1",
     "cerebral": "^5.0.4",
     "lodash": "^4.17.5",
@@ -28,7 +27,8 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "postinstall": "node -e \"var s=['../../../aultfarms-lib/src'],d=['node_modules/aultfarms-lib'],fs=require('fs');fs.exists(d[0],function(e){e||fs.symlinkSync(s[0],d[0],'dir')});\" && echo \"Created node_modules/aultfarms-lib for easy requires\""
   },
   "browserslist": [
     ">0.2%",

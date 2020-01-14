@@ -22,7 +22,8 @@ const deadCardToRecord = c => {
     if (matches) note = matches[1];
     // Ditch anything in parentheses:
     tags_and_pens_str = tags_and_pens_str.replace(/\(.*\)/g,'');
-    let tags_and_pens = tags_and_pens_str.match(/([A-Za-z']+ ?([0-9]+)?)/g);
+//    let tags_and_pens = tags_and_pens_str.match(/([A-Za-z']+ ?([0-9]+)?)/g);
+    let tags_and_pens = tags_and_pens_str.match(/(([A-Z]+:[A-Z]{3}[0-9]{2}-[A-Z0-9]:)?[A-Za-z']+ ?([0-9]+)?)/g);
     tags_and_pens = _.map(tags_and_pens, tp => tp.trim());
     tags_and_pens = _.map(tags_and_pens, tp => ( tp==='NT' ? 'NOTAG1' : tp));
     // eliminate everything that isn't just tags
@@ -119,7 +120,7 @@ const reloadOneRecord = sequence('dead.reloadOneRecord', [
       if (!g) g = { groupname: "NONE" }; // early tags have no group
       const previous = _.clone(get(state`dead.tagIndex.${str}`));
       let newone = _.clone(previous) || {};
-      newone[g.groupname] = r.date;
+      newone[g.groupname] = refreshedRecord.date;
       store.set(state`dead.tagIndex.${str}`, newone);
     });
 
@@ -172,7 +173,7 @@ export const saveDead = sequence('dead.saveDead', [
     card.id = props.record.id;
     card.idList = props.record.idList || get(state`trello.lists.dead.id`),
     card.name = props.record.date+': '
-                +_.join(_.map(props.record.tags, t=>t.color+t.number), ' ')
+                +_.join(_.map(props.record.tags, tagObjToStr), ' ')
                 +(props.record.note ? 'Note: '+props.record.note : '');
     return { card };
   },
