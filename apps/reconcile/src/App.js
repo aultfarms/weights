@@ -1,18 +1,26 @@
 import React from 'react';
-import { connect } from '@cerebral/react';
-import { state } from 'cerebral/tags';
+import logo from './logo.svg';
 import './App.css';
 
-import ChecksPaste from './ChecksPaste';
-import AccountSheet from './AccountSheet';
-
-export default connect({
-}, function App(props) {
+function App() {
   return (
     <div className="App">
-      <AccountSheet />
-      <ChecksPaste />
+      <header className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <p>
+          Edit <code>src/App.js</code> and save to reload.
+        </p>
+        <a
+          className="App-link"
+          href="https://reactjs.org"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn React
+        </a>
+      </header>
     </div>
   );
-});
+}
 
+export default App;

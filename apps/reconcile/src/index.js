@@ -1,25 +1,23 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import AppModule from './modules/app';
-import AccountSheetModule from './modules/accountsheet';
-import registerServiceWorker from './registerServiceWorker';
+import React from 'react'
+import { render } from 'react-dom'
+import { createOvermind } from 'overmind'
+import { Provider } from 'overmind-react'
+import { config } from './overmind'
+import App from './App'
 
-import { Controller } from 'cerebral';
-import { Container } from '@cerebral/react';
-import devtools from 'cerebral/devtools';
-
-const controller = Controller(AppModule, {
-  devtools: process.env.NODE_ENV === 'production' ? devtools({host: 'localhost:8000', reconnect: true }) : null,
+const overmind = createOvermind(config, {
+  devtools: (process.env.NODE_ENV !== 'production'),
 });
 
-
-// Render the root node:
-ReactDOM.render(
-  <Container controller={controller}>
+render(
+  <Provider value={overmind}>
     <App />
-  </Container>, document.getElementById('root')
-);
+  </Provider>
+, document.querySelector('#root'));
 
-registerServiceWorker();
+
+if (module.hot) {
+  module.hot.accept();
+}
+
+
