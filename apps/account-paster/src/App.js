@@ -1,158 +1,131 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
+import React, { useCallback, useState } from 'react';
+import { nameCategoryMapping, splitMapping, standardizeName } from './name-category-mappings';
+import { useDropzone } from 'react-dropzone';
+import { parse as csvparse } from 'papaparse';
+import moment from 'moment';
+import numeral from 'numeral';
 import './App.css';
-
-import parseLib from './parseLib';
-
-const nameCategoryMapping = {
-  'ADM Logansport': 'sales-grain-corn',
-  'AGRICOR, INC.': 'feed-hominy',
-  'ARCHER DANIELS MIDLAND': 'feed-hulls',
-  'AT&T - AultFarms': 'employee-phone',
-  'AT&T Mobility - DAD': 'employee-phone',
-  'Ag Source, Inc.': 'repairs-grainhandling',
-  'Agco Finance - Agco Plus': 'repairs-telehandler',
-  'Agronomic Solutions': 'services-regulatory',
-  'BBH Trucking': 'feed-trucking-brad',
-  'BIG R STORES': 'supplies-general',
-  'BLB Trucking': 'repairs-truck-general',
-  'Bane Welker Equip - PAY PLYMOUTH EAUL01': 'repairs-tractors',
-  'Bane Welker Equip - PAY WINAMAC DAUL01': 'repairs-tractors',
-  'Bob Gottschalk': 'SPLIT',
-  'Bonnie Montgomery': 'cashrent-fall',
-  'Bush Veterinary Services, P.C.': 'medicine',
-  'Calf Care': 'medicine',
-  'Cargill Incorporated': 'feed-gluten',
-  'Ceres Solutions': 'SPLIT',
-  'Cole Hardwood': 'bedding-sawdust',
-  'Cole Warren Farms': 'feed-syrup',
-  'Cornerstone Comfort Solutions': 'repairs-hvac',
-  'DRAGO INDIANA': 'repairs-cornhead',
-  'DirecTV': 'utilities-tv',
-  'Du-Mar Welding LLC': 'supplies-general',
-  'Enyart\'s True Value': 'supplies-general',
-  'Fansler Lumber Co. Inc.': 'supplies-general',
-  'Farm Credit Mid America': 'SPLIT',
-  'Ferguson Farms, Inc.': 'repairs-truck-trailer',
-  'Fulton County Treasurer': 'taxes-property',
-  'GUTWEIN LLP': 'services-legal',
-  'Greenmark Equipment': 'repairs-tractors',
-  'Gutwein Dairy Consulting, Inc.': 'feed-mineral',
-  'H&H Diesel Inc.': 'repairs-truck-general',
-  'HOLLOWAY\'S ELECTRIC MOTOR SERVICE': 'repairs-general',
-  'Homer Miller': 'bedding-sawdust',
-  'INGREDION': 'feed-gluten',
-  'Indiana Department of Workforce Development': 'taxes-state-unemployment',
-  'Indiana State Chemist': 'miscellaneous-licensefees',
-  'Irving Materials, Inc.': 'bedding-chips',
-  'JOHNNY ON THE SPOT': 'utilities-sanitation',
-  'Jeri Stinson': 'services-cleaning',
-  'Joe Miller': 'supplies-twine',
-  'Kline\'s CPA Group, P.C.': 'services-accounting',
-  'Lawson Products, Inc.': 'supplies-general',
-  'Liberty Mutual Acct 401580870': 'insurance-auto',
-  'Liberty Mutual Acct 6680': 'insurance-general',
-  'NAPA AUTO PARTS': 'supplies-general',
-  'NAU Country Insurance': 'insurance-crop',
-  'NIPSCO': 'utilities-gas',
-  'New Holland Rochester Inc.': 'repairs-tractors',
-  'OR Processing': 'feed-candy',
-  'OYLER REPAIR SHOP': 'repairs-general',
-  'Organix Recycling': 'feed-fruit',
-  'POWER BRAKE AND SPRING': 'supplies-general',
-  'Pallet Pro LLC': 'bedding-sawdust',
-  'Parker & Sons Eqpt., Inc.': 'repairs-jcb',
-  'Premier Pallet LLC': 'bedding-sawdust',
-  'Protective Insurance Company': 'insurance-workmanscomp',
-  'Prudential': 'insurance-life-carl',
-  'Rochester LP Gas': 'utilities-gas',
-  'SMITH FARM STORE': 'supplies-general',
-  'Safeco Insurance': 'insurance-auto',
-  'Sam\'s Club': 'miscellaneous-subscriptions',
-  'Service Sanitation': 'utilities-sanitation',
-  'Silver Star Companies, LLC': 'crop-seed-wheat',
-  'The Andersons': 'SPLIT',
-  'Transfer from Farm Credit': 'transfer-from:FC.RLOC,to:FF.checking',
-  'Tri-State Calf Products': 'cattle-purchase-cattle',
-  'ULERICK HEATING & COOLING': 'repairs-hvac',
-  'VPSI DUBOIS DISTRIBUTORS': 'medicine',
-  'Valley Sanitation': 'utilities-trash',
-  'Voya Finanacial': 'insurance-life-rita',
-  'Wiers International Trucks SOUTH BEND': 'repairs-truck-general',
-  'Wildman Uniform and Linen': 'employee-clothes',
-};
 
 const col = val => <td style={{minWidth:'25px'}}>{val ? val : ''}</td>;
 
-const splitRowFarmCredit = (key) => 
-  <tr key={key}>
-    {col()}
-    {col()}
-    {col()}
-    {col('SPLIT')}
-    {col()}
-    {col()}
-    {col()}
-    {col()}
-    {col('SPLIT')}
-    {col()}
-  </tr>;
-
-const objToRow = (r,i) => 
-  <tr key={'row'+i}>
-    {col(r.date)}
-    {col()}
-    {col(r.check)}
-    {col(r.conf)}
-    {col(r.amt)}
-    {col()}
-    {col()}
-    {col()}
-    {col(r.name)}
-    {col(nameCategoryMapping[r.name] ? nameCategoryMapping[r.name] : '')}
+const txToRow = (r,i) => 
+  <tr key={'row'+i} style={{backgroundColor: r.iserror ? 'red' : 'white' }}>
+    {col(r.date && r.date.isValid() ? r.date.format('YYYY-MM-DD') : '') /* writtenDate */ }
+    {col() /* postDate */ }
+    {col(r.check ? r.check : '') /* checkNum */ }
+    {col(r.description) /* description */ }
+    {col(r.amount < 0 ? r.amount : '') /* debit */ }
+    {col(r.amount >= 0 ? r.amount : '') /* credit  */ }
+    {col() /* splitAmount */ }
+    {col() /* balance */ }
+    {col(r.name) /* who */ }
+    {col(r.category ? r.category : '') /* category */ }
+    {col(r.note ? r.note : '') /* note */ }
   </tr>
 ;
 
-class App extends Component {
-  
-  constructor(props) {
-    super(props);
-    this.state = {};
+const standardizeTx = (tx,line) => {
+  line = line + 2; // header row, and 1-index instead of 0-index
+  const date = moment(tx['Payment Date'], 'MM/DD/YYYY');
+  const name = tx['Payee'];
+  const amount = numeral(tx['Dollar Amount']).value();
+  const category = nameCategoryMapping[standardizeName(name)] || false;
+  const description = ''; // in the future, can put memo line here
+  let iserror = false;
+  let note = '';
+
+
+  if (!date || !date.isValid()) {
+    iserror = true;
+    note += `The date ${tx['Payment Date']} is invalid.  `;
   }
+  if (!category) {
+    iserror = true;
+    note += `The name ${name} is not found in the known list of category mappings`;
+  }
+  if (!amount) {
+    iserror = true;
+    note += `The amount ${tx['Dollar Amount']} is invalid`;
+  }
+  return {
+    iserror, note, date, amount, name, category, description
+  };
+}
 
-  render() {
-    return (this.state.do_parse
+const splitLine = (tx) => ({
+  iserror: tx.iserror,
+  note: tx.iserror ? 'Split of line w/ error' : '',
+  date: '',
+  amount: '',
+  name: 'SPLIT',
+  category: '',
+  descriptoin: 'SPLIT',
+})
+const insertSplits = (acc, tx, i) => {
+  if (tx.category && tx.category === 'SPLIT') {
+    const numsplits = splitMapping[tx.name] || 2; // default to 2 split lines
+    for(let j=0; j<numsplits; j++) {
+      acc.push(splitLine(tx));
+    }
+  }
+  return acc;
+};
 
-    ? <div className="App">
+export const App = () => {
+  
+  const [parseState, setParseState] = useState('START');
+  const [transactions, setTransactions] = useState([]);
+
+  const onDrop = useCallback((acceptedFiles) => {
+    setParseState('PARSING');
+
+    acceptedFiles.forEach((file) => {
+      csvparse(file, {
+        header: true,
+        complete: ({ data,errors }) => {
+          const cleaned = data.map(standardizeTx);
+          const withSplits = cleaned.reduce(insertSplits, []);
+          console.log('cleaned = ', cleaned);
+          console.log('withSplits = ', withSplits);
+          setTransactions(cleaned);
+          console.log('parsed transactions = ', transactions);
+          setParseState('PARSED');
+        },
+      });
+    })
+  }, []);
+  const {getRootProps, getInputProps} = useDropzone({onDrop});
+
+
+  let body = '';
+  switch(parseState) {
+
+    case "PARSING": body = 
+      <div>Parsing...</div>
+    break;
+
+    case "PARSED": console.log('IN PARSED, tx = ', transactions); body = 
+      <div>
         Paste this into google sheets:
         <table style={ { border: '1px solid grey' } }>
           <tbody>
-            { 
-              parseLib(this.state.pasted_data).reduce((acc,r,i) => {
-                acc.push(objToRow(r,i));
-                if (nameCategoryMapping[r.name] === 'SPLIT') {
-                  if (r.name === 'Farm Credit Mid America') {
-                    // 2 empty rows
-                    acc.push(splitRowFarmCredit('row'+i+'_1'));
-                    acc.push(splitRowFarmCredit('row'+i+'_2'));
-                  }
-                }
-                return acc;
-              }, [])
-            }
+            { transactions.map(txToRow) }
           </tbody>
         </table>
-      </div>
+      </div>;
+    break;
 
-    : <div className="App">
-        v1.0: Paste stuff from bank here:
-        <br/>
-        <textarea rows="40" cols="120" onChange={ evt => this.setState({ pasted_data: evt.target.value }) }>{this.state.pasted_data}</textarea>
-        <br/>
-        <button onClick={() => this.setState({ do_parse: true }) } >Convert</button>
-      </div>
-    )
+    // START:
+    default: body = 
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh', border: '3px dashed grey', borderRadius: '5px', margin: '20px'}} {...getRootProps()}>
+        <input {...getInputProps()} />
+        <p>v2.0: Drop FBB Excel File Here</p>
+      </div>;
   }
+
+  return <div className="App">
+    {body}
+  </div>;
 }
 
 export default App;
