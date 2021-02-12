@@ -5,7 +5,6 @@ export const standardizeName = orig => {
   a = a.replace(/[^a-zA-Z]/g,''); // remove puntuation and spaces
   a = a.toUpperCase(); // case insensitive
   a = a.replace(/(LLC|INC)/,''); // no LLC or INC
-  console.log(`Turned ${orig} into ${a}`);
   return a;
 };
 
@@ -14,7 +13,22 @@ const standardizeNameKeys = obj => Object.keys(obj)
     acc[standardizeName(k)] = obj[k];
     return acc;
   }, {});
-   
+
+export const categoryNoteMapping = {
+  'cattle-purchase-cattle': 'head: , weight: , incomingid: ',
+  'sales-cattle': 'head: , loads: , weight: , outid: ',
+  'sales-grain-corn': 'bushels',
+  'sales-grain-beans': 'bushels',
+  'sales-grain-wheat': 'bushels',
+  'fuel-dieseloffroad': 'gallons',
+  'fuel-dieselonroad': 'gallons',
+  'fuel-gasoline': 'gallons',
+  'crop-seed-corn': 'bags',
+  'crop-seed-beans': 'units',
+  'crop-seed-wheat': 'units',
+  'bedding-straw': 'bales',
+};
+
 
 export const nameCategoryMapping = standardizeNameKeys({
   'ADM Logansport': 'sales-grain-corn',
@@ -29,34 +43,59 @@ export const nameCategoryMapping = standardizeNameKeys({
   'Agronomic Solutions': 'services-regulatory',
   'ALRO STEEL': 'supplies-steel',
   'BBH Trucking': 'feed-trucking-brad',
+  'BENJAMIN LIVESTOCK & FEED': 'cattle-purchase-trucking',
+  'BOYER LIVESTOCK TRUCKING LLC': 'cattle-purchase-trucking',
   'BIG R STORES': 'supplies-general',
   'STOCK+FIELD-CORPORATE': 'supplies-general',
   'BLB Trucking': 'repairs-truck-general',
+  'Bambauer Equipment, LLC': [ 'repairs-manure', 'equipment-FILL_IN_WHAT_WE_BOUGHT' ],
   'Bane Welker Equip - PAY PLYMOUTH EAUL01': 'repairs-tractors',
   'BANE-WELKER-PLYMOUTH': 'repairs-tractors',
   'Bane Welker Equip - PAY WINAMAC DAUL01': 'repairs-tractors',
   'BANE-WELKER-WINAMAC': 'repairs-tractors',
   'Bob Gottschalk': 'SPLIT',
   'Bonnie Montgomery': 'cashrent-fall',
+  'BOSWELL LIVESTOCK COMMISSION CO': { 
+    mergeifamount: {
+      lessthan: { value: 0, category: 'cattle-purchase-cattle' }, 
+      'else':   {           category: 'sales-cattle' },
+    },
+  },
   'Bush Veterinary Services, P.C.': 'medicine',
   'Calf Care': 'medicine',
   'Cargill Incorporated': 'feed-gluten',
   'C & J SCOTT FARMS INC': 'supplies-twine',
-  'Ceres Solutions': 'SPLIT',
+  'Ceres Solutions': { 
+    category: 'SPLIT', 
+    splits: [ 'fuel-dieselonroad', 'fuel-dieseloffroad', 'fuel-gasoline' ] 
+  },
+  'CFC DISTRIBUTORS, INC': 'repairs-tillage',
   'Cole Hardwood': 'bedding-sawdust',
   'Cole Warren Farms': 'feed-syrup',
+  'CONTERRA AG CAPITAL': { 
+    category: 'SPLIT', 
+    mergeifamount: {
+      lessthan: { abs: true, value: 2000, splits: [ 'loan-principal-conterra.AG1032', 'loan-interest-conterra.AG1032' ] },
+      'else':   {                         splits: [ 'loan-principal-conterra.AG1019', 'loan-interest-conterra.AG1019' ] },
+    }
+  },
   'Cornerstone Comfort Solutions': 'repairs-hvac',
   'DRAGO INDIANA': 'repairs-cornhead',
+  'DEFCO': ['repairs-rentalhouses', 'repairs-beef', 'repairs-buildings', 'repairs-electrical', 'repairs-plumbing' ],
   'DirecTV': 'utilities-tv',
   'AT&T': 'utilities-tv',
   'Du-Mar Welding LLC': 'supplies-general',
   'Enyart\'s True Value': 'supplies-general',
   'Fansler Lumber Co. Inc.': 'supplies-general',
   'Farm Credit Mid America': 'SPLIT',
+  'Farm Credit Srvcs of Mid-America':  'UNKNOWN',
+  'FARM JOURNAL': 'miscellaneous-subscriptions',
   'First Bank of Berne': 'SPLIT',
   'Ferguson Farms, Inc.': 'repairs-truck-trailer',
   'Fulton County Treasurer': 'taxes-property',
+  'GOHN AG LLC': [ 'crop-seed-beans-treatment', 'crop-fungicide', 'crop-fungicide-aerialapplication' ],
   'GUTWEIN LLP': 'services-legal',
+  'GREEN LAWN FARM': 'cattle-purchase-cattle',
   'Greenmark Equipment': 'repairs-tractors',
   'Gutwein Dairy Consulting, Inc.': 'feed-mineral',
   'H&H Diesel Inc.': 'repairs-truck-general',
@@ -64,23 +103,35 @@ export const nameCategoryMapping = standardizeNameKeys({
   'Homer Miller': 'bedding-sawdust',
   'INGREDION': 'feed-gluten',
   'Indiana Department of Workforce Development': 'taxes-state-unemployment',
+  'Indiana Farm Bureau Insurance': 'miscellaneous-memberships',
   'Indiana State Chemist': 'miscellaneous-licensefees',
   'Irving Materials, Inc.': 'bedding-chips',
   'JOHNNY ON THE SPOT': 'utilities-sanitation',
   'Jeri Stinson': 'services-cleaning',
   'Joe Miller': 'supplies-twine',
+  'JOHN DEERE FINANCIAL': 'SPLIT',
+  'Kelsey Equipment': 'repairs-irrigator',
   'Kline\'s CPA Group, P.C.': 'services-accounting',
+  'KUERT CONCRETE INC': 'repairs-concrete',
   'Lawson Products, Inc.': 'supplies-general',
   'LDC Claypool Holdings LLC': 'feed-hulls',
   'Liberty Mutual Acct 401580870': 'insurance-auto',
   'Liberty Mutual Acct 6680': 'insurance-general',
+  'LIBERTY MUTUAL INSURANCE': [ 'insurance-general', 'insurance-auto', 'insurance-workmanscomp' ],
+  'MACY ELEVATOR': [ 'feed-innoculant', 'repairs-waterfountains' ],
+  'MIAMI LOGISTICS': 'supplies-stone',
   'MOON FENCING': 'repairs-fence',
   'McGREW\'S WELL DRILLING INC': 'repairs-well',
   'NAPA AUTO PARTS': 'supplies-general',
   'NAPA ROCHESTER': 'supplies-general',
   'NAU Country Insurance': 'insurance-crop',
+  'NAU COUNTRY INSURANCE CO': 'insurance-crop',
+  'NUTRIEN AG SOLUTIONS INC': 'SPLIT',
   'NIPSCO': 'utilities-gas',
   'New Holland Rochester Inc.': 'repairs-tractors',
+  'NFIB': 'charity',
+  'NORTHERN STAR SEED LLC': 'crop-seed-wheat',
+  'ODELL LUMBER & SUPPLY': 'supplies-lumber',
   'OR Processing': 'feed-candy',
   'OYLER REPAIR SHOP': 'repairs-general',
   'Organix Recycling': 'feed-fruit',
@@ -91,13 +142,17 @@ export const nameCategoryMapping = standardizeNameKeys({
   'Premier Pallet LLC': 'bedding-sawdust',
   'Protective Insurance Company': 'insurance-workmanscomp',
   'Prudential': 'insurance-life-carl',
+  'Reliastar Life Insurance Co': 'insurance-life-rita',
   'Rochester LP Gas': 'utilities-gas',
   'SMITH FARM STORE': 'supplies-general',
   'SMITH FARM STORE-RENSSELAER': 'supplies-general',
   'Safeco Insurance': 'insurance-auto',
   'Sam\'s Club': 'miscellaneous-subscriptions',
+  'SAMS CLUB-SYNCHRONY BANK': 'miscellaneous-subscriptions',
+  'Security Life of Denver Insuranc': 'insurance-life-rita',
   'Service Sanitation': 'utilities-sanitation',
   'Silver Star Companies, LLC': 'crop-seed-wheat',
+  'SIMPSON STRAW LLC': 'feed-shucklage',
   'The Andersons': 'SPLIT',
   'THE ANDERSONS INC-N MANCHESTER': 'SPLIT',
   'THE TIRE STORE': 'repairs-pickups',
@@ -113,7 +168,4 @@ export const nameCategoryMapping = standardizeNameKeys({
   'Wildman Uniform and Linen': 'employee-clothes',
 });
 
-// If you want more/less than 2 splits inserted for a payee, put them here:
-export const splitMapping = standardizeNameKeys({
-  'Ceres': 3,
-});
+
