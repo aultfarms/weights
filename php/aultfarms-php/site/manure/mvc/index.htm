@@ -1,0 +1,164 @@
+<html>
+  <head>
+
+    <!-- CSS -->
+    <link href="aultfarms.css" rel="stylesheet" />
+
+    <!-- Javascript Libraries -->
+    <script src="lib/jquery-min.js"></script> <!-- Must be first -->
+    <script src="lib/underscore-min.js"></script>
+    <script src="lib/backbone-min.js"></script>
+    <script src="https://api.trello.com/1/client.js?key=3ad06cb25802014a3f24f479e886771c"></script>
+
+    <!-- Custom Javascript -->
+    <script src="js/models.js"></script>
+    <script src="js/views.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Templates -->
+
+    <!-- <select> template: uses 
+           element_id: , 
+           cur_selection: , 
+           options: [ { value: , text: }, ] -->
+    <script id="tpl-form-select" type="text/template">
+      <select id="<%= element_id %>">
+        <% options.each(function(o) { %>
+          <option value="<%= o.value %>" <% if (cur_selection == o.value) { %> SELECTED <% }  %> >
+            <%= o.text %>
+          </option>
+        <% }); %>
+      </select>
+    </script>
+
+    <!-- date template. uses:
+      id:
+      default: -->
+    <script id="tpl-form-date" type="text/template">
+      <input type="date" id="<%= id %>" value="<%= default %>" />
+    </script>
+
+    <!-- basic loading/loaded selection template.  uses:
+      id:
+      display_name:
+      form_element_html: -->
+    <script type="text/template" id="tpl-loading-loaded">
+      <div id="<%= id %>">
+        <div class="loading">Loading <%= display_name %>...</div>
+        <div class="loaded">
+          <%= display_name %>: <%= form_element_html %>
+        </div>
+      </div>
+    </script>
+
+    <!-- Load count template with increment button.  uses:
+      id:
+      button_id:
+      default: -->
+    <script type="text/template" id="tpl-loads">
+      <input type="number" id="<%= id %>" value="<%= default %>" />
+      <button id="<%= button_id %>">+1</button>
+    </script>
+
+    <!-- Notes template.  Uses:
+      id:
+      default: -->
+    <script type="text/template" id="tpl-notes">
+      <textarea id="<%= id %>" rows="5"><%= default %></textarea>
+    </script>
+
+
+    <!-- card saving status messages.  uses:
+      msgs: [ "msg_1", "msg_2", ]
+      -->
+    <script type="text/template" id="tpl-save-status">
+      <div class="modal" id="blk-save-status">
+        <div class="modal-content" id="blk-save-status-content">
+          Card is being saved.  Please wait...<br/>
+          <% msgs.each(function(m) { %>
+            <%= m %> <br/>
+          <% }); %>
+        </div>
+      </div>
+    </script>
+
+    <!-- summary block.  uses:
+      -->
+    <script type="text/template" id="tpl-summary">
+      <div id="blk-summary">
+        <div class="loading">Loading summary...</div>
+        <div class="loaded">
+          <b><u>Totals:</u></b><br>
+          <div id="blk-summary-field">TODO: make this work!</div>
+          <div id="blk-summary-source">TODO: make this work!</div>
+        </div>
+      </div>
+    </script>
+
+    <!-- authorization footer.  uses:
+      fullname:
+      trello_board_link:
+      trello_board_name: --> 
+    <script type="text/template" id="tpl-authorization">
+      <div class="blk-authorization">
+
+        <div class="loading">Checking for login status...</div>
+
+        <div class="loaded">
+          <div class="logged_in">
+            <a id="link-trello-board" href="<%= trello_board_link %>"><%= trello_board_name =></a>
+            Logged in to Trello as <%= fullname %>.
+            <a id="link-logout" href="#">Log Out</a>
+          </div>
+          <div class="logged_out">
+            <a id="link-connect-trello" href="#">Connect to Trello</a>
+          </div>
+        </div>
+
+      </div>
+    </script>
+
+
+    <!-- other <head> setup -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Manure Tracking - Ault Farms</title>
+
+  </head>
+  <body id="container-app">
+
+    <!-- Saving card messages -->
+    <div id="container-card-status"></div>
+
+    <!-- Main content -->
+    <div id="container-main">
+      <b><u>Manure Tracking:</u></b> (<a href="#" id="link-refresh">Refresh</a>)
+      <hr>
+
+      <div id="container-field"></div>
+      <div id="container-source"></div>
+      <div id="container-date"></div>
+
+      <hr>
+
+      <div id="container-loads"></div>
+      <button class="full-width" id="save-1">Save</button>
+
+      <div id="container-notes"></div>
+      <div id="container-operator"></div>
+      <button class="full-width" id="save-2">Save</button>
+
+      <hr>
+
+      <div id="container-summary"></div>
+      
+    </div>
+
+    <!-- Authorization -->
+    <div id="container-authorization"></div>
+
+    <!-- Debugging -->
+    <div id="container-debug"></div>
+
+  </body>
+</html>

@@ -1,0 +1,10 @@
+#! /usr/local/bin/bash
+
+# Note: for future reference, I can use this to combine files into a single file by chaining --js in the same call
+
+echo "Running 'java -jar google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js ../site/feed/index.js --js_output_file ../site/feed/index-min.js'"
+java -jar google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js ../site/feed/index.js --js_output_file ../site/feed/index-min.js
+echo "Running 'java -jar google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js ../site/grain/index.js --js_output_file ../site/grain/index-min.js'"
+java -jar google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js ../site/grain/index.js --js_output_file ../site/grain/index-min.js
+echo "Running 'java -jar google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js ../site/lib/util.js --js_output_file ../site/lib/util-min.js'"
+java -jar google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js ../site/lib/util.js --js_output_file ../site/lib/util-min.js

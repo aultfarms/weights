@@ -1,0 +1,83 @@
+Groups:
+  - there is a list that identifies all the incoming numbers with a group
+    name (BOL:DEC-1 for "Butch Ohio Line, 1st Dec group"
+  - each list has the ear tag number range for that group in the name on the card.
+
+Shots:
+  - there is a time-series of cards, with one 'date' card breaking one day from the next
+  - Can get treatment by pen because that's on the card
+  - any calves with fevers are on card.  Not yet tracking which treatments, but should add
+    that once a suitable format is found.
+
+Death:
+  - ear tag numbers should point back to a group name, track %death for group
+  - can also track number of days here vs. when died (or recorded at least)
+  - any notags or tags for groups we don't have recorded should be lumped together
+  - could also try to track # dead per location
+  - eventually add tracker for "type" of death
+
+
+
+
+Old notes:
+
+Overall:
+  - Basic: need to sync entire Livestock Trello board locally because I need groups in almost all apps
+  - Incoming "creates" a group".  May mix with existing group into a pen.  Pen will have possibly multiple "sources".
+  - Processing make a record for a group, adds "numbers" for it.  Should be able to process a "group" without an incoming record?
+    * Processing operates on a pen.  Always.
+
+Model concepts:
+  - group
+  - pen
+  - action
+    * processing (1st round, 2nd round, etc.)
+    * treatment
+    * move
+ 
+  - groups can assigned at:
+    * incoming - by truck or source
+    * tagging - by pen
+    * mixing - part of pen into another pen
+
+  - what does ear tag tell us?
+    * treatment history
+    * pen they were in when they were processed 1st time
+
+  - Therefore, a "group" can go into many pens on arrival
+    and a "pen" can contain many groups.  Numbers may be uncertain at some points.
+
+  - group numbers should add up and match purchase receipts at some point, but mixing
+    and splitting on incoming makes it harder to represent.
+
+  - group may arrive over multiple days (
+
+
+Apps:
+
+Immediate Needs:
+  * Treatment History
+    = incoming
+    = treaments
+
+- Entry:
+  * Dead
+  * Incoming
+  * Processing
+  * Move/Merge
+  * Outgoing
+  * Treatment
+  * Weights
+    - by group
+    - by animal
+  * Feed
+
+- Lookup:
+  * By Tag
+    > mainly for treatment
+
+- Analysis:
+  * Dead stats
+    - % by group
+    - # by year
+  * Evaluate tests

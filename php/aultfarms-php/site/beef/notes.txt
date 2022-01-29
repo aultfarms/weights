@@ -1,0 +1,60 @@
+Overall:
+  - Basic: need to sync entire Livestock Trello board locally because I need groups in almost all apps
+  - Incoming "creates" a group".  May mix with existing group into a pen.  Pen will have possibly multiple "sources".
+  - Processing make a record for a group, adds "numbers" for it.  Should be able to process a "group" without an incoming record?
+    * Processing operates on a pen.  Always.
+
+Model concepts:
+  - group
+  - pen
+  - action
+    * processing (1st round, 2nd round, etc.)
+    * treatment
+    * move
+ 
+  - groups can assigned at:
+    * incoming - by truck or source
+    * tagging - by pen
+    * mixing - part of pen into another pen
+
+  - what does ear tag tell us?
+    * treatment history
+    * pen they were in when they were processed 1st time
+
+  - Therefore, a "group" can go into many pens on arrival
+    and a "pen" can contain many groups.  Numbers may be uncertain at some points.
+
+  - group numbers should add up and match purchase receipts at some point, but mixing
+    and splitting on incoming makes it harder to represent.
+
+  - group may arrive over multiple days (
+
+
+Apps:
+
+Immediate Needs:
+  * Treatment History
+    = incoming
+    = treaments
+
+- Entry:
+  * Dead
+  * Incoming
+  * Processing
+  * Move/Merge
+  * Outgoing
+  * Treatment
+  * Weights
+    - by group
+    - by animal
+  * Feed
+
+- Lookup:
+  * By Tag
+    > mainly for treatment
+
+- Analysis:
+  * Dead stats
+    - % by group
+    - # by year
+  * Evaluate tests

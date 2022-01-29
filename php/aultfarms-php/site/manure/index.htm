@@ -1,0 +1,112 @@
+<html>
+  <head>
+    <style>
+      body {
+        max-width: 350px;
+      };
+    </style>
+    <script src="../jquery.js"></script> <!-- Must be first -->
+    <script src="https://api.trello.com/1/client.js?key=3ad06cb25802014a3f24f479e886771c"></script>
+    <script src="index.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Manure Tracking - Ault Farms</title>
+  </head>
+  <body>
+
+    <!-- Saving card messages -->
+    <div id="d_saving_card">
+      <font color="#AA0000">
+        Card is being saved. Please wait...</font>
+        <div id="d_saving_msg"></div>
+      </font>
+    </div>
+
+    <!-- Main content -->
+    <div id="d_main">
+      <b><u>Manure Tracking:</u></b> (<a href="#" id="link_refresh">Refresh</a>)
+      <hr>
+      <form method="POST" action="">
+        <div id="d_card_saved_msg"></div>
+
+        <div id="d_field">
+          <div class="loading">Loading field...</div>
+          <div class="loaded">
+            Field: <select id="s_field"></select>
+          </div>
+        </div>
+
+        <div id="d_source">
+          <div class="loading">Loading sources...</div>
+          <div class="loaded">
+            Source: <select id="s_source"></select>
+          </div>
+        </div>
+
+        <div id="d_date"></div>
+          <div class="loading">Loading dates...</div>
+          <div class="loaded">
+            Date: <select id="s_date"></select>
+          </div>
+        </div>
+
+        <hr>
+
+        <div id="d_load_count">
+          <div class="loading">Loading load count...</div>
+          <div class="loaded">
+            Loads: <input type="number" id="i_load_count">
+            <button id="b_increment_load_count">+1</button>
+          </div>
+        </div>
+
+        <button id="b_save1">Save</button>
+
+        <div id="d_notes">
+          <div class="loading">Loading notes...</div>
+          <div class="loaded">
+            Notes:<br>
+            <textarea id="i_notes" rows="5"></textarea>
+          </div>
+        </div>
+
+        <div id="d_operator">
+          <div class="loading">Loading operators....</div>
+          <div class="loaded">
+            Operator: <select id="s_operator"></select>
+          </div>
+        </div>
+
+        <button id="b_save2">Save</button>
+      </form>
+
+      <hr>
+
+      <div id="d_summary">
+        <div class="loading">Loading summary...</div>
+        <div class="loaded">
+          <b><u>Totals:</u></b><br>
+          <div class="d_summary_field"></div>
+          <div class="d_summary_source"></div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Authorization -->
+    <div id="d_authorization_footer">
+      <div class="loading">Checking for login status...</div>
+      <div class="logged_in">
+        <div id="link_trello_board"></div>
+        Logged in to Trello as <span id="s_fullname"></span> 
+        <a id="link_logout" href="#">Log Out</a>
+      </div>
+      <div class="logged_out">
+        <a id="link_connect_trello" href="#">Connect to Trello</a><br>
+      </div>
+    </div>
+
+    <!-- Debugging -->
+    <div id="d_debug"></div>
+
+  </body>
+</html>

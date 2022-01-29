@@ -1,0 +1,14 @@
+Google Closure Compiler is best option. Needs java to run, though, and
+1and1 doesn't have java.  So, commit everything to git, pull on your laptop,
+run:
+
+java -jar ../../scripts/google_closure_compiler/compiler.jar --language_in ECMASCRIPT5 --js index.js --js_output_file index-min.js
+
+Then commit, push, and pull on server.  Done.
+
+
+Options:
+- Go to jscompress.com
+- use JSMin.php, which is in scripts/
+- use the Google Closure Compiler in script/ (best option)
+

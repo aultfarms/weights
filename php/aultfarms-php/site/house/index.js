@@ -1,0 +1,309 @@
+// Pulled this from example at http://jsfiddle.net/nNesx/.
+
+////////////////////////////////////////////////////
+// Utilities:
+////////////////////////////////////////////////////
+
+var debug = function(args_to_print) {
+  args = Array.prototype.slice.call(arguments);
+  str = "";
+  $.each(args, function(idx, str_or_obj) {
+    if (typeof(str_or_obj) == "string") {
+      str += str_or_obj;
+    } else {
+      str += JSON.stringify(str_or_obj, false, "  ");
+    }
+  });
+  $("#d_debug").append(str);
+}
+
+var userMsg = function(args_to_print) {
+  args = Array.prototype.slice.call(arguments);
+  str = "";
+  $.each(args, function(idx, str_or_obj) {
+    if (typeof(str_or_obj) == "string") {
+      str += str_or_obj;
+    } else {
+      str += JSON.stringify(str_or_obj, false, "  ");
+    }
+  });
+  $("#d_msg").append(str);
+}
+
+var clearUserMsg = function() {
+  $("#d_msg").html("");
+}
+
+
+////////////////////////////////////////////////////
+// Setup:
+////////////////////////////////////////////////////
+
+consts = {
+        expenses_listid: "5099404b38fc5a2e2600d0ba", // Board in Ault Farms org.
+
+};
+
+$(document).ready(function() {
+  // First try to authorize to Trello without the popup:
+  Trello.authorize({
+    interactive: false,
+    persist: true,
+    scope: {
+      write: true,
+      read: true
+    },
+    expiration: "30days",
+    success: onAuthorize,
+  });
+
+  // Wire up logout link:
+  $("#a_logout").click(function() {
+    Trello.deauthorize();
+    updateLoggedIn();
+  });
+  
+  // Wire up login link:
+  $("#a_connect_trello").click(function() {
+    Trello.authorize({ 
+      type: "popup", 
+      persist: true,
+      success: onAuthorize,
+      scope: { write: true, read: true } 
+    });
+  });
+
+  // Update the DOM based on login status
+  updateLoggedIn();
+});
+
+/////////////////////////////////////////////////////
+// Authorization:
+/////////////////////////////////////////////////////
+
+var updateLoggedIn = function() {
+  var isLoggedIn = Trello.authorized();
+
+  // Toggle visibility of div's based on login status
+  $("#d_not_logged_in").toggle(!isLoggedIn);
+  $("#d_logged_in").toggle(isLoggedIn);
+
+  // If we're logged in, populate all the comboboxes
+  if (isLoggedIn) {
+    $("#d_sum").text("Loading cards...");
+
+    // Populate the drivers:
+    populateSum();
+  }
+
+};
+
+// Called when user has authorized with Trello
+var onAuthorize = function() {
+  // Toggle main div's on/off, load external items
+  updateLoggedIn();
+
+  // Get name of logged in user, display in fullName field
+  Trello.members.get("me", function(member){
+    $("#fullName").text(member.fullName);
+  });
+};
+
+//////////////////////////////////////////////////////
+// Functions for caching data in-memory:
+
+var cache = {};
+cache.data = {};
+cache.DataItem = function(id, data) {
+  this.id = id; this.data = data;
+}
+
+// Get some data from Trello, pass it through sanitizer(), store in cache.
+cache.get = function(id, trello_path, sanitizer, callback) {
+  if (arguments.length == 1) { // only asked for in-memory version
+    return cache.data[id];
+  }
+  if (cache.data[id]) {
+    callback(cache.data[id]);
+  } else {
+    Trello.get(trello_path, function(result) {
+      cache.data[id] = sanitizer(result);
+      callback(cache.data[id]);
+    });
+  }
+};
+
+cache.reset = function() {
+  cache.data = {};
+  updateLoggedIn();
+}
+
+
+//////////////////////////////////////////////////////
+// Helper functions for populating controls:
+//////////////////////////////////////////////////////
+
+// arr can either be simple string array, or could be array of DataItem objects
+var arrayToSelect = function(arr, select_id) {
+  var html = "<select name=\"" + select_id + "\" id=\"" + select_id + "\">";
+  for (idx in arr) {
+    html += "<option value=\"" + arr[idx].id + "\">" + arr[idx].data + "</option>";
+  }
+  html += "</select>";
+  return html;
+};
+
+var splitString = function(separator, str) {
+  if (typeof(str) != "string") return [];
+  // Use the built-in split:
+  values = str.split(separator);
+  // Remove any empty values:
+  for(i=0; i<values.length; i++) {
+    values[i] = $.trim(values[i]);
+    if (values[i].length < 1) {
+      values.splice(i, 1); // Remove the empty one at location "index"
+      i--; // Update the index to reflect the removed item
+    }
+  }
+  return values;
+};
+
+var getWebControl = function(id, form_id, callback) {
+  // If we don't have the paticular data in memory, pull it from Trello
+  trello_path = "card/" + id + "/desc";
+  // Should return data as an array of cache.DataItem objects
+  sanitizer = function(raw_data) {
+    var arr = splitString(";", raw_data._value);
+    $.each(arr, function(idx, val) {
+      arr[idx] = new cache.DataItem(val, val);
+    });
+    return arr;
+  }
+  cache.get(id, trello_path, sanitizer, function(data) {
+    callback(arrayToSelect(data, form_id));
+  });
+};
+
+// Return a filtered version of data: only include values which match
+// any one of the filters.
+var filterDataItems = function(data, filters, all) {
+  if (all) return data;
+  var arr = [];
+  $.each(data, function(idx, val) {
+    if (!val) return true; // continue in callback
+    cmp_str = val.data.toUpperCase();
+    $.each(filters, function(jdx, filter_str) {
+      if (cmp_str.indexOf(filter_str.toUpperCase()) >= 0) {
+        // One of the filter strings matches
+        arr[idx] = data[idx];
+        return false; // break from callback on each for filters
+      }
+    });
+  });
+  return arr;
+};
+
+//////////////////////////////////////////////////////
+// Populating controls:
+//////////////////////////////////////////////////////
+
+var populateSum = function() {
+  $("#d_sum").html("Loading sum...");
+  $("#d_full_sum").html("Loading full sum...");
+
+  Trello.get("lists/"+consts.expenses_listid+"/cards", function(data) {
+    var sum = 0;
+    var html = "<table border='1'>";
+    for (var i in data) {
+      var regexp = /\$([0-9,.]+)/g;
+      while (1) {
+        var amounts = regexp.exec(data[i].name);
+        if (!amounts) break;
+        var amt = amounts[1].replace(",", "");
+        console.log("Adding amt ", amt, " (", +amt, ") to sum, sum = ", sum);
+        sum += +amt;
+        var fsum = "$" + sum.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        var famt = "$" + (+amt).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        html += "<tr><td>"+famt+"</td><td>"+fsum+"</td><td>"+data[i].name+"</td></tr>";
+      }
+    }
+    html += "</table><br/>";
+    // Found this: http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+    var formatted_sum = "$" + sum.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    $("#d_sum").html("Total dollars spent (w/o furntiture or appliances): " + formatted_sum + " on " + data.length + " cards.<br/>" + html);
+
+
+    var sum = 0;
+    var html = "<table border='1'>";
+    for (var i in data) {
+      var regexp = /\$[af]?([0-9,.]+)/g;
+      while (1) {
+        var amounts = regexp.exec(data[i].name);
+        if (!amounts) break;
+        var amt = amounts[1].replace(",", "");
+        console.log("Adding amt ", amt, " (", +amt, ") to sum, sum = ", sum);
+        sum += +amt;
+        var fsum = "$" + sum.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        var famt = "$" + (+amt).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        html += "<tr><td>"+famt+"</td><td>"+fsum+"</td><td>"+data[i].name+"</td></tr>";
+      }
+    }
+    html += "</table><br/>";
+    // Found this: http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+    var formatted_sum = "$" + sum.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    $("#d_full_sum").html("Total dollars spent: " + formatted_sum + " on " + data.length + " cards.<br/>" + html);
+
+
+
+  });
+
+  // When the driver is selected, store it as default choice:
+};
+
+
+var refreshLinkClicked = function() {
+  populateSum();
+}
+
+//////////////////////////////////////////////////////////////////
+// Functions to fix Trello bugs:
+//////////////////////////////////////////////////////////////////
+
+var trello_put = function(rest_of_url, success, error) {
+  $.ajax(
+    {
+      url: "https://api.trello.com/1/" + rest_of_url,
+      type: "GET",
+      data: {
+              key: Trello.key,
+              token: Trello.token,
+              _method: "PUT"
+            },
+      dataType: "jsonp",
+      success: success,
+      error: error
+    });
+
+}
+
+/*
+var trello_put_post = function(rest_of_url, success, error) {
+  $.ajax(
+    {
+      url: "https://api.trello.com/1/" + rest_of_url,
+      type: "POST",
+      data: {
+              key: Trello.key,
+              token: Trello.token,
+              _method: "PUT"
+            },
+      dataType: "jsonp",
+      success: success,
+      error: error
+    });
+
+
+}
+*/

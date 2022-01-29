@@ -2,9 +2,11 @@
 const Promise = require('bluebird');
 Promise.longStackTraces();
 const Trello = require('node-trello');
-const _ = require('lodash');
 const moment = require('moment');
 const numeral = require('numeral');
+const debug = require('debug');
+const info = debug('grain-trello:info');
+const trace = debug('grain-trello:trace');
 
 const token = require('/Users/aultac/.trello/token.js');
 
@@ -69,6 +71,7 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
 .filter(b => !b.closed)
 .filter(b => b.name === 'Grain hauling')
 .then(gb => config.board.id = gb[0].id)
+.tap(() => trace(`Found board id: ${config.board.id}`))
 
 // Get lists info:
 .then(() => t.getAsync(`/1/boards/${config.board.id}/lists`, { fields: 'name,id,closed' }))
@@ -76,6 +79,7 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
 .filter(l => l.name !== 'Web Controls')
 .map(mapList)
 .then(lists => config.lists = _.keyBy(lists, 'id'))
+.tap(() => trace(`Found lists: ${JSON.stringify(config.lists,false,'  ')}`))
 
 // Get cards for board, sort into lists:
 .then(() => t.getAsync(`/1/boards/${config.board.id}/cards`, { fields: 'name,id,closed,idList' }))

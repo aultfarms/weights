@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <style>
+      body {
+        max-width: 500px;
+      }
+      table {
+        border-width: 1px;
+        border-color: #444444;
+        border-style: solid;
+        border-radius: 5px;
+        box-shadow: 3px 3px 1px #888888
+      }
+      th {
+        color: #FFFFFF;
+        background-color: #82A6E9;
+        font-weight: bold;
+        font-family: sans-serif;
+        text-align: center;
+      }
+      td {
+        color: #333333;
+        font-family: sans-serif;
+        text-align: right;
+        padding-right: 5px;
+        padding-left: 5px;
+      }
+      td.card {
+        text-align: center;
+      }
+      td.amt {
+        color: #880000;
+      }
+      td.sum {
+        color: #333333;
+      }
+      tr {
+        border-width: 1px;
+        border-color: #555555;
+        border-style: solid;
+        border-radius: 2px;
+      }
+    </style>
+    <script src="jquery.js"></script> <!-- Must be first -->
+    <script src="https://api.trello.com/1/client.js?key=3ad06cb25802014a3f24f479e886771c"></script>
+    <script src="index.js"></script>
+<!--    <meta name="viewport" content="initial-scale=-1.0;" /> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>2013 Beef Expansion</title>
+  </head>
+  <body>
+    <div id="d_not_logged_in">
+      <a id="a_connect_trello" href="#">Connect to Trello</a><br>
+    </div>
+    <div id="d_logged_in">
+      <b><u>Sum of all bushels:</u></b> (<a href="#" onClick="refreshLinkClicked();">Refresh</a>)
+      <font color="#AA0000"><div id="d_msg"></div></font>
+      <hr>
+      <div>
+        <div id="d_sum"></div>
+        <hr>
+        <div id="d_categorized_sum"></div>
+      </div>
+      <hr>
+      <div id="d_logged_in_header">
+        <div id="d_trello_link"></div>
+        Logged in to Trello as <span id="fullName"></span> 
+        <a id="a_logout" href="#">Log Out</a>
+      </div>
+    </div>
+    <div id="d_debug"></div>
+  </body>
+</html>

@@ -1,2 +1,20 @@
-node_modules/
 .*.swp
+
+node_modules/
+.env
+
+.history
+.dccache
+
+# ts build stuff
+dist/
+*.tsbuildinfo
+
+# yarn 2 stuff
+/.yarn/*
+!/.yarn/releases/
+!/.yarn/plugins/
+!/.yarn/versions/
+.pnp.*
+# ignore sdk stuff
+.vim

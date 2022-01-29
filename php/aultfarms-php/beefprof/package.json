@@ -1,0 +1,16 @@
+{
+  "name": "beefprof",
+  "version": "1.0.0",
+  "description": "Beef Profit Estimator",
+  "main": "app.js",
+  "dependencies": {
+    "reflux": "^0.2.7",
+    "webpack": "^1.7.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

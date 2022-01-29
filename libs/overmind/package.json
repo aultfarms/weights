@@ -1,0 +1,31 @@
+{
+  "name": "@aultfarms/overmind",
+  "version": "0.0.3",
+  "description": "Libraries for mapping data models in Ault Farms",
+  "main": "index.js",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Aaron Ault <aultac@gmail.com>",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.2",
+    "@types/debug": "^4",
+    "@yarnpkg/sdks": "^2.6.0-rc.4",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "@types/moment": "^2.13.0",
+    "debug": "^4.3.3",
+    "moment": "^2.29.1",
+    "tslib": "^2.3.1"
+  },
+  "peerDependencies": {
+    "overmind": "*"
+  }
+}

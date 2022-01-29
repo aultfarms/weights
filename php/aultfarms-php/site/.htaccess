@@ -1,0 +1,20 @@
+# Tells 1and1 to use PHPv5.2 as the default for all php pages.
+# I cannot use PHPv5.4 because it got rid of the ability to explicitly 
+# pass parameters by refernce when calling a function, which causes the
+# php-openid library to fail.
+AddType x-mapp-php5 .php
+
+RewriteEngine On
+# This will enable the Rewrite capabilities
+
+RewriteCond %{HTTP_HOST} ^www [NC]
+RewriteRule ^/?(.*)$ https://aultfarms.com/$1 [R,L]
+
+RewriteCond %{HTTPS} off
+# This checks to make sure the connection is not already HTTPS
+
+RewriteRule ^/?(.*)$ https://aultfarms.com/$1 [R,L]
+# This rule will redirect users from their original location, to the same location but using HTTPS.
+# i.e.  http://www.example.com/foo/ to https://www.example.com/foo/
+# The leading slash is made optional so that this will work either in httpd.conf
+# or .htaccess context

@@ -1,0 +1,10 @@
+{
+  "extends": "tsconfig.json",
+  "compilerOptions": {
+    "rootDir": false,
+    "rootDirs": [ "src", "test" ],
+    "sourceMap": false,
+    "esModuleInterop": true
+  },
+  "include": [ "src", "test" ]
+}
