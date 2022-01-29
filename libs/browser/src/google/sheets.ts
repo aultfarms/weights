@@ -1,4 +1,4 @@
-import { client } from './gapi';
+import { client } from './core';
 import { createFile } from './drive';
 import debug from 'debug';
 

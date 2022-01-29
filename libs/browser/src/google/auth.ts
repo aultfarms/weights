@@ -1,4 +1,4 @@
-import { auth2 } from './gapi';
+import { auth2 } from './core';
 
 //--------------------------------------------
 // Authorize must be called before anything else
@@ -8,7 +8,7 @@ export async function authorize() : Promise<boolean> {
   const a = await auth2();
   if (a.getAuthInstance().isSignedIn.get()) {
     isAuthorized = true;
-    return;
+    return true;
   }
   return a.getAuthInstance().signIn();
 }

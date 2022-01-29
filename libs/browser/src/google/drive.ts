@@ -1,6 +1,6 @@
 // Google Drive functions
 import debug from 'debug';
-import { client } from './gapi';
+import { client } from './core';
 import { createSpreadsheet } from './sheets';
 import oerror from '@overleaf/o-error';
 // Note these are node-specific @googleapis libraries, but they have the 
