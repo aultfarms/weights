@@ -1,10 +1,11 @@
 import { client } from './core';
-import { createFile } from './drive';
+import { createFile, ensurePath } from './drive';
 import debug from 'debug';
 
 import type { sheets_v4 as Sheets } from '@googleapis/sheets';
 
-const info = debug('af/google#sheets');
+const warn = debug('af/google#sheets:warn');
+const info = debug('af/google#sheets:info');
 
 async function sheets(): Promise<Sheets.Sheets> {
   // @ts-ignore
@@ -25,13 +26,13 @@ export function arrayToLetterRange(row:string,arr:any[]):string {
 export async function getAllRows(
   { id, worksheetName }
 : { id: string, worksheetName: string }
-): Promise<Sheets.Schema$RowData> {
-  const res = await (await sheets()).spreadsheets.values.get({ 
+): Promise<Sheets.Schema$ValueRange> {
+  const res = (await (await sheets()).spreadsheets.values.get({ 
     spreadsheetId: id, 
     range: worksheetName+'!A:ZZ',
-  });
+  }));
   info('getAllRows finished, result = ', res);
-  return { values: res.result.values };
+  return res.data;
 }
 
 // cols is just an array of your data, in order by the columns you want to
@@ -58,19 +59,39 @@ export async function putRow(
 
 export async function createSpreadsheet({
   parentid=null,
+  parentpath=null,
   name,
   worksheetName=false
+// either give a parentid
 }: {
-  parentid?: string | null | false,
+  parentid: string | null | false,
+  parentpath?:null,
   name: string,
   worksheetName?: string | false,
-}): Promise<{ id: string }> {
+// or give a parentpath
+} | {
+  parentid?:null,
+  parentpath: string,
+  name: string,
+  worksheetName?: string
+}): Promise<{ id: string } | null > {
+  if (!parentid && parentpath) {
+    const result = await ensurePath({path: parentpath});
+    if (!result) {
+      warn('WARNING: google.createSpreadsheet: Unable to ensurePath for parentpath = ', parentpath);
+      throw new Error('Unable to ensure path for parentpath '+parentpath);
+    }
+    parentid = result?.id;
+  }
   info('creating spreadsheet, calling createFile');
-  const { id } = await createFile({
+  const fileresult = await createFile({
     parentid,
     name,
     mimeType: 'application/vnd.google-apps.spreadsheet'
   });
+  if (!fileresult) return null;
+
+  const id = fileresult.id;
   info('worksheetName = ', worksheetName, ', id = ', id);
   if (!worksheetName) return {id};
   // If we have a worksheetName, add a worksheet with that name
