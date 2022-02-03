@@ -1,11 +1,12 @@
 import { client } from './core';
-import { createFile, ensurePath } from './drive';
+import { createFile, ensurePath, idFromPath } from './drive';
 import debug from 'debug';
 
 import type { sheets_v4 as Sheets } from '@googleapis/sheets';
 
 const warn = debug('af/google#sheets:warn');
-const info = debug('af/google#sheets:info');
+//const info = debug('af/google#sheets:info');
+//const trace = debug('af/google#sheets:trace');
 
 async function sheets(): Promise<Sheets.Sheets> {
   // @ts-ignore
@@ -14,10 +15,11 @@ async function sheets(): Promise<Sheets.Sheets> {
 
 export function arrayToLetterRange(row:string,arr:any[]):string {
   const startletter = 'A';
-  let endletter = String.fromCharCode(65+arr.length);
+  const end = arr.length-1;
+  let endletter = String.fromCharCode(65+end);
   if (arr.length > 25) { // more than a single letter can represent
-    const mostsig = String.fromCharCode(65+Math.trunc(arr.length/26)); // integer division
-    const leastsig = String.fromCharCode(65+(arr.length%26)); // remainder
+    const mostsig = String.fromCharCode(65+Math.trunc(end/26)); // integer division
+    const leastsig = String.fromCharCode(65+(end%26)); // remainder
     endletter = mostsig+leastsig;
   }
   return startletter+row+':'+endletter+row;
@@ -27,12 +29,13 @@ export async function getAllRows(
   { id, worksheetName }
 : { id: string, worksheetName: string }
 ): Promise<Sheets.Schema$ValueRange> {
-  const res = (await (await sheets()).spreadsheets.values.get({ 
+  const res = await ((await sheets()).spreadsheets.values.get({ 
     spreadsheetId: id, 
     range: worksheetName+'!A:ZZ',
   }));
-  info('getAllRows finished, result = ', res);
-  return res.data;
+  // Not sure why result is not on the type
+  // @ts-ignore
+  return res.result;
 }
 
 // cols is just an array of your data, in order by the columns you want to
@@ -53,8 +56,33 @@ export async function putRow(
     majorDimension: 'ROWS',
     values: [ cols ],
   };
-  const result = (await client()).sheets.spreadsheets.values.update(params, data);
-  return result.result.updatedData.values[0];
+  const result = await ((await client()).sheets.spreadsheets.values.update(params, data));
+  return result.result.updatedData?.values[0];
+}
+
+export async function getSpreadsheet(
+  {id=null,path=null}:
+  {id?: string | null, path?: string | null}
+): Promise<Sheets.Schema$Spreadsheet | null> {
+  if (!id) {
+    if (!path) {
+      warn('getSpreadsheet: WARNING: you must pass either an id or a path, and you passed neight as truthy.');
+      return null;
+    }
+    const id = (await idFromPath({path}))?.id;
+    if (!id) {
+      warn('getSpreadsheet: WARNING: unable to find an ID at given path: ',path);
+      return null;
+    }
+  }
+  const res = await ((await sheets()).spreadsheets.get({
+    spreadsheetId: id || '',
+    ranges: [],
+    includeGridData: false,
+  }));
+  // I don't know why the type of spreadsheets.get doesn't have result on it
+  // @ts-ignore
+  return res?.result;
 }
 
 export async function createSpreadsheet({
@@ -83,7 +111,6 @@ export async function createSpreadsheet({
     }
     parentid = result?.id;
   }
-  info('creating spreadsheet, calling createFile');
   const fileresult = await createFile({
     parentid,
     name,
@@ -92,10 +119,9 @@ export async function createSpreadsheet({
   if (!fileresult) return null;
 
   const id = fileresult.id;
-  info('worksheetName = ', worksheetName, ', id = ', id);
   if (!worksheetName) return {id};
   // If we have a worksheetName, add a worksheet with that name
-  const result = (await client()).sheets.spreadsheets.batchUpdate(
+  await ((await client()).sheets.spreadsheets.batchUpdate(
     { spreadsheetId: id },
     { 
       requests: [ 
@@ -109,7 +135,6 @@ export async function createSpreadsheet({
         } 
       ]
     }
-  );
-  info('After adding worksheet, result = ', result);
+  ));
   return {id};
 }

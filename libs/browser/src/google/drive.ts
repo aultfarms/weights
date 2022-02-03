@@ -8,6 +8,7 @@ import type { drive_v3 as Drive  } from '@googleapis/drive';
 
 const warn = debug('af/google#drive:warn');
 const info = debug('af/google#drive:info');
+const trace = debug('af/google#drive:trace');
 
 // Given a path line /a/b/c, it will find the ID of the folder at that path
 // If the path does not exist, it will create it
@@ -21,6 +22,7 @@ export async function ensurePath({
   donotcreate?: boolean
 }): Promise<{ id: string } | null> {
   if (!path || path.length < 1) { // path is empty, we're done
+    trace('path is empty, returning id ', id);
     return id ? {id} : null;
   }
   // If leading slash, this is root:
@@ -28,14 +30,16 @@ export async function ensurePath({
   const parts = path.split('/'); 
   const name = parts[0]; // get the top one 
   if (!name) {
+    trace('after split, name is empty, returning id ', id);
     return id ? {id} : null;
   }
   const rest = parts.slice(1); 
+  trace('ensurePath: checking for file ',name,' in folder with  id ', id);
   const found = await findFileInFolder({id,name});
 
   if (!found) {
     if (donotcreate) {
-      warn('WARNING: google.ensurePath: did not find path, and we were not asked to make it with donotcreate=true');
+      warn('WARNING: google.ensurePath: did not find path, and donotcreate=true so we did not create it');
       return null;
     }
     // Create this part of the path if it doesn't exist
@@ -46,7 +50,7 @@ export async function ensurePath({
       id: result?.id, 
     });
   }
-  info('google.ensurePath: found ',name,', going down rest of path ',rest.join('/'));
+  trace('google.ensurePath: found ',name,', going down rest of path ',rest.join('/'));
   return ensurePath({ 
     path: rest.join('/'), 
     id: found.id, 
@@ -57,7 +61,6 @@ export async function ensurePath({
 // Given a path, find it's ID:
 export async function idFromPath({path}: {path: string}): Promise<{ id: string }> {
   const result = await ensurePath({path,donotcreate: true});
-  info('returned from ensurePath, result = ', result);
   if (!result || !result.id) throw new Error('Could not find file at path '+path);
   return {id:result.id};
 }
@@ -74,7 +77,7 @@ export async function createFile({
 }): Promise<{ id: string } | null> {
   try { 
     const c = await client();
-    const file: Drive.Schema$File = await c.drive.files.create({
+    const res = await c.drive.files.create({
       resource: { 
         name, 
         mimeType,
@@ -82,8 +85,8 @@ export async function createFile({
       },
       fields: 'id',
     });
-    info('createFile: returning file = ', file.id);
-    if (!file.id) return null;
+    const file = res?.result;
+    if (!file?.id) return null;
     return { id: file.id };
   } catch(e) {
     warn('ERROR: createFile: failed to create file ', name, '.  Error was: ', e);
@@ -101,14 +104,13 @@ export async function findFileInFolder(
 ): Promise<Drive.Schema$File | null> {
   if (!id) return null;
   const c = await client();
-  const res: Drive.Schema$FileList = await c.drive.files.list({
+  const res = await c.drive.files.list({
     q: `name='${name}' and trashed=false and '${id}' in parents`,
     fileId: id,
     spaces: 'drive',
   });
-  let files = res.files;
+  let files = (res?.result as Drive.Schema$FileList)?.files;
   if (files && files.length > 1) {
-    info('findFileInfolder: Found more than 1 file ('+files.length+'), filtering for case-sensitive now');
     // Their search is case-insensitve so it will return all matches with same case.
     files = files.filter(f => f.name === name); // do our own case-sensitive search
     if (files.length > 1) {
@@ -116,10 +118,9 @@ export async function findFileInFolder(
     }
   }
   if (!files || files.length < 1 || !files[0]) {
-    warn('findFileInFolder: WARNING: Did not find folder', name);
+    trace('findFileInFolder: WARNING: Did not find folder', name);
     return null;
   }
   return files[0];
 }
-
 

@@ -1,14 +1,11 @@
 // Sadly, gapi-script library did not work for me, I had to grab the thing from google myself 
 // and then follow how gapi-script did it to get it loading statically w/ types
-import debug from 'debug';
 
 // load window.gapi
 import "./gapi.js";
 // Now grab the window.gapi
 const gapiStatic = window.gapi as (typeof gapi);
 
-const info = debug('af/google#gapi:info');
-info('Hello!');
 // Library exports a static gapi variable that uses gapi.auth2 from @types/gapi
 
 const gconfig = {
@@ -20,29 +17,25 @@ const gconfig = {
 };
 
 let _auth2: typeof gapi.auth2 | null = null;
-export const auth2 = async () => {
-  if (!_auth2) {
-    _auth2 = await new Promise(async (resolve) => {
-      gapiStatic.load('auth2', async () => {
-        await gapiStatic.auth2.init(gconfig);
-        resolve(gapiStatic.auth2);
-      });
+let _client: typeof gapi.client | null = null;
+async function load() {
+  await new Promise<void>(async (resolve) => {
+    gapiStatic.load('client:auth2', async () => {
+      await gapiStatic.client.init(gconfig);
+      _auth2 = gapiStatic.auth2;
+      _client = gapiStatic.client;
+      resolve();
     });
+  });
+}
 
-  }
+export const auth2 = async () => {
+  if (!_auth2) await load();
   return _auth2;
 }
 
-let _client: typeof gapi.client | null = null;
 export const client = async () => {
-  if (!_client) {
-    _client = await new Promise(async (resolve) => {
-      gapiStatic.load('client', async () => {
-        await gapiStatic.client.init(gconfig);
-        resolve(gapiStatic.client);
-      });
-    });
-  }
+  if (!_client) await load();
   return _client;
 };
 
