@@ -1,0 +1,23 @@
+{
+  "name": "summary",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "update": "node update.js",
+    "summarize": "node summarize.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "chalk": "^4.1.0",
+    "cli-table": "^0.3.6",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "moment-range": "^4.0.2",
+    "numeral": "^2.0.6",
+    "xlsx": "^0.16.9"
+  }
+}

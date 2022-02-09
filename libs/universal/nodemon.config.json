@@ -1,0 +1,8 @@
+{
+  "delay": 500,
+  "verbose": true,
+  "watch": [
+    "dist",
+    "test"
+  ]
+}
