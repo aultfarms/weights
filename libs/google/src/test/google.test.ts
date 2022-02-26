@@ -1,6 +1,8 @@
 import type * as google from '../';
 import debug from 'debug';
 import deepequal from 'deep-equal';
+import xlsx from 'sheetjs-style';
+import { stringify } from 'q-i';
 
 const info = debug('test/google:info');
 
@@ -59,6 +61,37 @@ export async function drive(g: Google) {
   const r4 = await g.drive.idFromPath({ path: `${path}/FILE1` });
   if  (!newFile || newFile.id !== r4?.id) throw `createFile did not return same id as idFromPath (${newFile?.id} vs. ${r4?.id})`;
 
+  info('drive: ls');
+  const lsFolder = await g.drive.createFolder({ parentid: r2.id, name: "FOLDER2" });
+  if (!lsFolder?.id) throw `ls: createFolder returned falsey id (${lsFolder})`;
+  await g.drive.createFile({ parentid: lsFolder.id, name: "FILE1", mimeType: 'application/vnd.google-apps.spreadsheet' });
+  await g.drive.createFile({ parentid: lsFolder.id, name: "FILE2", mimeType: 'application/vnd.google-apps.spreadsheet' });
+  const r5 = await g.drive.ls({ path: `${path}/FOLDER2` });
+  if (!r5) throw `ls: did not return truthy result (${r5})`;
+  if (!r5.id || typeof r5.id !== 'string') throw `ls: did not return a string for id (${r5.id})`;
+  if (!Array.isArray(r5.contents)) throw `ls: did not return an array of contents (${r5.contents})`;
+  
+  const r6 = await g.drive.ls({ path: `${path}/FOLDER2/FILE1` }); // try ls-ing a file:
+  if (!r6 || !r6.id || typeof r6.id !== 'string') throw `ls: when ls-ing a file, did not return a string for id (${r6?.id})`;
+  if (!Array.isArray(r6.contents) || r6.contents.length !== 0) throw `ls: when ls-ing a file, contents was not an empty array (${r6.contents})`;
+
+  info('drive: uploadArrayBuffer');
+  const data = [ { col1: 'row1col1', col2: 'row1col2' }, { col1: 'row2col2', col2: 'row2col2' } ];
+  const wb = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(data), 'testsheet');
+  const r7 = await g.drive.uploadArrayBuffer({
+    filename: 'TEST_XLSX.xlsx',
+    parentid: r2.id, // ${path}/TEST_XLSXL.xlsx
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: xlsx.write(wb, { bookType: 'xlsx', type: 'array' }),
+  });
+  if (!r7) throw `uploadArrayBuffer returned null`;
+  const r8 = await g.drive.getFileContents({ id: r7.id });
+  if (!r8) throw `getFileContents returned null`;
+  const wb2 = xlsx.read(r8, { type: 'array' });
+  const data2 = xlsx.utils.sheet_to_json(wb2.Sheets['testsheet']!);
+  if (!deepequal(data, data2)) throw `Downloaded xlsx differs from uploaded xlsx.  Uploaded = ${stringify(data)}, Downloaded = ${stringify(data2)}`;
+
   info('drive: passed');
 }
 
@@ -90,7 +123,7 @@ export async function sheets(g: Google) {
   const sheet2 = await g.sheets.getSpreadsheet({ id: r3.id });
   if (!sheet2 || !sheet2.sheets) throw `createSpreadsheet failed to getSpreadsheet after creating with a worksheetName`;
   if (!sheet2.sheets.find((s) => s?.properties?.title === 'testsheet2')) {
-    throw `createSpreadsheet failed to set worksheetName to testsheet1, sheet names are ${sheet2.sheets.map(s => s?.properties?.title).join(',')}`;
+    throw `createSpreadsheet failed to set worksheetName to testsheet2, sheet names are ${sheet2.sheets.map(s => s?.properties?.title).join(',')}`;
   }
 
   info(`sheets: putRow`);
@@ -107,6 +140,36 @@ export async function sheets(g: Google) {
     throw `putRow failed to put the given row to the spreadsheet: values in sheet (${allrows?.values}) are not equal to cols (${cols})`;
   }
 
+  info(`sheets: spreadsheetToJson`);
+  const header = [ 'key1', 'key2', 'key3' ];
+  const rows = [ [ 'val1-1', 'val1-2', 'val1-3' ],
+                 [ 'val2-1', 'val2-2', 'val2-3' ],
+                 [ 'val3-1', 'val3-2', 'val3-3' ] ];
+  await g.sheets.putRow({
+    id, worksheetName,
+    row: '1',
+    cols: header,
+  });
+  for (const [i, row] of rows.entries()) {
+    await g.sheets.putRow({
+      id, worksheetName,
+      row: ''+(i+2),
+      cols: row
+    });
+  }
+  const json = await g.sheets.spreadsheetToJson({ id });
+  if (!json) throw `sheets.spreadsheetToJson returned falsey (${json})`;
+  if (!json[worksheetName]) throw `sheets.spreadsheetToJson did not have the worksheetName (${worksheetName}) key in it (${Object.keys(json)})`;
+  for (const [rownum,row] of rows.entries()) {
+    const retrow = json?.[worksheetName]?.[rownum];
+    for (const [colnum,key] of header.entries()) {
+      if (retrow?.[key] !== row[colnum]) {
+        throw `sheets.spreadsheetToJson: row ${rownum} of returned json did not have value at ${key} (${retrow?.[key]}): should have been value ${row[colnum]}`;
+      }
+    }
+  }
+
+
   info(`sheets: arrayToLetterRange`);
   const str = g.sheets.arrayToLetterRange("1", cols);
   if (str !== 'A1:C1') throw `arrayToLetterRange: created range string (${str}) is not what was expected ('A1:C1')`;
@@ -115,6 +178,7 @@ export async function sheets(g: Google) {
 }
 
 export default async function run(g: Google) {
+
   await itLoads(g);
   await core(g);
   await auth(g);

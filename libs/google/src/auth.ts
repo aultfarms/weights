@@ -10,7 +10,7 @@ export async function authorize() : Promise<boolean> {
     isAuthorized = true;
     return true;
   }
-  return a.getAuthInstance().signIn();
+  return !!a.getAuthInstance().signIn();
 }
 
 export async function deauthorize() {

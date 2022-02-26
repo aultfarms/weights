@@ -1,6 +1,8 @@
+/// <reference types="gapi" />
+/// <reference types="gapi.client" />
+/// <reference types="gapi.auth2" />
 // Sadly, gapi-script library did not work for me, I had to grab the thing from google myself 
 // and then follow how gapi-script did it to get it loading statically w/ types
-
 // load window.gapi
 import "./gapi.js";
 // Now grab the window.gapi
@@ -31,11 +33,13 @@ async function load() {
 
 export const auth2 = async () => {
   if (!_auth2) await load();
+  if (!_auth2) throw new Error(`auth2 was null even after loading`);
   return _auth2;
 }
 
 export const client = async () => {
   if (!_client) await load();
+  if (!_client) throw new Error(`client was null even after loading`);
   return _client;
 };
 

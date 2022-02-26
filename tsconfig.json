@@ -6,6 +6,7 @@
 
     "lib": [ "esnext" ],
     "allowJs": true,
+    "esModuleInterop": true,
     "stripInternal": true,
     "importHelpers": true,
     "alwaysStrict": true,
@@ -13,8 +14,8 @@
     "allowSyntheticDefaultImports": true,
     "importsNotUsedAsValues": "error",
     "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitThis": true,
     "noImplicitAny": true,
     "noImplicitOverride": true,

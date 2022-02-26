@@ -10,11 +10,11 @@
   <script type="module">
     // Import all the libs under test and put them in window so clientScripts
     // can execute them
-    import * as libsundertest from '../dist/index.mjs';
+    import * as libsundertest from '../dist/browser/index.mjs';
     window.libsundertest = libsundertest;
   </script>
 
   <!-- you can use window.libsundertest in your tests -->
-  <script src="../dist/test/index.mjs"></script>
+  <script src="../dist/test/browser/index.mjs"></script>
 
 </html>

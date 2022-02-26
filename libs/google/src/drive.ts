@@ -1,7 +1,7 @@
 // Google Drive functions
 import debug from 'debug';
-import { client } from './core';
-import * as oerror from '@overleaf/o-error';
+import { client, auth2 } from './core';
+import oerror from '@overleaf/o-error';
 // Note these are node-specific @googleapis libraries, but they have the 
 // typescript typings we need:
 import type { drive_v3 as Drive  } from '@googleapis/drive';
@@ -106,7 +106,7 @@ export async function findFileInFolder(
   const c = await client();
   const res = await c.drive.files.list({
     q: `name='${name}' and trashed=false and '${id}' in parents`,
-    fileId: id,
+    //fileId: id,
     spaces: 'drive',
   });
   let files = (res?.result as Drive.Schema$FileList)?.files;
@@ -123,4 +123,102 @@ export async function findFileInFolder(
   }
   return files[0];
 }
+
+export async function getToken(): Promise<string> {
+  return (await auth2()).getAuthInstance().currentUser.get().getAuthResponse(true).access_token;
+}
+
+export async function getFileContents({ id }: { id: string }): Promise<ArrayBuffer> {
+  // When dealing with binary files, you can't use the client b/c it seems to make things into strings
+  // Based on https://stackoverflow.com/questions/61552228/gdrive-api-v3-files-get-download-progress
+  return new Promise(async (resolve, reject) => {
+    const oauthToken = await getToken();
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
+    xhr.setRequestHeader('Authorization', `Bearer ${oauthToken}`);
+    xhr.responseType = 'arraybuffer';
+    xhr.onabort = (evt) => {
+      reject(new Error(`google#getFileContents: ${id}: download aborted.  evt = ${evt}`));
+    };
+    xhr.onerror = (evt) => {
+      reject(new Error(`google#getFileContents: ${id}: download error, evt = ${evt}`));
+    };
+    xhr.ontimeout = event => {
+      reject(new Error(`drive#getFileContents: Timeout downloading file, event = ${event}`))
+    };
+    xhr.onload = () => { resolve(xhr.response); };
+
+    xhr.send()
+  });
+}
+
+export type FileList = { id: string, name: string, kind?: string }[];
+export async function ls(
+  {id,path}: 
+  { id: string, path?: null } | { path: string, id?: null }
+):Promise< { id: string, contents: FileList } | null > {
+  if (!id) {
+    if (!path) return null;
+    const found = await idFromPath({path});
+    if (!found || !found.id) {
+      trace(`Did not find an id for path `,path);
+      return null;
+    }
+    if (!found.id) return null;
+    id = found.id;
+  }
+  if (!id) return null;
+
+  const c = await client();
+  const res = await c.drive.files.list({
+    q: `trashed=false and '${id}' in parents`,
+    //fileId: id,
+    spaces: 'drive',
+  });
+  const files = (res?.result as Drive.Schema$FileList)?.files;
+  if (!files) return { id,  contents: [] };
+  return {
+    id,
+    contents: files.map(f => ({ 
+      id: f.id || '', 
+      name: f.name || '', 
+      kind: f.kind || '' 
+    })),
+  };
+}
+
+export async function uploadArrayBuffer(
+  { filename, parentid, parentpath, type, buffer }:
+  { filename: string, parentid?: string, parentpath?: string, type: string, buffer: ArrayBuffer }
+): Promise<{ id: string } | null> {
+  if (!parentid) {
+    if (!parentpath) throw new Error('uploadArrayBuffer: must pass either a parentpath or a parentid');
+    const res = await ensurePath({ path: parentpath });
+    if (!res) throw new Error(`uploadArrayBuffer: could not ensure parent path ${parentpath}`);
+    parentid = res.id;
+  }
+  // based on https://stackoverflow.com/questions/52081706/google-drive-api-correct-way-to-upload-binary-files-via-the-multipart-api
+  const content = new Blob([ buffer ]);
+  const meta = {name: filename, mimeType: type, parents: [ parentid ]};
+  const accessToken = await getToken();
+  const payload = new FormData();
+  payload.append('metadata', new Blob([JSON.stringify(meta)], {type: 'application/json'}));
+  payload.append('file', content);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('post', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+    xhr.onload = function() {
+      const result = JSON.parse(xhr.response);
+      info('xhr.response for post to drive is: ', xhr.response);
+      resolve({id: result.id});
+    };
+    xhr.onerror = function() {
+      warn('ERROR: failed to post as xhr to google.  Response was: ', xhr.response);
+      reject(new Error(`ERROR: failed to post as xhr to google.  Response was: ${JSON.stringify(xhr.response,null,'  ')}`));
+    };
+    xhr.send(payload);
+  });
+};
+
 

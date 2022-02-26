@@ -6,6 +6,7 @@ node_modules/
 
 # ts build stuff
 dist/
+dist-browser/
 *.tsbuildinfo
 
 # yarn 2 stuff

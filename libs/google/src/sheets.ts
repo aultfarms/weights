@@ -1,6 +1,7 @@
 import { client } from './core';
 import { createFile, ensurePath, idFromPath } from './drive';
 import debug from 'debug';
+import pReduce from 'p-reduce';
 
 import type { sheets_v4 as Sheets } from '@googleapis/sheets';
 
@@ -57,7 +58,7 @@ export async function putRow(
     values: [ cols ],
   };
   const result = await ((await client()).sheets.spreadsheets.values.update(params, data));
-  return result.result.updatedData?.values[0];
+  return result.result.updatedData?.values?.[0];
 }
 
 export async function getSpreadsheet(
@@ -83,6 +84,46 @@ export async function getSpreadsheet(
   // I don't know why the type of spreadsheets.get doesn't have result on it
   // @ts-ignore
   return res?.result;
+}
+
+export type SheetJson = {
+  [key: string]: any,
+};
+export async function sheetToJson(
+  {id, worksheetName}:
+  {id: string, worksheetName: string}
+): Promise<SheetJson[] | null> {
+  const allrows = await getAllRows({id, worksheetName});
+  if (!allrows || !allrows.values || allrows.values.length < 1) return null;
+  const header = allrows.values[0];
+  if (!header) return null;
+  return allrows.values.slice(1).map(row => {
+    const ret: SheetJson = {};
+    for (const [index,key] of header.entries()) {
+      ret[key] = row[index]; // get the ith item from the row and place at ith key from header
+    }
+    return ret;
+  });
+}
+
+export type SpreadsheetJson = {
+  [sheetname: string]: SheetJson[] | null,
+};
+export async function spreadsheetToJson(
+  { id }:
+  { id: string }
+  // each sheet will be at a key that is its sheetname, and it will be an array of objects
+): Promise<SpreadsheetJson | null> {
+  const result = await getSpreadsheet({ id });
+  if (!result || !result.sheets) return null;
+  const sheetnames = result.sheets.map(s => s.properties?.title);
+  return pReduce(sheetnames, async (acc,worksheetName) => {
+    if (!worksheetName) return acc;
+    const s = await sheetToJson({ id, worksheetName });
+    if (!s) acc[worksheetName] = null;
+    else acc[worksheetName] = await sheetToJson({ id, worksheetName });
+    return acc;
+  },{} as SpreadsheetJson);
 }
 
 export async function createSpreadsheet({
@@ -117,7 +158,6 @@ export async function createSpreadsheet({
     mimeType: 'application/vnd.google-apps.spreadsheet'
   });
   if (!fileresult) return null;
-
   const id = fileresult.id;
   if (!worksheetName) return {id};
   // If we have a worksheetName, add a worksheet with that name

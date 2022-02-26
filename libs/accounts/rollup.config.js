@@ -8,29 +8,29 @@ const plugins = [ resolve({
 }), commonjs() ];
 
 const watch = {
-  buildDelay: 200, // delay build until 100 ms after last change
-  include: "dist/**/*.js",
-  exclude: [ "dist/browser.mjs", "dist/test/browser.mjs" ],
+  buildDelay: 200, // delay build until 200 ms after last change
+  include: "dist-browser/**/*.js",
+  exclude: [ "dist-browser/browser/index.mjs", "dist-browser/test/browser/index.mjs" ],
 };
 
 // use defineConfig to get typings in editor:
 export default defineConfig([
   {
-    input: "dist/browser.js",
+    input: "dist-browser/browser/index.js",
     plugins,
     watch,
     output: {
-      file: "dist/index.mjs",
+      file: "dist/browser/index.mjs",
       format: "esm",
       sourcemap: true
     },
   },
   {
-    input: "dist/test/index.js",
+    input: "dist-browser/test/browser/index.js",
     plugins,
     watch,
     output: {
-      file: "dist/test/index.mjs",
+      file: "dist/test/browser/index.mjs",
       format: "esm",
       sourcemap: true
     }

@@ -1,13 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowJs": true,
-    "target": "es2020",
-    "module": "es2020",
-    "moduleResolution": "node",
     "rootDir": "src",
-    "outDir": "dist",
-    "lib": [ "esnext", "dom" ]
+    "outDir": "dist"
   },
-  "include": [ "src" ]
+  "include": [ "src" ],
+  "exclude": [ "src/browser", "src/test/browser" ]
 }

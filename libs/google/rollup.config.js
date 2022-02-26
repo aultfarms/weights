@@ -1,5 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+//import dts from 'rollup-plugin-dts';
 import { defineConfig } from 'rollup';
 
 const plugins = [ resolve({ 
@@ -15,6 +16,7 @@ const watch = {
 
 // use defineConfig to get typings in editor:
 export default defineConfig([
+  // Rollup the main codebase:
   {
     input: "dist/index.js",
     plugins,
@@ -25,6 +27,15 @@ export default defineConfig([
       sourcemap: true
     },
   },
+  /*
+  // Rollup the TS declaration files into a single index.d.ts
+  {
+    input: 'dist/index.d.ts',
+    output: [ { file: 'dist/index-rollup.d.ts', format: 'es' } ],
+    plugins: [ dts() ],
+  },
+  */
+  // Rollup the browser tests:
   {
     input: "dist/test/index.js",
     plugins,
