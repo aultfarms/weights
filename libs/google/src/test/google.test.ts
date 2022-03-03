@@ -1,7 +1,7 @@
 import type * as google from '../';
 import debug from 'debug';
 import deepequal from 'deep-equal';
-import xlsx from 'sheetjs-style';
+import xlsx from 'xlsx-js-style'; // 'sheetjs-style'
 import { stringify } from 'q-i';
 
 const info = debug('test/google:info');

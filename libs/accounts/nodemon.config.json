@@ -1,5 +1,5 @@
 {
-  "delay": 500,
+  "delay": 1000,
   "verbose": true,
   "watch": [
     "dist",

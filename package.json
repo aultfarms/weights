@@ -14,7 +14,7 @@
   "repository": "git@github.com:aultfarms/af-monorepo.git",
   "author": "Aaron Ault <aultac@gmail.com>",
   "license": "Apache-2.0",
-  "packageManager": "yarn@3.1.1",
+  "packageManager": "yarn@3.2.0",
   "devDependencies": {
     "@tsconfig/node16": "^1.0.2",
     "@types/mocha": "^9",

@@ -1,5 +1,5 @@
+import xlsx from 'xlsx-js-style'; //'sheetjs-style';
 import type * as accountsLib from '../../browser/index.js';
-import xlsx from 'sheetjs-style';
 import { drive } from '@aultfarms/google';
 import deepequal from 'deep-equal';
 import debug from 'debug';
@@ -15,7 +15,14 @@ export default async function run(accounts: typeof accountsLib) {
   info('google: testing uploadXlsxWorkbookToGoogle');
   const data = [ { col1: 'row1col1', col2: 'row1col2' }, { col1: 'row2col2', col2: 'row2col2' } ];
   const wb = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(data), 'testsheet');
+  const ws = xlsx.utils.json_to_sheet(data);
+  ws['A1'].s = {
+    fill: {
+      patternType: 'solid',
+      fgColor: { rgb: "FFFFAA00" },
+    }
+  }
+  xlsx.utils.book_append_sheet(wb, ws, 'testsheet');
   const r1 = await accounts.google.uploadXlsxWorkbookToGoogle({
     parentpath: `${pathroot}/BROWSERGOOGLE`,
     filename: 'TEST.xlsx',

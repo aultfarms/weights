@@ -1,4 +1,4 @@
-import xlsx, { WorkBook, WorkSheet } from 'sheetjs-style';
+import xlsx, { WorkBook, WorkSheet } from 'xlsx-js-style'; //'sheetjs-style';
 import moment, { Moment } from 'moment';
 import momentrange from 'moment-range';
 import type { ProfitLoss } from './index.js';

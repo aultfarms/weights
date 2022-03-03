@@ -6,12 +6,14 @@
 
     "lib": [ "esnext" ],
     "allowJs": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "stripInternal": true,
     "importHelpers": true,
     "alwaysStrict": true,
     "strict": true,
     "allowSyntheticDefaultImports": true,
+    "noFallthroughCasesInSwitch": true,
     "importsNotUsedAsValues": "error",
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": false,
@@ -22,7 +24,7 @@
     "noImplicitReturns": true,
     "sourceMap": true,
     "declaration": true,
-    "forceConsistentCasingInFileNames": true
-
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   }
 }

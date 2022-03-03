@@ -38,7 +38,7 @@ export type ProfitLoss = {
   categories: CategoryTree, // the full annual categories for the year, same as the fourth quarter
 };
 
-export function yearProfitLoss(
+export function profitLoss(
   { ledger, type, year }:
   { ledger: FinalAccounts, type: 'mkt' | 'tax', year?: number}
 ): ProfitLoss {

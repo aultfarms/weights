@@ -18,7 +18,7 @@
     "dev:testcafe": "testcafe --live --config-file=.testcafe.js",
     "dev": "yarn run build:tsc && concurrently \"yarn run dev:tsc\" \"yarn run dev:rollup\"",
     "test:testcafe": "testcafe --config-file='.testcafe.js'",
-    "test": "live-server --port=8080 --host=localhost --wait=1000 --open=test/index.html",
+    "test": "live-server --port=8080 --host=localhost --wait=1000 --watch=dist/index.mjs,dist/test/index.mjs --open=test/index.html",
     "clean": "rm -rf dist"
   },
   "author": "Aaron Ault <aultac@gmail.com>",
@@ -62,7 +62,7 @@
     "moment": "^2.29.1",
     "p-reduce": "^3.0.0",
     "q-i": "^2.0.1",
-    "sheetjs-style": "^0.15.8",
-    "tslib": "^2.3.1"
+    "tslib": "^2.3.1",
+    "xlsx-js-style": "^1.0.0"
   }
 }

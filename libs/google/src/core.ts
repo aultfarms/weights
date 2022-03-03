@@ -1,12 +1,15 @@
 /// <reference types="gapi" />
 /// <reference types="gapi.client" />
 /// <reference types="gapi.auth2" />
+import debug from 'debug';
 // Sadly, gapi-script library did not work for me, I had to grab the thing from google myself 
 // and then follow how gapi-script did it to get it loading statically w/ types
 // load window.gapi
 import "./gapi.js";
 // Now grab the window.gapi
 const gapiStatic = window.gapi as (typeof gapi);
+
+const trace = debug('af/google#drive/core:trace');
 
 // Library exports a static gapi variable that uses gapi.auth2 from @types/gapi
 
@@ -22,10 +25,13 @@ let _auth2: typeof gapi.auth2 | null = null;
 let _client: typeof gapi.client | null = null;
 async function load() {
   await new Promise<void>(async (resolve) => {
-    gapiStatic.load('client:auth2', async () => {
-      await gapiStatic.client.init(gconfig);
+    trace('Loading client from static gapi library');
+    gapiStatic.load('client:auth2', async (result: any) => {
+      trace('client loaded, initializing, result of load = ', result);
+      const result2 = await gapiStatic.client.init(gconfig);
       _auth2 = gapiStatic.auth2;
       _client = gapiStatic.client;
+      trace('gapi loaded, result of init = ', result2, ', and token = ', _auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token);
       resolve();
     });
   });

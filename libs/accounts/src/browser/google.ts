@@ -1,7 +1,8 @@
+import xlsx from 'xlsx-js-style'; //'sheetjs-style';
 import * as google from '@aultfarms/google';
 import debug from 'debug';
 import chalk from 'chalk';
-import xlsx from 'sheetjs-style';
+import oerror from '@overleaf/o-error';
 import { MultiError } from '../err.js';
 
 const { green, red, yellow } = chalk;
@@ -15,7 +16,12 @@ export async function readAccountsFromGoogle(
 ): Promise<RawSheetAccount[]> {
   if (!status) status = info;
   const path = accountsdir;
-  const lsfiles = await google.drive.ls({ path });
+  let lsfiles = null;
+  try {
+    lsfiles = await google.drive.ls({ path });
+  } catch(e: any) {
+    throw oerror.tag(e, `af/accounts#browser/google: failed to ls path ${path}`);
+  }
   if (!lsfiles) throw new MultiError({ msg: `Failed to ls files at path ${path}` });
   const accountfiles = lsfiles.contents.filter(f => f.name.match(/^Account-/) && f.kind === 'drive#file');
   const xlsxfiles = accountfiles.filter(f => f.name.match(/\.xlsx$/));

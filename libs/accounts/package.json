@@ -5,8 +5,8 @@
   "type": "module",
   "comment1": "dist/node/index.js is normal output of tsc, used for node",
   "main": "dist/node/index.js",
-  "types": "dist/index.d.ts",
-  "comment2": "dist/browser.mjs is rolled up with rollup",
+  "types": "dist/node/index.d.ts",
+  "comment2": "dist/browser.mjs is rolled up with rollup from dist-browser/",
   "browser": "dist/browser/index.mjs",
   "files": [
     "dist"
@@ -21,7 +21,7 @@
     "dev:rollup": "rollup --config rollup.config.js --watch",
     "comment3": "You need the first build to make sure rollup has files to rollup the first time",
     "dev": "yarn run build && concurrently \"yarn run dev:node\" \"yarn run dev:browser\" \"yarn run dev:rollup\"",
-    "test:browser": "live-server --port=8080 --host=localhost --wait=1000 --open=test/index.html",
+    "test:browser": "live-server --port=8080 --host=localhost --wait=1000 --watch=dist/browser/index.mjs,dist/test/browser/index.mjs --open=test/index.html",
     "test:node": "DEBUG=\"af/accounts*\" nodemon --enable-source-maps --config nodemon.config.json dist/test/node/index.js",
     "test": "concurrently \"yarn run test:browser\" \"yarn run test:node\"",
     "cli": "yarn node dist/node/cli.js",
@@ -74,8 +74,7 @@
     "prettyoutput": "^1.2.0",
     "q-i": "^2.0.1",
     "rfdc": "^1.3.0",
-    "sheetjs-style": "^0.15.8",
     "tslib": "^2.3.1",
-    "xlsx": "^0.18.0"
+    "xlsx-js-style": "^1.0.0"
   }
 }

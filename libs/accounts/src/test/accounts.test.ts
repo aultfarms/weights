@@ -1,6 +1,7 @@
 import type * as accounts from '../index.js';
 import ledgerTest from './ledger.test.js';
 import profitLossTest from './profitloss.test.js';
+import balanceTest from './balance.test.js';
 import rfdc from 'rfdc';
 import debug from 'debug';
 
@@ -19,6 +20,9 @@ export default async function run(a: typeof accounts, rawaccts: accounts.ledger.
   const ledger = await a.ledger.loadAll({ rawaccts: deepclone(rawaccts), status: () => {}});
   if (!ledger) throw `Failed to load ledger, loadAll returned falsey`;
   await profitLossTest(a.profitloss, ledger);
+
+  info('testing balance');
+  await balanceTest(a.balance, ledger);
 
   info('All Account Tests Passed');
 }

@@ -4,6 +4,7 @@ import debug from 'debug';
 
 import accountsTests from '../accounts.test.js';
 import googleTests from './google.test.js';
+import spreadsheetTests from './spreadsheets.test.js';
 
 const info = debug('af/accounts#test:info');
 
@@ -39,6 +40,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       info(`Browser account tests: have ${cyan(testsheets.length)} accounts loaded from Google at /AF-TESTACCOUNTS, starting tests...`);
       // Run the account tests:
       await accountsTests(universal_accounts, testsheets);
+      // Run browser-specific file download from xlsx library
+      await spreadsheetTests(/*libsundertest*/);
     } catch(e: any) {
       info(red('FAILED: tests threw exception: '), e);
     }

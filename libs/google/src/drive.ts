@@ -2,6 +2,7 @@
 import debug from 'debug';
 import { client, auth2 } from './core';
 import oerror from '@overleaf/o-error';
+import { stringify } from 'q-i';
 // Note these are node-specific @googleapis libraries, but they have the 
 // typescript typings we need:
 import type { drive_v3 as Drive  } from '@googleapis/drive';
@@ -35,12 +36,19 @@ export async function ensurePath({
   }
   const rest = parts.slice(1); 
   trace('ensurePath: checking for file ',name,' in folder with  id ', id);
-  const found = await findFileInFolder({id,name});
-
+  let found = null;
+  let founderror = null;
+  try {
+    found = await findFileInFolder({id,name});
+  } catch(e: any) {
+    founderror = e;
+    // Did not find it, logic below to handle that case
+  }
+   
   if (!found) {
     if (donotcreate) {
       warn('WARNING: google.ensurePath: did not find path, and donotcreate=true so we did not create it');
-      return null;
+      throw oerror.tag(founderror, `af/google#drive/ensurePath: did not find path, and donotcreate was true so we did not create it.`);
     }
     // Create this part of the path if it doesn't exist
     info('ensurePath: creating folder ', name, ' in parent id ', id);
@@ -60,8 +68,13 @@ export async function ensurePath({
 
 // Given a path, find it's ID:
 export async function idFromPath({path}: {path: string}): Promise<{ id: string }> {
-  const result = await ensurePath({path,donotcreate: true});
-  if (!result || !result.id) throw new Error('Could not find file at path '+path);
+  let result = null;
+  try { 
+    result = await ensurePath({path,donotcreate: true});
+  } catch(e:any) {
+    throw oerror.tag(e, `af/google#drive/idFromPath: Could not find file at path ${path}`);
+  }
+  if (!result || !result.id) throw new Error(`af/google#drive/idFromPath: Could not find file at path ${path}, result was ${result}`);
   return {id:result.id};
 }
 
@@ -103,12 +116,26 @@ export async function findFileInFolder(
   { id: string | null, name: string}
 ): Promise<Drive.Schema$File | null> {
   if (!id) return null;
+  let res;
   const c = await client();
-  const res = await c.drive.files.list({
-    q: `name='${name}' and trashed=false and '${id}' in parents`,
-    //fileId: id,
-    spaces: 'drive',
-  });
+  try { 
+    res = await c.drive.files.list({
+      q: `name='${name}' and trashed=false and '${id}' in parents`,
+      //fileId: id,
+      spaces: 'drive',
+    });
+  } catch(e) {
+    try { 
+      res = await c.drive.files.list({
+        q: `'${id}' in parents`,
+        spaces: 'drive',
+      });
+      const allfiles = (res?.result as Drive.Schema$FileList)?.files;
+      throw oerror.tag(e as Error, `af/google#findFileInFolder: Failed to find file with name ${name} and has parent id ${id}.  All files in parent are: ${stringify(allfiles)}`);
+    } catch(e2: any) {
+      throw oerror.tag(e2 as Error, `af/google#drive/findFileInFolder: failed to find file with name ${name} and child of id ${id}, and failed to list all available files for that parent`);
+    }
+  }
   let files = (res?.result as Drive.Schema$FileList)?.files;
   if (files && files.length > 1) {
     // Their search is case-insensitve so it will return all matches with same case.
@@ -210,7 +237,6 @@ export async function uploadArrayBuffer(
     xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
     xhr.onload = function() {
       const result = JSON.parse(xhr.response);
-      info('xhr.response for post to drive is: ', xhr.response);
       resolve({id: result.id});
     };
     xhr.onerror = function() {

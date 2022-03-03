@@ -1,5 +1,5 @@
 import { ledger } from '../index.js';
-import { readAccountsFromDir } from './xlsx.js';
+import { readAccountsFromDir } from './spreadsheets.js';
 import { Command } from 'commander';
 
 import debug from 'debug';
