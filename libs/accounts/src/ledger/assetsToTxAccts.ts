@@ -3,7 +3,7 @@ import moment, { Moment } from 'moment';
 import numeral from 'numeral';
 import rfdc from 'rfdc'; // really fast deep clone
 import omit from 'omit';
-import { stringify } from 'q-i';
+import { stringify } from '../stringify.js';
 import { moneyEquals, weHave, line2Str } from './util.js';
 import { MultiError, AccountError, LineError } from '../err.js';
 import type { ValidatedRawSheetAccount, OriginLine, AccountInfo } from './types.js';
@@ -327,7 +327,7 @@ export default function(
                 if (initialLine.date.isBefore(l.priorDate)) {
                   priorAsOfLine = {
                     ...deepclone(linetemplate),
-                    date: l.priorDate.clone(),
+                    date: moment(`${l.priorDate.format('YYYY-MM-DD')} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // prioDate is an "as-of" the end of that prior day
                     description: "Initializing prior balance value after old purchase",
                     assetTxType: 'AS-OF',
                     amount: AMOUNT_PLACEHOLDER_FOR_ASOF,
@@ -344,7 +344,7 @@ export default function(
             const priorValue = acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue;
             asOfLine = {
               ...deepclone(linetemplate),
-              date: moment(l.asOfDate, 'YYYY-MM-DD'),
+              date: moment(`${l.asOfDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // as-of at the end of the day
               description: "asOfDate Balance Adjustment." + (l.description ? '  Orig desc: '+l.description : ''),
               assetTxType: 'AS-OF',
               amount: AMOUNT_PLACEHOLDER_FOR_ASOF, // 'AS-OF_COMPUTE_FROM_EXPECTED_BALANCE',
@@ -384,7 +384,7 @@ export default function(
               throw new LineError({ line: l, msg: `Origin line has sale date (${l.saleDate}) prior to or on priorDate (${priorAsOfLine.date.format('YYYY-MM-DD')}).  Sales should happen between the priorDate and the asOfDate` });
             }
             if (asOfLine && asOfLine.date.isSameOrBefore(saleDate)) {
-              throw new LineError({ line: l, msg: `Origin line has sale date (${l.saleDate}) after to or on asOfDate (${asOfLine.date.format('YYYY-MM-DD')}).  Sales should happen prior to final as-of date which should be $0` });
+              throw new LineError({ line: l, msg: `Origin line has sale date (${l.saleDate}) after or on asOfDate (${asOfLine.date.format('YYYY-MM-DD')}).  Sales should happen prior to final as-of date which should be $0` });
             }
 
             // If we get here, then the saleLine MUST be between the priorAsOfLine and the asOfLine.

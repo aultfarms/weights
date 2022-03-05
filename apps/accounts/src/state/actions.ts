@@ -1,7 +1,6 @@
 import { action } from 'mobx';
 //import type { Context } from './index.js';
-import { state } from './state';
-import chalk from 'chalk';
+import { state, ActivityMessage } from './state';
 import debug from 'debug';
 import { ledger, google } from '@aultfarms/accounts';
 
@@ -30,18 +29,25 @@ export const onInitialize = action('onInitialize', async () => {
       let step;
       for await (step of ledger.loadInSteps({ rawaccts, status: activity })) {
         if (step && step.errors) {
-          activity('ERROR ON STEP: '+step.step);
-          activity(step.errors);
+          activity('ERROR ON STEP: '+step.step, 'bad');
           break;
         }
       }
       if (!step) {
-        activity('ERROR: no step!');
+        activity('ERROR: no step!', 'bad');
       } else if (step.errors && step.errors.length > 0) {
-        activity(step.errors);
+        activity(step.errors, 'bad');
+        errors(step.errors);
       }
-    } catch (e) {
+    } catch (e: any) {
       warn('Could not process accounts into ledger, error = ', e);
+      if (typeof e.msgs === 'function') {
+        activity(e.msgs(), 'bad');
+        errors(e.msgs());
+        
+      } else if (typeof e.message === 'string') {
+        activity(e.message, 'bad');
+      }
       activity('Error: could not process accounts into ledger', 'bad');
       return;
     }
@@ -51,12 +57,22 @@ export const onInitialize = action('onInitialize', async () => {
   }
 });
 
-export const changeIt = action('changeIt', (hello: string) => {
-  state.hello = hello;
+export const activity = action('activity', (msg: string | string[] | ActivityMessage | ActivityMessage[], type: ActivityMessage['type'] = 'good') => {
+  if (!Array.isArray(msg)) {
+    msg = [ msg ] as string[] | ActivityMessage[];
+  }
+  // Make sure evey element is an activity message (convert strings):
+  const msgs: ActivityMessage[] = msg.map(m => {
+    if (typeof m === 'object' && 'msg' in m && typeof m.msg === 'string') {
+      return m as ActivityMessage;
+    } else {
+      return { msg: m, type} as ActivityMessage;
+    }
+  });
+
+  state.activityLog = [...state.activityLog, ...msgs ];
 });
 
-export const activity = action('activity', (msg: string | string[], type: 'good' | 'bad' = 'good') => {
-  const color = type === 'good' ? chalk.green : chalk.red;
-  if (typeof msg === 'string') msg = [ msg ];
-  state.activityLog = [...state.activityLog, ...(msg.map(m => color(m)))];
+export const errors = action('errorrs', (errs: string[]) => {
+  state.errors = [ ...state.errors, ...errs ];
 });

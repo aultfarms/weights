@@ -4,6 +4,7 @@ import debug from 'debug';
 import { context } from './state';
 import { NavBar } from './NavBar';
 import { ActivityLog } from './ActivityLog';
+import { Errors } from './Errors';
 
 const warn = debug('accounts#App:info');
 
@@ -17,11 +18,6 @@ const warn = debug('accounts#App:info');
 
 export const App = observer(function App() {
   const ctx = React.useContext(context);
-  const { changeIt } = ctx.actions;
-
-  const change = () => {
-    changeIt(Math.random().toString());
-  };
 
   React.useEffect(() => {
     // NOTE: DO NOT CONSOLE.LOG IN THIS FUNCTION.
@@ -32,13 +28,11 @@ export const App = observer(function App() {
   });
 
   return (
-    <div onClick={change}>
+    <div>
       <NavBar />
-
       <ActivityLog />
-
-      {ctx.state.hello} world
-      <br />
+      <hr />
+      <Errors />
     </div>
   )
 });

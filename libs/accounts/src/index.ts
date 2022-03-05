@@ -1,3 +1,5 @@
 export * as ledger from './ledger/index.js';
 export * as profitloss from './profit-loss/index.js';
 export * as balance from './balance/index.js';
+export * as err from './err.js';
+export { stringify} from './stringify.js';

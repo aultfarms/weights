@@ -11,11 +11,18 @@ export type Config = {
   },
 };
 
+export type ActivityMessage = {
+  msg: string,
+  type: 'good' | 'bad',
+};
+
+
 export type State = {
   config: Config,
   consoleLogs: any[],
   hello: string,
-  activityLog: string[],
+  activityLog: ActivityMessage[],
+  errors: string[],
 };
 
 // Figure out the config: load from localStorage, but have default
@@ -44,6 +51,7 @@ export const state = observable<State>({
   // For config:
   config: config,
   activityLog: [],
+  errors: [],
 
   // For console-feed:
   consoleLogs: [],

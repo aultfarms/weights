@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import oerror from '@overleaf/o-error';
 import { MultiError } from '../err.js';
 
-const { green, red, yellow } = chalk;
+const { red, yellow } = chalk;
 const info = debug('af/accounts#browser/google:info');
 
 import type { RawSheetAccount, StatusFunction } from '../ledger/types.js';
@@ -24,26 +24,39 @@ export async function readAccountsFromGoogle(
   }
   if (!lsfiles) throw new MultiError({ msg: `Failed to ls files at path ${path}` });
   const accountfiles = lsfiles.contents.filter(f => f.name.match(/^Account-/) && f.kind === 'drive#file');
-  const xlsxfiles = accountfiles.filter(f => f.name.match(/\.xlsx$/));
-  const gsheetsfiles = accountfiles.filter(f => !f.name.match(/\.xlsx$/));
-  for (const x of xlsxfiles) {
-    status(red('WARNING: reading excel files ('+x.name+') from google is not yet supported.  Open it and save as a google sheet to use it.'));
-  }
+  // When I switched this to just export the whole sheet as an XLSX, I think I no longer need to worry about this
+  //const xlsxfiles = accountfiles.filter(f => f.name.match(/\.xlsx$/)); // I don't think this is 
+  //const gsheetsfiles = accountfiles.filter(f => !f.name.match(/\.xlsx$/));
+  //for (const x of xlsxfiles) {
+  //  status(red('WARNING: reading excel files ('+x.name+') from google is not yet supported.  Open it and save as a google sheet to use it.'));
+  //}
   const accts: RawSheetAccount[] = [];
-  for (const fileinfo of gsheetsfiles) {
+  for (const [fileindex, fileinfo] of accountfiles.entries()) {
     const filename = fileinfo.name;
     const id = fileinfo.id;
-    status(green('------> reader:'));
-    status(yellow(' reading Sheets file ' + filename + ' at id ' + id))
-    const result = await google.sheets.spreadsheetToJson({ id });
+    let result: google.sheets.SpreadsheetJson | null = null;
+    if (filename.match(/xlsx$/)) {
+      // Download as regular xlsx file and make a workbook
+      const arraybuffer = await google.drive.getFileContents({ id });
+      const wb = xlsx.read(arraybuffer, { type: 'array' });
+      result = wb.SheetNames.reduce((acc,sheetname) => {
+        acc[sheetname] = xlsx.utils.sheet_to_json(wb, { raw: false });
+        return acc;
+      }, {} as google.sheets.SpreadsheetJson);
+    } else {
+      // Export the sheets file as an xlsx.
+      status(yellow(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename)));
+      result = await google.sheets.spreadsheetToJson({ id });
+    }
     if (!result) {
-      status(red('WARNING: spreadsheetToJson returned null for file ', fileinfo.name));
+      status(red('WARNING: spreadsheetToJson or getFileContents returned null for file ', filename));
       continue;
     }
+
     const sheetnames = Object.keys(result);
     for (const worksheetName of sheetnames) {
       if (!result[worksheetName] || !Array.isArray(result[worksheetName])) {
-        status(red('WARNING: spreadsheetToJson returned null for sheet name ', worksheetName, ' of file ', fileinfo.name));
+        status(red('WARNING: spreadsheetToJson returned null for sheet name ', worksheetName, ' of file ', filename));
         continue;
       }
       accts.push({

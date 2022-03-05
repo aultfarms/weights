@@ -155,13 +155,22 @@ export async function getToken(): Promise<string> {
   return (await auth2()).getAuthInstance().currentUser.get().getAuthResponse(true).access_token;
 }
 
-export async function getFileContents({ id }: { id: string }): Promise<ArrayBuffer> {
+// If you want to download a spreadsheet as an xlsx, pass exportMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+export async function getFileContents({ id, exportMimeType=null }: { id: string, exportMimeType?: null | string }): Promise<ArrayBuffer> {
   // When dealing with binary files, you can't use the client b/c it seems to make things into strings
   // Based on https://stackoverflow.com/questions/61552228/gdrive-api-v3-files-get-download-progress
   return new Promise(async (resolve, reject) => {
     const oauthToken = await getToken();
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
+    let path = `https://www.googleapis.com/drive/v3/files/${id}`;
+    if (exportMimeType) {
+      // Export (does this work for things other than spreadsheets? slides?)
+      path += `/export?mimeType=${exportMimeType}&alt=media`;
+    } else {
+      // Just download directly.
+      path += '?alt=media';
+    }
+    xhr.open('GET', path);
     xhr.setRequestHeader('Authorization', `Bearer ${oauthToken}`);
     xhr.responseType = 'arraybuffer';
     xhr.onabort = (evt) => {

@@ -1,8 +1,9 @@
 import moment, { Moment } from 'moment';
 import chalk from 'chalk';
 import { MultiError, LineError } from '../err.js';
+import { stringify } from '../stringify.js';
 
-const { cyan } = chalk;
+const { magenta } = chalk;
 const { isMoment } = moment;
 
 export type StatusFunction = (msg: string) => any;
@@ -102,19 +103,19 @@ export function assertAccountSettings(o: any): asserts o is AccountSettings {
     errs.push('Settings has no accounttype');
   } else {
     if (o.acctname && typeof o.acctname !== 'string') {
-      errs.push('Settings has acctname ('+cyan(o.acctname)+'), but it is not a string');
+      errs.push('Settings has acctname ('+magenta(o.acctname)+'), but it is not a string');
     }
     if (o.balancetype && o.balancetype !== 'inverted') {
-      errs.push('Settings has a balancetype ('+cyan(o.balancetype)+'), but it is not "inverted"');
+      errs.push('Settings has a balancetype ('+magenta(o.balancetype)+'), but it is not "inverted"');
     }
     if (o.amounttype && o.amounttype !== 'inverted') {
-      errs.push('Settings has a amounttype ('+cyan(o.amounttype)+'), but it is not "inverted"');
+      errs.push('Settings has a amounttype ('+magenta(o.amounttype)+'), but it is not "inverted"');
     }
     if (o.mktonly && typeof o.mktonly !== 'boolean') {
-      errs.push('Settings has a mktonly ('+cyan(o.mktonly)+'), but it is not boolean');
+      errs.push('Settings has a mktonly ('+magenta(o.mktonly)+'), but it is not boolean');
     }
     if (o.taxonly && typeof o.taxonly !== 'boolean') {
-      errs.push('Settings has a taxonly ('+cyan(o.taxonly)+'), but it is not boolean');
+      errs.push('Settings has a taxonly ('+magenta(o.taxonly)+'), but it is not boolean');
     }
     switch(o.accounttype) {
       case 'inventory':
@@ -127,7 +128,7 @@ export function assertAccountSettings(o: any): asserts o is AccountSettings {
         errs.push('Settings has an accounttype of "invalid"');
       break;
       default: 
-        errs.push('Settings has an accounttype ('+cyan(o.accounttype)+'), but it is not one of the known values of cash, inventory, asset, futures-asset, futures-cash');
+        errs.push('Settings has an accounttype ('+magenta(o.accounttype)+'), but it is not one of the known values of cash, inventory, asset, futures-asset, futures-cash');
     }
   }
   if (errs.length > 0) throw new MultiError({ msg: errs });
@@ -151,7 +152,7 @@ export function assertAccountInfo(a: any): asserts a is AccountInfo {
     try { 
       assertAccountSettings(a) 
     } catch(e: any) {
-      e = MultiError.wrap(e, `Settings (${JSON.stringify(a.settings)}) is not a valid AccountSettings`);
+      e = MultiError.wrap(e, `Settings (${stringify(a.settings)}) is not a valid AccountSettings`);
       errs.concat(e.msgs());
     }
   }

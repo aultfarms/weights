@@ -3,7 +3,7 @@ import type * as accountsLib from '../../browser/index.js';
 import { drive } from '@aultfarms/google';
 import deepequal from 'deep-equal';
 import debug from 'debug';
-import { stringify } from 'q-i';
+import { stringify } from '../../stringify.js';
 
 const info = debug('af/accounts#test/browser/google:info');
 

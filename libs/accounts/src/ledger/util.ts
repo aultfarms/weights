@@ -2,7 +2,7 @@ import type {ValidatedRawTx, ValidatedRawSheetAccount} from "./types.js";
 import rfdc from 'rfdc'; // really fast deep clone
 import moment from 'moment';
 import omit from 'omit';
-import { stringify } from 'q-i';
+import { stringify } from '../stringify.js';
 
 const deepclone = rfdc({ proto: true });
 

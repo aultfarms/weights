@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import settingsParser from './settings-parser.js';
 import numeral from 'numeral';
 import { MultiError } from '../err.js';
+import { stringify } from '../stringify.js';
 import rfdc from 'rfdc';
 import { 
   RawSheetAccount,
@@ -18,7 +19,7 @@ import {
 } from './types.js';
 
 const deepclone = rfdc({ proto: true });
-const { green, cyan, yellow, red } = chalk;
+const { green, magenta, yellow, red } = chalk;
 const info = debug('af/accounts#initialValidateAccounts:info');
 //const trace = debug('af/accounts#initialValidateAccounts:info');
 
@@ -112,16 +113,16 @@ function getAccountSettings(
   try { assertAccountSettings(settings) }
   catch(e: any) {
     status(
-      red('FAILURE: acct ')+cyan(acct.name)+red(' has invalid Settings: ')+
-      JSON.stringify(settings)+
-      '.  Errors were: '+JSON.stringify(e)
+      red('FAILURE: acct ')+magenta(acct.name)+red(' has invalid Settings: ')+
+      stringify(settings)+
+      '.  Errors were: '+stringify(e)
     );
     return null;
   }
 
   // Tell user what settings we found:
   if (Object.keys(settings).length > 0) {
-    status(yellow('        Found Settings for account ')+green(acct.name)+yellow(JSON.stringify(settings)));
+    info(yellow('        Found Settings for account ')+green(acct.name)+yellow(stringify(settings)));
   }
   // Send settings back to put into the acct object
   return settings;

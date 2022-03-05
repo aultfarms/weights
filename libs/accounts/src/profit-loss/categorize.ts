@@ -2,6 +2,7 @@ import type { AccountTx } from '../ledger/types.js';
 import { LineError } from '../err.js';
 import type { Moment } from 'moment';
 import type { DateRange }from 'moment-range';
+import { stringify } from '../stringify.js';
 
 export type AmountConfig = {
   start?: Moment,
@@ -113,7 +114,7 @@ export function categorize({ lines }: { lines: AccountTx[] }): CategoryTree {
 
   const txCatToArr = (tx: AccountTx) => {
     if (!tx.category || typeof tx.category !== 'string') {
-      throw new Error(`categorize: ERROR: found a tx without a valid category: ${JSON.stringify(tx, null, '  ')}`);
+      throw new Error(`categorize: ERROR: found a tx without a valid category: ${stringify(tx)}`);
     }
     return tx.category.split('-');
   };

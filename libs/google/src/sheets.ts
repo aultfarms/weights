@@ -1,5 +1,6 @@
 import { client } from './core';
-import { createFile, ensurePath, idFromPath } from './drive';
+import { createFile, ensurePath, idFromPath, getFileContents } from './drive';
+import xlsx from 'xlsx-js-style';
 import debug from 'debug';
 import pReduce from 'p-reduce';
 
@@ -9,9 +10,16 @@ const warn = debug('af/google#sheets:warn');
 //const info = debug('af/google#sheets:info');
 //const trace = debug('af/google#sheets:trace');
 
+export const XlsxMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 async function sheets(): Promise<Sheets.Sheets> {
   // @ts-ignore
   return ((await client()).sheets as Sheets.Sheets);
+}
+
+export async function googleSheetToXlsxWorkbook({ id }: { id: string }): Promise<xlsx.WorkBook> {
+  const arraybuffer = await getFileContents({ id, exportMimeType: XlsxMimeType });
+  return xlsx.read(arraybuffer, { type: 'array' });
 }
 
 export function arrayToLetterRange(row:string,arr:any[]):string {
@@ -114,14 +122,11 @@ export async function spreadsheetToJson(
   { id: string }
   // each sheet will be at a key that is its sheetname, and it will be an array of objects
 ): Promise<SpreadsheetJson | null> {
-  const result = await getSpreadsheet({ id });
-  if (!result || !result.sheets) return null;
-  const sheetnames = result.sheets.map(s => s.properties?.title);
-  return pReduce(sheetnames, async (acc,worksheetName) => {
-    if (!worksheetName) return acc;
-    const s = await sheetToJson({ id, worksheetName });
-    if (!s) acc[worksheetName] = null;
-    else acc[worksheetName] = await sheetToJson({ id, worksheetName });
+  // Getting each individual sheet via Google Sheets exceeds our quota.  Grab the whole thing as an xlsx,
+  // then do the sheet_to_json conversion here:
+  const wb = await googleSheetToXlsxWorkbook({ id });
+  return wb.SheetNames.reduce((acc,worksheetName) => {
+    acc[worksheetName] = xlsx.utils.sheet_to_json(wb.Sheets[worksheetName]!, { raw: false });
     return acc;
   },{} as SpreadsheetJson);
 }

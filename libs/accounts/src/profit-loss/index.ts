@@ -4,6 +4,7 @@ import { categorize, CategoryTree, getCategory, amount, AmountConfig, credit, de
 import { isStart, moneyEquals } from '../ledger/util.js';
 import type { FinalAccounts, AccountTx } from '../ledger/types.js';
 import { MultiError } from '../err.js';
+import { stringify } from '../stringify.js';
 import rfdc from 'rfdc';
 
 export { profitLossToWorkbook } from './exporter.js';
@@ -50,7 +51,7 @@ export function profitLoss(
   // Keep only the requested year, or default this year:
   if (!year) year = moment().year();
   if (!years.find(y => y===year)) {
-    throw new MultiError({ msg: `ERROR: requested year ${year} for type ${type} does not exist in list of years from transactions (${JSON.stringify(years)})` });
+    throw new MultiError({ msg: `ERROR: requested year ${year} for type ${type} does not exist in list of years from transactions (${stringify(years)})` });
   }
 
   // Produce one sheet per quarter:

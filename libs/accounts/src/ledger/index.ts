@@ -47,7 +47,7 @@ export {
 
 const deepclone = rfdc({proto: true}); // need proto:true for moment
 const info = debug('af/accounts:info');
-const { cyan, red } = chalk;
+const { magenta, red } = chalk;
 
 
 function totalSummaryStr(accts: { lines: any[] }[]) {
@@ -132,7 +132,7 @@ export async function* loadInSteps(
     rawaccts = deepclone(rawaccts);
   
     // Get account settings, validate account types, column names, etc.
-    status(cyan('******** initialValidateAccounts ********'));
+    status(magenta('******** initialValidateAccounts ********'));
     let validrawaccts = initialValidateAccounts({rawaccts, status});
     validrawaccts = promoteLineErrorsToAcct(validrawaccts);
     yield { 
@@ -141,7 +141,7 @@ export async function* loadInSteps(
       vaccts: validrawaccts,
     };
   
-    status(cyan(`********        assets        ********: ${totalSummaryStr(validrawaccts)}`));
+    status(magenta(`********        assets        ********: ${totalSummaryStr(validrawaccts)}`));
     validrawaccts = assetsToTxAccts({accts: validrawaccts}) // Convert all asset accounts to regular TX accounts
     validrawaccts = promoteLineErrorsToAcct(validrawaccts);
     yield { 
@@ -150,7 +150,7 @@ export async function* loadInSteps(
       vaccts: validrawaccts,
     };
   
-    status(cyan(`********     standardize      ********: ${totalSummaryStr(validrawaccts)}`));
+    status(magenta(`********     standardize      ********: ${totalSummaryStr(validrawaccts)}`));
     validrawaccts = standardize({ accts: validrawaccts, status }); // All the lines have consistent fields now
     validrawaccts = promoteLineErrorsToAcct(validrawaccts);
     yield { 
@@ -159,7 +159,7 @@ export async function* loadInSteps(
       vaccts: validrawaccts,
     };
   
-    status(cyan(`********        splits        ********: ${totalSummaryStr(validrawaccts)}`));
+    status(magenta(`********        splits        ********: ${totalSummaryStr(validrawaccts)}`));
     validrawaccts = splits({ accts: validrawaccts, status });      // replaces split master lines with individual split counterparts below it
     validrawaccts = promoteLineErrorsToAcct(validrawaccts);
     yield { 
@@ -169,7 +169,7 @@ export async function* loadInSteps(
     };
     throwIfErrors(validrawaccts);
   
-    status(cyan(`********  assertAllAccounts  ********: ${totalSummaryStr(validrawaccts)}`));
+    status(magenta(`********  assertAllAccounts  ********: ${totalSummaryStr(validrawaccts)}`));
     let accts: Account[] | null = null;
     let errors: string[] | null = null;
     try {
@@ -189,7 +189,7 @@ export async function* loadInSteps(
 
     // We lose the ability to include errors in the account itself once it is an Account,
     // so they get passed back separately now.
-    status(cyan(`********   validateBalances   ********: ${totalSummaryStr(accts)}`));
+    status(magenta(`********   validateBalances   ********: ${totalSummaryStr(accts)}`));
     let res = validateBalances({accts});
     yield {
       step: 'validateBalances',
@@ -203,10 +203,10 @@ export async function* loadInSteps(
     }
     accts = res.accts;
   
-    status(cyan(`********     separateTaxMkt   ********: ${totalSummaryStr(accts)}`));
+    status(magenta(`********     separateTaxMkt   ********: ${totalSummaryStr(accts)}`));
     const finalaccts = separateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
 
-    status(cyan(`********       finished       ********: ${finalSummaryStr(finalaccts)}`));
+    status(magenta(`********       finished       ********: ${finalSummaryStr(finalaccts)}`));
     yield {
       step: 'separateTaxMkt',
       final: finalaccts,
@@ -216,7 +216,7 @@ export async function* loadInSteps(
 
   } catch(e: any) {
     e = MultiError.wrap(e, `Accounts failed to load`);
-    status(red(e.msgs().join('\n')));
+    info(red(e.msgs().join('\n')));
     throw e;
   }
 };

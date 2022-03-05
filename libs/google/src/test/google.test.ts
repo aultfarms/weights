@@ -82,7 +82,7 @@ export async function drive(g: Google) {
   const r7 = await g.drive.uploadArrayBuffer({
     filename: 'TEST_XLSX.xlsx',
     parentid: r2.id, // ${path}/TEST_XLSXL.xlsx
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    type: g.sheets.XlsxMimeType,
     buffer: xlsx.write(wb, { bookType: 'xlsx', type: 'array' }),
   });
   if (!r7) throw `uploadArrayBuffer returned null`;
@@ -169,6 +169,11 @@ export async function sheets(g: Google) {
     }
   }
 
+  info(`sheets: googleSheetToXlsxWorkbook`);
+  const wb = await g.sheets.googleSheetToXlsxWorkbook({ id });
+  if (!wb?.Sheets[worksheetName]) {
+    throw `sheets.googleSheetToXlsxWorkbook: failed to retrive a workbook, workbook should have contained sheet ${worksheetName}`;
+  }
 
   info(`sheets: arrayToLetterRange`);
   const str = g.sheets.arrayToLetterRange("1", cols);
