@@ -17,7 +17,10 @@ export const Errors = observer(function App() {
         : `There are ${state.errors.length} total errors.`
       }
       <br/>
-      Made it to step: {state.stepResult?.step || 'none'}
+      { state.stepResult?.step
+        ?  `Made it to step: ${state.stepResult.step}`
+        : ''
+      }
 
     </div>
   )

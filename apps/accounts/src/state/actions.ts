@@ -1,11 +1,15 @@
 import { action } from 'mobx';
 //import type { Context } from './index.js';
-import { state, ActivityMessage } from './state';
+import { state, ActivityMessage, State } from './state';
 import debug from 'debug';
 import { ledger, google } from '@aultfarms/accounts';
 
 const warn = debug("accounts#actions:warn");
 //const info = debug("accounts#actions:info");
+
+export const page = action('page', (page: State['page']) => {
+  state.page = page;
+});
 
 export const onInitialize = action('onInitialize', async () => {
 
@@ -85,6 +89,6 @@ export const stepResult = action('stoppedOnStep', (step: ledger.StepResult) => {
   state.stepResult = step;
 });
 
-export const selectedStepAccount = action('selectedStepAccount', (sel: typeof state.selectedStepAccount) => {
-  state.selectedStepAccount = sel;
+export const selectedAccountName = action('selectedAccountName', (sel: string | null) => {
+  state.selectedAccountName = sel || '';
 });

@@ -18,18 +18,25 @@ const info = debug('accounts#NavBar:info');
 
 import './NavBar.css';
 
-const pages = ['Balance Sheet', 'Profit Loss' ];
+const pages = ['Activity', 'Ledger', 'Balance Sheet', 'Profit Loss' ];
 const settings = ['Config'];
 
 // Mostly from the MaterialUI example page
 export const NavBar = observer(() => {
-  const { state, actions } = React.useContext(context);
+  const { actions } = React.useContext(context);
 
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
   const menuItemClickedNav = (page: string) => () => {
     info('clicked page = ', page);
+    switch(page) {
+      case 'Activity': actions.page('activity'); break;
+      case 'Ledger': actions.page('ledger'); break;
+      case 'Balance Sheet': actions.page('balance'); break;
+      case 'Profit Loss': actions.page('profit'); break;
+      default: info('Page ',page,' has no handler');
+    }
     handleCloseNavMenu();
   }
   const menuItemClickedUser = (setting: string) => () => {
@@ -38,7 +45,7 @@ export const NavBar = observer(() => {
   }
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
-    info('setting Anhor El User = ');
+    info('setting Anhor El Nav = ');
     setAnchorElNav(event.currentTarget);
   };
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {

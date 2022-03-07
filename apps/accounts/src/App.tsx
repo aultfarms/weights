@@ -4,8 +4,7 @@ import debug from 'debug';
 import { context } from './state';
 import { NavBar } from './NavBar';
 import { ActivityLog } from './ActivityLog';
-import { Errors } from './Errors';
-import { RawAccountChooser } from './RawAccountChooser';
+import { Ledger } from './Ledger';
 
 const warn = debug('accounts#App:info');
 
@@ -25,6 +24,7 @@ const warn = debug('accounts#App:info');
 
 export const App = observer(function App() {
   const ctx = React.useContext(context);
+  const { state } = ctx;
 
   React.useEffect(() => {
     // NOTE: DO NOT CONSOLE.LOG IN THIS FUNCTION.
@@ -34,13 +34,19 @@ export const App = observer(function App() {
     console_div.scrollTop = console_div.scrollHeight - console_div.clientHeight;
   });
 
+  const displayPage = () => {
+    switch(state.page) {
+      case 'activity': return <ActivityLog />;
+      case 'ledger': return <Ledger />;
+      case 'balance': return <div>Balance not yet implemented</div>;
+      case 'profit': return <div>Profit not yet implemented</div>;
+    }
+  }
+
   return (
     <div>
       <NavBar />
-      <ActivityLog />
-      <hr />
-      <Errors />
-      <RawAccountChooser />
+      {displayPage()}
     </div>
   )
 });
