@@ -38,6 +38,10 @@ export const onInitialize = action('onInitialize', async () => {
       } else if (step.errors && step.errors.length > 0) {
         activity(step.errors, 'bad');
         errors(step.errors);
+        stepResult(step);
+      } else if (!step.done) {
+        activity('Did not finish loading, but no errors reported?', 'bad');
+        stepResult(step);
       }
     } catch (e: any) {
       warn('Could not process accounts into ledger, error = ', e);
@@ -75,4 +79,12 @@ export const activity = action('activity', (msg: string | string[] | ActivityMes
 
 export const errors = action('errorrs', (errs: string[]) => {
   state.errors = [ ...state.errors, ...errs ];
+});
+
+export const stepResult = action('stoppedOnStep', (step: ledger.StepResult) => {
+  state.stepResult = step;
+});
+
+export const selectedStepAccount = action('selectedStepAccount', (sel: typeof state.selectedStepAccount) => {
+  state.selectedStepAccount = sel;
 });

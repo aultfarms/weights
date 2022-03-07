@@ -24,7 +24,7 @@ export const ActivityLog = observer(() => {
 
 
   return (
-    <div id="activitylog" style={{overflow: 'scroll', maxHeight: '400px' }}>
+    <div id="activitylog" style={{overflow: 'scroll', maxHeight: '300px' }}>
       {state.activityLog.slice().reverse().map((l,i) => 
         <div 
           key={`activitylog-key${i}`} 

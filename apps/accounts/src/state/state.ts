@@ -1,4 +1,5 @@
 import { observable, autorun } from 'mobx';
+import type { ledger } from '@aultfarms/accounts';
 
 export type Config = {
   accountsLocation: {
@@ -19,10 +20,14 @@ export type ActivityMessage = {
 
 export type State = {
   config: Config,
-  consoleLogs: any[],
-  hello: string,
   activityLog: ActivityMessage[],
   errors: string[],
+  stepResult: ledger.StepResult | null,
+  selectedStepAccount: { 
+    name: string,
+    vacct?: ledger.ValidatedRawSheetAccount,
+    acct?: ledger.Account,
+  } | null,
 };
 
 // Figure out the config: load from localStorage, but have default
@@ -52,12 +57,8 @@ export const state = observable<State>({
   config: config,
   activityLog: [],
   errors: [],
-
-  // For console-feed:
-  consoleLogs: [],
-
-  // Leftover from startup:
-  hello: 'world',
+  stepResult: null,
+  selectedStepAccount: null,
 });
 
 
@@ -65,3 +66,5 @@ export const state = observable<State>({
 autorun(() => {
   localStorage.setItem('accounts-config', JSON.stringify(state.config));
 });
+
+

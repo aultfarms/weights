@@ -1,5 +1,5 @@
 import moment, { Moment } from 'moment';
-//import debug from 'debug';
+import debug from 'debug';
 import numeral from 'numeral';
 import rfdc from 'rfdc'; // really fast deep clone
 import omit from 'omit';
@@ -11,7 +11,7 @@ import { ledger2Str } from './util.js';
 
 const { isMoment } = moment;
 
-//const trace = debug('af/accounts#assetsToAccts:trace');
+const trace = debug('af/accounts#assetsToAccts:trace');
 const deepclone = rfdc({ proto: true });
 
 const AMOUNT_PLACEHOLDER_FOR_ASOF = -9_999_999_999;
@@ -46,6 +46,7 @@ function pushError(acct: ValidatedRawSheetAccount, err: MultiError | LineError |
 
 function balanceAtDate(date: Moment, acct: ValidatedRawSheetAccount) {
   let balance = acct.lines[0]?.balance || 0;
+  date = moment(`${date.format('YYYY-MM-DD')} 23:59:59`, 'YYYY-MM-DD HH:mm:ss');
   for(const l of acct.lines) {
     if (!l.date) {
       throw new LineError({ line: l, msg: `Error: line has no date!` });
@@ -408,6 +409,7 @@ export default function(
           if (priorAsOfLine) lines_to_push.push(priorAsOfLine);
           if (saleLine) lines_to_push.push(saleLine);
           if (asOfLine) lines_to_push.push(asOfLine);
+
           if (lines_to_push.length < 1) {
             if (!acct.errors) acct.errors = [] as string[];
             acct.errors.push(`ERROR: had an original asset account line that resulted in no TX lines upon conversion.  Original line is: ${line2Str(l)}`);
@@ -492,8 +494,8 @@ export default function(
                 line: l,
                 msg: `ERROR: line ${i} of acct ${acct.name}: `+
                   `balanceAtDate[${l.priorDate.format('YYYY-MM-DD')}] `+ 
-                  `(${balanceAtDate(l.priorDate,acct)}) !== expectedPriorValue(${l.expectedPriorValue}), `+
-                  `line = ${line2Str(l)}, prev = ${line2Str(prev)}`,//+
+                  `(${balanceAtDate(l.priorDate,acct)}) !== expectedPriorValue(${l.expectedPriorValue}) `//+
+                  //`line = ${line2Str(l)}, prev = ${line2Str(prev)}`,//+
                   //`****** acct ***** = ${ledger2Str(acct)}`,
               }));
             }
@@ -505,8 +507,8 @@ export default function(
               pushError(acct, new LineError({
                 line: l,
                 msg: `ERROR: line ${i} of acct ${acct.name}: `+
-                  `l.balance(${l.balance}) !== expectedCurrentValue(${l.expectedCurrentValue}). `+
-                  `l = ${line2Str(l)}`,
+                  `l.balance(${l.balance}) !== expectedCurrentValue(${l.expectedCurrentValue}). `//+
+                  //`l = ${line2Str(l)}`,
               }));
             }
           }

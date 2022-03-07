@@ -5,6 +5,7 @@ import { context } from './state';
 import { NavBar } from './NavBar';
 import { ActivityLog } from './ActivityLog';
 import { Errors } from './Errors';
+import { RawAccountChooser } from './RawAccountChooser';
 
 const warn = debug('accounts#App:info');
 
@@ -12,9 +13,15 @@ const warn = debug('accounts#App:info');
 // Basic React app w/ mobx is done.  This app now needs:
 // XX 1: console output, collapsable (console-feed)
 // 2: config page w/ localstorage (google paths)
-// 3: load ledger by default on startup from stored path
-// 4: show all errors on main screen
-// 5: button to create balance sheet and p&l  (download vs. in google)
+// XXX 3: load ledger by default on startup from stored path
+// XXX 4: show all errors on main screen
+// XXX 5: button to create balance sheet and p&l  (download vs. in google)
+// 6: debug assets since all current ones have incorrect prior's
+// 6: display general combined tax/mkt ledgers (toggle for tax/mkt)
+// 7: display balance sheet on balance sheet page
+// 8: display P&L on P&L page
+// 9: download button on each balance and P&L page
+// 10: add category listing for new categories this year, maybe also missing categories
 
 export const App = observer(function App() {
   const ctx = React.useContext(context);
@@ -33,6 +40,7 @@ export const App = observer(function App() {
       <ActivityLog />
       <hr />
       <Errors />
+      <RawAccountChooser />
     </div>
   )
 });

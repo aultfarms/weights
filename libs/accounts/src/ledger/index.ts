@@ -116,17 +116,19 @@ type Steps = 'start' |
   'validateBalances' | 
   'separateTaxMkt';
 
-export async function* loadInSteps(
-  { rawaccts, status=null }:
-  { rawaccts: RawSheetAccount[], status?: ((msg: string)=>any) | null }
-): AsyncGenerator<{
+export type StepResult = {
   step: Steps,
   errors?: string[] | null,
   vaccts?: ValidatedRawSheetAccount[] | null,
   accts?: Account[] | null,
   final?: FinalAccounts | null,
   done?: true,
-}> {
+};
+
+export async function* loadInSteps(
+  { rawaccts, status=null }:
+  { rawaccts: RawSheetAccount[], status?: ((msg: string)=>any) | null }
+): AsyncGenerator<StepResult> {
   if (!status) status = info; // default to info from debug
   try {
     rawaccts = deepclone(rawaccts);
