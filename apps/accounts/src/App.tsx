@@ -5,6 +5,7 @@ import { context } from './state';
 import { NavBar } from './NavBar';
 import { ActivityLog } from './ActivityLog';
 import { Ledger } from './Ledger';
+import { BalanceSheets } from './BalanceSheets';
 
 const warn = debug('accounts#App:info');
 
@@ -38,7 +39,7 @@ export const App = observer(function App() {
     switch(state.page) {
       case 'activity': return <ActivityLog />;
       case 'ledger': return <Ledger />;
-      case 'balance': return <div>Balance not yet implemented</div>;
+      case 'balance': return <BalanceSheets />;
       case 'profit': return <div>Profit not yet implemented</div>;
     }
   }

@@ -11,6 +11,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import ReactJson from 'react-json-view';
+import numeral from 'numeral';
 
 const warn = debug('accounts#AcctViewer:warn');
 const info = debug('accounts#AcctViewer:info');
@@ -57,6 +58,8 @@ export const AcctViewer = observer(function AcctViewer(
 
   const isasset = a.settings.accounttype !== 'cash' && a.settings.accounttype !== 'futures-cash';
 
+  // numeral format:
+  const f = '$0,0.00';
   return (
     <Paper elevation={1}>
       <div>Showing lines {start+1} through { end < lines.length ? end : lines.length } of {lines.length}<br/></div>
@@ -70,8 +73,8 @@ export const AcctViewer = observer(function AcctViewer(
         <ReactJson src={withoutLines} collapsed={1} displayDataTypes={false} />
         {/* todo: add origin info */}
       </div>
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+      <TableContainer component={Paper} sx={{ maxHeight: 700 }}>
+        <Table stickyHeader sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
           <TableHead>
             <TableRow>
               <TableCell>#</TableCell>
@@ -105,13 +108,13 @@ export const AcctViewer = observer(function AcctViewer(
                 <TableCell align="right">{line.description}</TableCell>
                 <TableCell align="right">{line.who}</TableCell>
                 <TableCell align="right">{line.category}</TableCell>
-                <TableCell align="right">{line.amount}</TableCell>
-                <TableCell align="right">{line.balance}</TableCell>
+                <TableCell align="right">{numeral(line.amount).format(f)}</TableCell>
+                <TableCell align="right">{numeral(line.balance).format(f)}</TableCell>
                 { !isasset ? '' :
                   <TableCell align="right">
                     {'assetTxType' in line ? <div>{`Tx Type: ${line.assetTxType}`}</div> : '' }
-                    {'expectedCurrentValue' in line ? <div>{`expectedCurrentValue: ${line.expectedCurrentValue}`}</div> : '' }
-                    {'expectedPriorValue' in line ? <div>{`expectedPriorValue: ${line.expectedPriorValue}`}</div> : '' }
+                    {'expectedCurrentValue' in line ? <div>{`expectedCurrentValue: ${numeral(line.expectedCurrentValue).format(f)}`}</div> : '' }
+                    {'expectedPriorValue' in line ? <div>{`expectedPriorValue: ${numeral(line.expectedPriorValue).format(f)}`}</div> : '' }
                     {'priorDate' in line ? <div>{`Prior Date: ${line.priorDate.format('YYYY-MM-DD')}`}</div> : '' }
                   </TableCell>
                 }

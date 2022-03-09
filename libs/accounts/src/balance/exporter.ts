@@ -31,10 +31,18 @@ export function annualBalanceSheetToWorkbook(abs: AnnualBalanceSheet) {
   const sheets = [];
   if (abs.asOfDate) sheets.push(abs.asOfDate);
   if (abs.yearend) sheets.push(abs.yearend);
-  if (abs.quarters) sheets.push(...abs.quarters);
+  if (abs.quarters) {
+    // Could have a duplicate with the year-end here
+    for (const q of abs.quarters) {
+      if (sheets.find(s => s.name === q.name)) continue; // do not push duplicates
+      // Otherwise, this is a new one
+      sheets.push(q);
+    }
+  }
   if (sheets.length < 1) {
     throw new MultiError({ msg: `AnnualBalanceSheet had no balance sheets` });
   }
+
 
   return sheets.reduce((wb: WorkBook,bs: BalanceSheet) => {
     info(`Adding balance sheet ${bs.name} into workbook`);

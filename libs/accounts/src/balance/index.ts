@@ -35,6 +35,31 @@ export type AnnualBalanceSheet = {
   quarters?: BalanceSheet[],
 }
 
+export type CatIndex = {
+  [cat: string]: true
+};
+
+export function treeToCategoryNames(
+  tree: BalanceTree, 
+  catindex: CatIndex, // mutates catindex
+  opts: { excludeRoot?: boolean },
+  parentstr?: string,
+): void {
+  if (typeof parentstr !== 'string') {
+    parentstr = '';
+  }
+  if (tree.name !== 'root' || !opts.excludeRoot) {
+    if (parentstr) parentstr += '-';
+    parentstr += tree.name;
+    catindex[parentstr] = true;
+  }
+  if (tree.children) {
+    for (const c of Object.values(tree.children)) {
+      treeToCategoryNames(c, catindex, opts, parentstr);
+    }
+  }
+};
+
 export function getAccountBalance(
   { balanceSheet, accountName, balanceTree }:
   { balanceSheet: BalanceSheet, accountName: string, balanceTree?: BalanceTree }

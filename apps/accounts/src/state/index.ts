@@ -1,6 +1,7 @@
 import { createContext } from 'react';
-import { state } from './state';
+import { state, IndexedStatements } from './state';
 import * as actions from './actions';
+export type { IndexedStatements };
 
 export type State = typeof state;
 export type Actions = typeof actions;

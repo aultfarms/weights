@@ -72,14 +72,25 @@ export const balancesheets = action('balancesheets', (bss?: typeof _balancesheet
   if (state.balancesheets.rev < 0) return null;
   state.balancesheets.rev++;
   _balancesheets = bss;
+  info('set balance sheets to ', bss);
 });
 
 let _profitlosses: IndexedStatements<accountsLib.profitloss.ProfitLoss> | null = null;
 export const profitlosses = action('profitlosses', (pls?: typeof _profitlosses): typeof _profitlosses | void => {
   if (typeof pls === 'undefined') return _profitlosses;
   if (state.profitlosses.rev < 0) return null;
-  state.balancesheets.rev++;
+  state.profitlosses.rev++;
   _profitlosses = pls;
 });
 
+export const balanceType = action('balanceType', (type: 'tax' | 'mkt') => {
+  state.balance.type = type;
+});
 
+export const balanceLevel = action('balanceLevel', (newval: number) => {
+  state.balance.level = newval;
+});
+
+export const balanceMsg = action('balanceMsg', (msg: string) => {
+  state.balance.msg = msg;
+});

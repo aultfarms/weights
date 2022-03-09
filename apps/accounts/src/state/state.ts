@@ -49,6 +49,11 @@ export type State = {
   } | null,
   balancesheets: BigData,
   profitlosses: BigData,
+  balance: {
+    type: 'mkt' | 'tax',
+    level: number,
+    msg: string,
+  }
 };
 
 
@@ -86,6 +91,11 @@ export const state = observable<State>({
   selectedAccount: null,
   balancesheets: { rev: 0 },
   profitlosses: { rev: 0 },
+  balance: {
+    type: 'mkt',
+    level: 4,
+    msg: '',
+  },
 });
 
 // Every time the state.config changes, save it to localStorage:
