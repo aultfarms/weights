@@ -1,4 +1,4 @@
-import { MultiError } from '../err.js';
+import { MultiError, AccountError } from '../err.js';
 import debug from 'debug';
 import chalk from 'chalk';
 
@@ -23,7 +23,7 @@ export default function(
   for (const acct of accts) {
     if (acct.errors && acct.errors.length > 0) {
       status(red(`Account ${acct.name} had errors`));
-      errors.concat(acct.errors);
+      errors.push(...acct.errors);
       continue;
     }
 
@@ -31,8 +31,8 @@ export default function(
       assertAccount(acct);
       newaccts.push(acct);
     } catch(e: any) {
-      e = MultiError.wrap(e, `Account failed type validation`);
-      errors.concat(e.msgs());
+      e = AccountError.wrap(e, acct, `Account failed type validation`);
+      errors.push(...e.msgs());
     }
   }
   if (errors.length > 0) {

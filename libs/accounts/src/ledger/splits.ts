@@ -144,11 +144,9 @@ export default function(
         acc.push(line);
       } catch(e: any) {
         e = LineError.wrap(e, line, `Line failed split processing`);
-        errors = [ ...errors, ...e.msgs() ];
-        acc.push({
-          ...line,
-          errors: e.concat(line.errors),
-        });
+        if (!line.errors) line.errors = [];
+        line.errors.push(...e.msgs());
+        acc.push(line);
       }
       return acc;
     },[] as ValidatedRawTx[]);

@@ -74,7 +74,7 @@ export class AccountError extends MultiError {
     { msg: string | string[], acct?: AccountInfoPrivate, cause?: Error }
   ) {
     if (typeof msg === 'string') {
-      msg = [ `Account Error ${acct?.name || 'unknown'}: ${msg}}` ];
+      msg = [ `ACCOUNT ${acct?.name || 'unknown'}: ${msg}` ];
     }
     super({ msg, cause });
     if (acct) {
@@ -83,8 +83,33 @@ export class AccountError extends MultiError {
         filename: acct.filename,
       };
     }
+  };
+
+  public static override wrap(e: any, acct?: AccountInfoPrivate | string | string[] | null, msg?: string | string[]): AccountError {
+    // If they left off the acct:
+    if (typeof acct !== 'object' || Array.isArray(acct) || !acct) {
+      msg = msg || acct || '<empty message>';
+      acct = 'unknown';
+    }
+    const name: string = (typeof acct === 'string') ? acct : acct.name;
+    if (!(e instanceof MultiError)) {
+      if (!msg || typeof msg === 'string') {
+        msg = `${msg || ''}: Non-Standard Error: ${e.toString()}`;
+      }
+      if (typeof msg === 'string') msg = [ msg ];
+      oerror.tag(e, msg.join('\n'));
+      return new AccountError({ msg, acct: { name }, cause: e });
+    }
+    if (!msg || typeof msg === 'string') {
+      msg = [ msg || 'Error' ];
+    }
+    msg = msg.map((s: string) => `ACCOUNT ${name}: ${s}`);
+    e.concat(msg);
+    oerror.tag(e);
+    return e;
   }
-}
+
+};
 
 export class LineError extends MultiError {
   constructor(

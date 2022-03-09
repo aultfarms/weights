@@ -1,5 +1,5 @@
 import moment, { Moment } from 'moment';
-import debug from 'debug';
+//import debug from 'debug';
 import numeral from 'numeral';
 import rfdc from 'rfdc'; // really fast deep clone
 import omit from 'omit';
@@ -7,11 +7,11 @@ import { stringify } from '../stringify.js';
 import { moneyEquals, weHave, line2Str } from './util.js';
 import { MultiError, AccountError, LineError } from '../err.js';
 import type { ValidatedRawSheetAccount, OriginLine, AccountInfo } from './types.js';
-import { ledger2Str } from './util.js';
+//import { ledger2Str } from './util.js';
 
 const { isMoment } = moment;
 
-const trace = debug('af/accounts#assetsToAccts:trace');
+//const trace = debug('af/accounts#assetsToAccts:trace');
 const deepclone = rfdc({ proto: true });
 
 const AMOUNT_PLACEHOLDER_FOR_ASOF = -9_999_999_999;
@@ -33,6 +33,18 @@ type AssetTx = {
   expectedCurrentValue?: number,
   balance?: number,
 };
+
+// Is d2 the same day or after d1?
+function isSameDayOrAfter(d1: Moment, d2: Moment): boolean {
+  if (d1.format('YYYY-MM-DD') === d2.format('YYYY-MM-DD')) return true; // same day
+  return d1.isSameOrAfter(d2);
+}
+
+// Is d2 the same day or before d1?
+function isSameDayOrBefore(d1: Moment, d2: Moment): boolean {
+  if (d1.format('YYYY-MM-DD') === d2.format('YYYY-MM-DD')) return true; // same day
+  return d1.isSameOrBefore(d2);
+}
 
 function safesetNumber(n: any): number {
   if (!n) return 0; // handles undefined, 0, ''
@@ -281,145 +293,157 @@ export default function(
           ...omit('lines')(acct),
           origin: omit('lines')(acct.origin),
         };
-        acct.lines = acct.origin.lines.reduce((acc,l) => {
-          if (l.errors && l.errors.length > 0) {
-            throw new LineError({line: l, msg: `Tried to make transactions from an error origin line` });
-          }
-          if (!acct.settings.mktonly && !acct.settings.taxonly) {
-            throw new LineError({
-              line: l,
-              msg: `ERROR: asset acct ${acct.name} has neither mktonly nor taxonly setting, but that should have been figured out automatically`
-            });
-          }
-
-          const linetemplate = {
-            originLine: deepclone(l),
-            category: l.category,
-            lineno: l.lineno,
-            acct: accountinfo,
-          };
-          // A Purchase goes in as a mid-year TX for both taxes and mkt.
-          // Both use purchaseDate, but taxes use taxCost and mkt uses purchaseValue
-          // inventory accounts call it initialDate and mktInitialValue, but they mean same thing as purchaseDate and purchaseValue
-          let initialLine: AssetTx | null = null;
-          let priorAsOfLine: AssetTx | null = null;
-          let saleLine: AssetTx | null = null;
-          let asOfLine: AssetTx | null = null;
-          if (l.purchaseDate || l.initialDate) { // assets
-            const value = acct.settings.taxonly ? l.taxCost : (l.purchaseValue || l.mktInitialValue);
-            // If we have a date but we do not have a value, then don't insert a purchase. (old things we don't remember).
-            // If we DO have a value, then go ahead and use that
-            if (weHave(value)) {
-              const date = l.purchaseDate || l.initialDate; // default purchaseDate, fallback initialDate
-              initialLine = {
-                ...deepclone(linetemplate),
-                date: moment(date, 'YYYY-MM-DD'),
-                description: l.purchaseDate ? "Asset Purchase" : "Asset initial addition to inventory",
-                assetTxType: l.purchaseDate ? 'PURCHASE' : 'INITIAL',
-                amount: safesetNumber(acct.settings.taxonly ? l.taxCost : (l.purchaseValue || l.mktInitialValue)), // inventory accounts use l.mktInitialValue instead of purchaseValue
-                expectedPriorValue: 0, // on a purchase, we are expecting to start from 0
-                priorDate: moment(date, 'YYYY-MM-DD').subtract(1, 'days'), // day before purchase, we should be zero
-              };
-
-              // Now, if we just pushed a purchase, but the priorDate for the originLine is AFTER the purchase,
-              // then we have an entry that was purchased before we started so we have no history
-              // to fixup the expectedPriorValue.  Add another entry to fix that if needed:
-              if (l.priorDate) {
-                if (initialLine.date.isBefore(l.priorDate)) {
-                  priorAsOfLine = {
-                    ...deepclone(linetemplate),
-                    date: moment(`${l.priorDate.format('YYYY-MM-DD')} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // prioDate is an "as-of" the end of that prior day
-                    description: "Initializing prior balance value after old purchase",
-                    assetTxType: 'AS-OF',
-                    amount: AMOUNT_PLACEHOLDER_FOR_ASOF,
-                    // Force "current" value to be expected "prior" value (i.e. the next TX will be the as-of TX that will check prior value)
-                    expectedCurrentValue: safesetNumber(acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue),
-                  };
+        const newlinesAndErrors = acct.origin.lines.reduce((acc,l) => {
+          try {
+            if (l.errors && l.errors.length > 0) {
+              throw new LineError({line: l, msg: `Tried to make transactions from an error origin line` });
+            }
+            if (!acct.settings.mktonly && !acct.settings.taxonly) {
+              throw new LineError({
+                line: l,
+                msg: `ERROR: asset acct ${acct.name} has neither mktonly nor taxonly setting, but that should have been figured out automatically`
+              });
+            }
+  
+            const linetemplate = {
+              originLine: deepclone(l),
+              category: l.category,
+              lineno: l.lineno,
+              acct: accountinfo,
+            };
+            // A Purchase goes in as a mid-year TX for both taxes and mkt.
+            // Both use purchaseDate, but taxes use taxCost and mkt uses purchaseValue
+            // inventory accounts call it initialDate and mktInitialValue, but they mean same thing as purchaseDate and purchaseValue
+            let initialLine: AssetTx | null = null;
+            let priorAsOfLine: AssetTx | null = null;
+            let saleLine: AssetTx | null = null;
+            let asOfLine: AssetTx | null = null;
+            if (l.purchaseDate || l.initialDate) { // assets
+              const value = acct.settings.taxonly ? l.taxCost : (l.purchaseValue || l.mktInitialValue);
+              // If we have a date but we do not have a value, then don't insert a purchase. (old things we don't remember).
+              // If we DO have a value, then go ahead and use that
+              if (weHave(value)) {
+                const date = l.purchaseDate || l.initialDate; // default purchaseDate, fallback initialDate
+                initialLine = {
+                  ...deepclone(linetemplate),
+                  date: moment(date, 'YYYY-MM-DD'),
+                  description: l.purchaseDate ? "Asset Purchase" : "Asset initial addition to inventory",
+                  assetTxType: l.purchaseDate ? 'PURCHASE' : 'INITIAL',
+                  amount: safesetNumber(acct.settings.taxonly ? l.taxCost : (l.purchaseValue || l.mktInitialValue)), // inventory accounts use l.mktInitialValue instead of purchaseValue
+                  expectedPriorValue: 0, // on a purchase, we are expecting to start from 0
+                  priorDate: moment(date, 'YYYY-MM-DD').subtract(1, 'days'), // day before purchase, we should be zero
+                };
+  
+                // Now, if we just pushed a purchase, but the priorDate for the originLine is AFTER the purchase,
+                // then we have an entry that was purchased before we started so we have no history
+                // to fixup the expectedPriorValue.  Add another entry to fix that if needed:
+                if (l.priorDate) {
+                  if (initialLine.date.isBefore(l.priorDate)) {
+                    priorAsOfLine = {
+                      ...deepclone(linetemplate),
+                      date: moment(`${l.priorDate.format('YYYY-MM-DD')} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // prioDate is an "as-of" the end of that prior day
+                      description: "Initializing prior balance value after old purchase",
+                      assetTxType: 'AS-OF',
+                      amount: AMOUNT_PLACEHOLDER_FOR_ASOF,
+                      // Force "current" value to be expected "prior" value (i.e. the next TX will be the as-of TX that will check prior value)
+                      expectedCurrentValue: safesetNumber(acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue),
+                    };
+                  }
                 }
               }
             }
+            
+            // An asOfDate TX should compute the amount based on the specified balance
+            if (l.asOfDate) { // all asset/inventory types, including futures-asset
+              const priorValue = acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue;
+              asOfLine = {
+                ...deepclone(linetemplate),
+                date: moment(`${l.asOfDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // as-of at the end of the day
+                description: "asOfDate Balance Adjustment." + (l.description ? '  Orig desc: '+l.description : ''),
+                assetTxType: 'AS-OF',
+                amount: AMOUNT_PLACEHOLDER_FOR_ASOF, // 'AS-OF_COMPUTE_FROM_EXPECTED_BALANCE',
+                expectedCurrentValue: safesetNumber(acct.settings.taxonly ? l.taxCurrentValue : l.mktCurrentValue),
+                priorValue: safesetNumber(acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue),
+                // These are only used if we have a priorValue:
+                expectedPriorValue: safesetNumber(priorValue),
+                priorDate: l.priorDate?.clone(),
+              };
+              // In borrowing base, we just have lines that keep adding asOfDate's without specifying a priorDate:
+              if (!weHave(priorValue)) {
+                delete asOfLine.expectedPriorValue;
+                delete asOfLine.priorDate;
+              }
+            }
+  
+            // A saleDate TX works just like a purchase TX: amount specified by sale value.  Only applies to mkt.
+            // i.e. it is a mid-year transaction to offset an actual trade-in value or check amount
+            if (acct.settings.mktonly && l.saleDate && weHave(l.saleValue)) {  // inventory accounts don't use this (only asOfDate updates), only asset accounts use this.
+              const saleDate = moment(l.saleDate, 'YYYY-MM-DD');
+              // Note: you actually cannot say that the expectedCurrentValue is 0 after sale, because we probably
+              // didn't have the exact estimated value in there before the sale.  There will be a net balance
+              // that is expensed/incomed at the end of the year/period by the as-of transaction that will force
+              // the balance to zero.
+              saleLine = {
+                ...deepclone(linetemplate),
+                date: saleDate,
+                description: "Asset sold." + (l.description ? "  Orig desc: "+l.description : ''),
+                assetTxType: 'SALE',
+                amount: safesetNumber(-l.saleValue), // a "sale" removes value from this account, so it is negative
+              };
+  
+              if (initialLine && isSameDayOrAfter(initialLine.date, saleDate)) {
+                const e = new LineError({ line: saleLine, msg: `Sale date (${l.saleDate}) prior to or on purchaseDate (${initialLine.date.format('YYYY-MM-DD')}).  Sales should happen after purchasing.` });
+                acc.errors = [ ...acc.errors, ...e.msgs() ];
+              }
+              if (priorAsOfLine && isSameDayOrAfter(priorAsOfLine.date, saleDate)) {
+                const e = new LineError({ line: saleLine, msg: `Sale date (${l.saleDate}) prior to or on priorDate (${priorAsOfLine.date.format('YYYY-MM-DD')}).  Sales should happen between the priorDate and the asOfDate` });
+                acc.errors = [ ...acc.errors, ...e.msgs() ];
+              }
+              if (asOfLine && isSameDayOrBefore(asOfLine.date, saleDate)) {
+                const e = new LineError({ line: saleLine, msg: `Sale date (${l.saleDate}) after or on asOfDate (${asOfLine.date.format('YYYY-MM-DD')}).  Sales should happen prior to final as-of date which should be $0` });
+                acc.errors = [ ...acc.errors, ...e.msgs() ];
+              }
+  
+              // If we get here, then the saleLine MUST be between the priorAsOfLine and the asOfLine.
+              if (typeof asOfLine?.expectedCurrentValue !== 'undefined' && Math.abs(asOfLine.expectedCurrentValue) >= 0.01) {
+                const e = new LineError({ line: l, msg: `Origin line has sale date between prior and as-of dates, but expected Current Value on origin line (${asOfLine.expectedPriorValue}) is not $0` });
+                acc.errors = [ ...acc.errors, ...e.msgs() ];
+              }
+              // Reset the expected prior value's on saleLine and asOfLine since we are sticking saleLine in right
+              // before the asOfLine:
+              if (asOfLine && typeof asOfLine.expectedPriorValue === 'number' && asOfLine.priorDate) {
+                saleLine.expectedPriorValue = asOfLine.expectedPriorValue;
+                saleLine.priorDate = asOfLine.priorDate.clone();
+                // Now reset the asOf expected prior value to the original prior value plus sale amount (which is a negative number)
+                asOfLine.expectedPriorValue = safesetNumber(saleLine.expectedPriorValue) + saleLine.amount;
+                // Also update the priorDate on the as-of line to be 1 day after the sale
+                asOfLine.priorDate = saleLine.date.clone();
+              }
+            }
+  
+            const lines_to_push: AssetTx[] = [];
+            if (initialLine) lines_to_push.push(initialLine);
+            if (priorAsOfLine) lines_to_push.push(priorAsOfLine);
+            if (saleLine) lines_to_push.push(saleLine);
+            if (asOfLine) lines_to_push.push(asOfLine);
+  
+            if (lines_to_push.length < 1) {
+              const e = new LineError({ line: l, msg: `ERROR: had an original asset account line that resulted in no TX lines upon conversion` });
+              acc.errors = [ ...acc.errors, ...e.msgs() ];
+            }
+            acc.lines = [ ...acc.lines, ...lines_to_push ];
+            return acc;
+          } catch(e: any) {
+            e = LineError.wrap(e, l, 'Origin line had errors');
+            if (!acc.errors) acc.errors = [] as string[];
+            acc.errors = [ ...acc.errors, ...e.msgs() ];
           }
-          
-          // An asOfDate TX should compute the amount based on the specified balance
-          if (l.asOfDate) { // all asset/inventory types, including futures-asset
-            const priorValue = acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue;
-            asOfLine = {
-              ...deepclone(linetemplate),
-              date: moment(`${l.asOfDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // as-of at the end of the day
-              description: "asOfDate Balance Adjustment." + (l.description ? '  Orig desc: '+l.description : ''),
-              assetTxType: 'AS-OF',
-              amount: AMOUNT_PLACEHOLDER_FOR_ASOF, // 'AS-OF_COMPUTE_FROM_EXPECTED_BALANCE',
-              expectedCurrentValue: safesetNumber(acct.settings.taxonly ? l.taxCurrentValue : l.mktCurrentValue),
-              priorValue: safesetNumber(acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue),
-              // These are only used if we have a priorValue:
-              expectedPriorValue: safesetNumber(priorValue),
-              priorDate: l.priorDate?.clone(),
-            };
-            // In borrowing base, we just have lines that keep adding asOfDate's without specifying a priorDate:
-            if (!weHave(priorValue)) {
-              delete asOfLine.expectedPriorValue;
-              delete asOfLine.priorDate;
-            }
-          }
-
-          // A saleDate TX works just like a purchase TX: amount specified by sale value.  Only applies to mkt.
-          // i.e. it is a mid-year transaction to offset an actual trade-in value or check amount
-          if (acct.settings.mktonly && l.saleDate && weHave(l.saleValue)) {  // inventory accounts don't use this (only asOfDate updates), only asset accounts use this.
-            const saleDate = moment(l.saleDate, 'YYYY-MM-DD');
-            // Note: you actually cannot say that the expectedCurrentValue is 0 after sale, because we probably
-            // didn't have the exact estimated value in there before the sale.  There will be a net balance
-            // that is expensed/incomed at the end of the year/period by the as-of transaction that will force
-            // the balance to zero.
-            saleLine = {
-              ...deepclone(linetemplate),
-              date: saleDate,
-              description: "Asset sold." + (l.description ? "  Orig desc: "+l.description : ''),
-              assetTxType: 'SALE',
-              amount: safesetNumber(-l.saleValue), // a "sale" removes value from this account, so it is negative
-            };
-
-            if (initialLine && initialLine.date.isSameOrAfter(saleDate)) {
-              throw new LineError({ line: l, msg: `Origin line has sale date (${l.saleDate}) prior to or on purchaseDate (${initialLine.date.format('YYYY-MM-DD')}).  Sales should happen after purchasing.` });
-            }
-            if (priorAsOfLine && priorAsOfLine.date.isSameOrAfter(saleDate)) {
-              throw new LineError({ line: l, msg: `Origin line has sale date (${l.saleDate}) prior to or on priorDate (${priorAsOfLine.date.format('YYYY-MM-DD')}).  Sales should happen between the priorDate and the asOfDate` });
-            }
-            if (asOfLine && asOfLine.date.isSameOrBefore(saleDate)) {
-              throw new LineError({ line: l, msg: `Origin line has sale date (${l.saleDate}) after or on asOfDate (${asOfLine.date.format('YYYY-MM-DD')}).  Sales should happen prior to final as-of date which should be $0` });
-            }
-
-            // If we get here, then the saleLine MUST be between the priorAsOfLine and the asOfLine.
-            if (typeof asOfLine?.expectedCurrentValue !== 'undefined' && Math.abs(asOfLine.expectedCurrentValue) >= 0.01) {
-              throw new LineError({ line: l, msg: `Origin line has sale date between prior and as-of dates, but expected Current Value on origin line (${asOfLine.expectedPriorValue}) is not $0` });
-            }
-            // Reset the expected prior value's on saleLine and asOfLine since we are sticking saleLine in right
-            // before the asOfLine:
-            if (asOfLine && typeof asOfLine.expectedPriorValue === 'number' && asOfLine.priorDate) {
-              saleLine.expectedPriorValue = asOfLine.expectedPriorValue;
-              saleLine.priorDate = asOfLine.priorDate.clone();
-              // Now reset the asOf expected prior value to the original prior value plus sale amount (which is a negative number)
-              asOfLine.expectedPriorValue = safesetNumber(saleLine.expectedPriorValue) + saleLine.amount;
-              // Also update the priorDate on the as-of line to be 1 day after the sale
-              asOfLine.priorDate = saleLine.date.clone().add(1, 'day');
-            }
-          }
-
-          const lines_to_push = [];
-          if (initialLine) lines_to_push.push(initialLine);
-          if (priorAsOfLine) lines_to_push.push(priorAsOfLine);
-          if (saleLine) lines_to_push.push(saleLine);
-          if (asOfLine) lines_to_push.push(asOfLine);
-
-          if (lines_to_push.length < 1) {
-            if (!acct.errors) acct.errors = [] as string[];
-            acct.errors.push(`ERROR: had an original asset account line that resulted in no TX lines upon conversion.  Original line is: ${line2Str(l)}`);
-          }
-
-          return acc.concat(lines_to_push);
-        },[] as AssetTx[]);
-
+          return acc;
+        },({ errors: [], lines: [] } as { errors: string[], lines: AssetTx[] }));
         // Sort the lines by the date ascending:
-        (acct.lines as AssetTx[]).sort((a,b) => (+(a.date) - +(b.date)));
+        (newlinesAndErrors.lines as AssetTx[]).sort((a,b) => (+(a.date) - +(b.date)));
+        acct.lines = newlinesAndErrors.lines;
+        acct.errors = [ ...acct.errors || [], ...newlinesAndErrors.errors ];
 
         //------------------------------------------------------
         // Next, create START entry, either as zero balance or as prior values if we have them.
@@ -427,9 +451,8 @@ export default function(
         // then we not only need 
         const first = acct.lines[0];
         if (!first) {
-          throw new AccountError({acct, msg: `Asset account has no lines`});
-        }
-        if (first.description !== 'START') { // If we don't have start, make one
+          acct.errors.push(`Asset account has no lines`);
+        } else if (first.description !== 'START') { // If we don't have start, make one
           // default to priorDate on TX, otherwise priorDate on acct, otherwise just one day before first TX
           const startdate = first.priorDate || 
             acct.settings.priorDate || 
@@ -451,82 +474,84 @@ export default function(
         //------------------------------------------------------------
         // Finally ready to compute the balances/amounts
         // Pass 4: Compute any missing amounts that are supposed to correct balances to equal the currentValue's
-        for (let i=1; i < acct.lines.length; i++) { // skip start entry
-          const l = acct.lines[i]!;
-          const prev = acct.lines[i-1]!;
-          // First make sure we have a properly-computed amount to force balance to currentValue:
-          if (l.amount === AMOUNT_PLACEHOLDER_FOR_ASOF && l.assetTxType === 'AS-OF') {
-            // this is the tx amount you need to make the balance what is expected
-            l.amount = l.expectedCurrentValue - (prev.balance || 0);
-          }
-          // Now compute the running balance:
-          // TS thinks the balance and amount could be undefined...
-          l.balance = (prev.balance || 0) + (l.amount || 0);
-        }
-
-
-        //----------------------------------------------------------
-        // Error handling/checking: verify that the balances all match what spreadsheets said they should be
-        for(const [i, l] of acct.lines.entries()) {
-          const prev = i > 0 ? acct.lines[i-1] : false;
-          if (typeof l.balance !== 'number') {
-            throw new LineError({ line: l, msg: `Line has no balance` });
-          }
-          if (typeof l.amount !== 'number') {
-            throw new LineError({ line: l, msg: `Line has no amount` });
-          }
-          // Prior value checks
-          if (weHave(l.expectedPriorValue)) {
-            if (!l.priorDate || !l.priorDate.isValid()) {
-              pushError(acct, new LineError({
-                line: l,
-                msg: `ERROR (checking prior): line ${i} `+
-                  `of acct ${acct.name} with txtype ${l.assetTxType} has no `+
-                  `priorDate to check prior value.  Should have been in `+
-                  `acct.settings.priorDate.  acct.settings is: `+
-                  `${stringify(acct.settings)}, and l.priorDate is `+
-                  `${l.priorDate}`, 
-              }));
-              continue;
+        // Only do these tests if we have no errors thus far.
+        if (!acct.errors || acct.errors.length < 1) {
+          for (let i=1; i < acct.lines.length; i++) { // skip start entry
+            const l = acct.lines[i]!;
+            const prev = acct.lines[i-1]!;
+            // First make sure we have a properly-computed amount to force balance to currentValue:
+            if (l.amount === AMOUNT_PLACEHOLDER_FOR_ASOF && l.assetTxType === 'AS-OF') {
+              // this is the tx amount you need to make the balance what is expected
+              l.amount = l.expectedCurrentValue - (prev.balance || 0);
             }
-            if (!moneyEquals(balanceAtDate(l.priorDate, acct),l.expectedPriorValue)) {
+            // Now compute the running balance:
+            // TS thinks the balance and amount could be undefined...
+            l.balance = (prev.balance || 0) + (l.amount || 0);
+          }
+
+          //----------------------------------------------------------
+          // Error handling/checking: verify that the balances all match what spreadsheets said they should be
+          for(const [i, l] of acct.lines.entries()) {
+            //const prev = i > 0 ? acct.lines[i-1] : false;
+            if (typeof l.balance !== 'number') {
+              throw new LineError({ line: l, msg: `Line has no balance` });
+            }
+            if (typeof l.amount !== 'number') {
+              throw new LineError({ line: l, msg: `Line has no amount` });
+            }
+            // Prior value checks
+            if (weHave(l.expectedPriorValue)) {
+              if (!l.priorDate || !l.priorDate.isValid()) {
+                pushError(acct, new LineError({
+                  line: l,
+                  msg: `ERROR (checking prior): line ${i} `+
+                    `of acct ${acct.name} with txtype ${l.assetTxType} has no `+
+                    `priorDate to check prior value.  Should have been in `+
+                    `acct.settings.priorDate.  acct.settings is: `+
+                    `${stringify(acct.settings)}, and l.priorDate is `+
+                    `${l.priorDate}`, 
+                }));
+                continue;
+              }
+              if (!moneyEquals(balanceAtDate(l.priorDate, acct),l.expectedPriorValue)) {
+                pushError(acct, new LineError({
+                  line: l,
+                  msg: `ERROR: line ${i} of acct ${acct.name}: `+
+                    `balanceAtDate[${l.priorDate.format('YYYY-MM-DD')}] `+ 
+                    `(${balanceAtDate(l.priorDate,acct)}) !== expectedPriorValue(${l.expectedPriorValue}) `//+
+                    //`line = ${line2Str(l)}, prev = ${line2Str(prev)}`,//+
+                    //`****** acct ***** = ${ledger2Str(acct)}`,
+                }));
+              }
+            }
+  
+            // currentValue checks
+            if (weHave(l.expectedCurrentValue)) {
+              if (!moneyEquals(l.balance,l.expectedCurrentValue)) {
+                pushError(acct, new LineError({
+                  line: l,
+                  msg: `ERROR: line ${i} of acct ${acct.name}: `+
+                    `l.balance(${l.balance}) !== expectedCurrentValue(${l.expectedCurrentValue}). `//+
+                    //`l = ${line2Str(l)}`,
+                }));
+              }
+            }
+  
+            // NaN amount and balance checks:
+            if (isNaN(l.amount)) {
               pushError(acct, new LineError({
                 line: l,
                 msg: `ERROR: line ${i} of acct ${acct.name}: `+
-                  `balanceAtDate[${l.priorDate.format('YYYY-MM-DD')}] `+ 
-                  `(${balanceAtDate(l.priorDate,acct)}) !== expectedPriorValue(${l.expectedPriorValue}) `//+
-                  //`line = ${line2Str(l)}, prev = ${line2Str(prev)}`,//+
-                  //`****** acct ***** = ${ledger2Str(acct)}`,
+                  `l.amount is NaN!`,
               }));
             }
-          }
-
-          // currentValue checks
-          if (weHave(l.expectedCurrentValue)) {
-            if (!moneyEquals(l.balance,l.expectedCurrentValue)) {
+            if (isNaN(l.balance)) {
               pushError(acct, new LineError({
-                line: l,
+                line: l, 
                 msg: `ERROR: line ${i} of acct ${acct.name}: `+
-                  `l.balance(${l.balance}) !== expectedCurrentValue(${l.expectedCurrentValue}). `//+
-                  //`l = ${line2Str(l)}`,
+                  `l.balance is NaN!`,
               }));
             }
-          }
-
-          // NaN amount and balance checks:
-          if (isNaN(l.amount)) {
-            pushError(acct, new LineError({
-              line: l,
-              msg: `ERROR: line ${i} of acct ${acct.name}: `+
-                `l.amount is NaN!`,
-            }));
-          }
-          if (isNaN(l.balance)) {
-            pushError(acct, new LineError({
-              line: l, 
-              msg: `ERROR: line ${i} of acct ${acct.name}: `+
-                `l.balance is NaN!`,
-            }));
           }
         }
       break;

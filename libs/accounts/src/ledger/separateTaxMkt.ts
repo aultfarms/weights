@@ -1,7 +1,6 @@
 import type { Account, AccountTx, FinalAccounts, StatusFunction } from './types.js';
 import moment from 'moment';
-import { MultiError } from '../err.js';
-import { stringify } from '../stringify.js';
+import { LineError } from '../err.js';
 import debug from 'debug';
 import rfdc from 'rfdc';
 
@@ -26,8 +25,8 @@ function combineAndSortLines(accts: Account[], status: StatusFunction) {
 
   // Sort by date
   lines.sort((a,b) => {
-    if (!a.date) {
-      throw new MultiError({ msg: `When sorting lines, line had null date: ${stringify(a)}` });
+    if (!a.date || typeof a.date.diff !== 'function') {
+      throw new LineError({ line: a, msg: `When sorting lines, line had an empty or invalid date` });
     }
     return a.date.diff(b.date);
   });

@@ -152,12 +152,12 @@ export async function annualBalanceSheet(
     if (!year) year = date.year();
   }
   if (year) {
-    dates = dates.concat([
+    dates.push(
       { date: `${year}-12-31`, name: `${year}Q4`, isQuarter: true, isYearEnd: true },
       { date: `${year}-09-30`, name: `${year}Q3`, isQuarter: true },
       { date: `${year}-06-30`, name: `${year}Q2`, isQuarter: true },
       { date: `${year}-03-31`, name: `${year}Q1`, isQuarter: true },
-    ]);
+    );
   }
  
   // Now construct the annual balance sheet: as-of, yearend, and quarters

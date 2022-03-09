@@ -31,7 +31,7 @@ export function annualBalanceSheetToWorkbook(abs: AnnualBalanceSheet) {
   const sheets = [];
   if (abs.asOfDate) sheets.push(abs.asOfDate);
   if (abs.yearend) sheets.push(abs.yearend);
-  if (abs.quarters) sheets.concat(abs.quarters);
+  if (abs.quarters) sheets.push(...abs.quarters);
   if (sheets.length < 1) {
     throw new MultiError({ msg: `AnnualBalanceSheet had no balance sheets` });
   }

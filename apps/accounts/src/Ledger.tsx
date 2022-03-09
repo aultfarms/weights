@@ -6,40 +6,46 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import { AcctViewer } from './AcctViewer';
 
-const warn = debug('accounts#RawAccountsChooser:info');
+const warn = debug('accounts#RawAccountsChooser:warn');
+const info = debug('accounts#RawAccountsChooser:info');
 
 export const Ledger = observer(function Ledger(): React.ReactElement {
+
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
-  const step = state.stepResult;
 
-  if (!step) return <React.Fragment />;
+  const sr = actions.stepResult(); 
+  // access state.stepResult.rev so we are updated when it changes
+  if (!state.stepResult || state.stepResult.rev < 0 || !sr) {
+    warn('WARNING: have no step result');
+    return <React.Fragment />;
+  }
 
   const chooseAccount = () => {
     // Since you can choose an account at the end (with "final") and after intermediate processing steps
     // that may have failed, this has to deal with which "state" are you in to determine which 
     // accounts it can list and what type of account you will be displaying
     let options: string[] = []; 
-    if (step.final) {
+    if (sr.final) {
       options = [ 
         ...options, 
-        ...(step.final.tax.accts.map(acct => acct.name)),
-        ...(step.final.mkt.accts.map(acct => acct.name)),
+        ...(sr.final.tax.accts.map(acct => acct.name)),
+        ...(sr.final.mkt.accts.map(acct => acct.name)),
       ];
     }
-    else if (step.accts) {
+    else if (sr.accts) {
       options = [
         ...options,
-        ...(step.accts.map(acct => acct.name)),
+        ...(sr.accts.map(acct => acct.name)),
       ];
     }
-    else if (step.vaccts) {
+    else if (sr.vaccts) {
       options = [
         ...options,
-        ...(step.vaccts.map(vacct => vacct.name)),
+        ...(sr.vaccts.map(vacct => vacct.name)),
       ];
     } else { // not much to show...
-      return <React.Fragment />;
+      return <div>No accounts available</div>
     }
     // remove any duplicate names (like between tax and mkt in final).  Note that
     // if the name is the same in tax and mkt, then it is the same account in both tax and mkt
@@ -48,12 +54,11 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
       return self.indexOf(value) === index;
     });
 
-
     // note that evt starts with an underscore, that tells typescript I know it isn't used
     const onChange = (_evt: any, name: string | null) => {
       actions.selectedAccountName(name);
     };
-
+    warn('chooseAccount: options are ', options);
     return <Autocomplete
       disablePortal
       id="account-chooser"
@@ -69,8 +74,8 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
 
   const displayAcct = () => {
     if (!state.selectedAccount) return <React.Fragment />;
-    if (state.selectedAccount.acct) return <AcctViewer acct={state.selectedAccount.acct} />;
-    if (state.selectedAccount.vacct) return <AcctViewer vacct={state.selectedAccount.vacct} />;
+    if (state.selectedAccount.acct) return <AcctViewer acct={state.selectedAccount.acct} centerline={state.selectedAccountLine} />;
+    if (state.selectedAccount.vacct) return <AcctViewer vacct={state.selectedAccount.vacct} centerline={state.selectedAccountLine} />;
     return <React.Fragment />;
   };
 

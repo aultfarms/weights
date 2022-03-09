@@ -8,7 +8,9 @@ const warn = debug('accounts#App:info');
 
 export const Errors = observer(function App() {
   const ctx = React.useContext(context);
-  const { state } = ctx;
+  const { state, actions } = ctx;
+
+  const sr = actions.stepResult();
 
   return (
     <div style={ state.errors.length < 1 ? good : bad }>
@@ -17,8 +19,8 @@ export const Errors = observer(function App() {
         : `There are ${state.errors.length} total errors.`
       }
       <br/>
-      { state.stepResult?.step
-        ?  `Made it to step: ${state.stepResult.step}`
+      { (sr && state.stepResult.rev > 0)
+        ?  `Made it to step: ${sr.step}`
         : ''
       }
 

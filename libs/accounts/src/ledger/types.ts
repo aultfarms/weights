@@ -1,6 +1,6 @@
 import moment, { Moment } from 'moment';
 import chalk from 'chalk';
-import { MultiError, LineError } from '../err.js';
+import { MultiError, LineError, AccountError } from '../err.js';
 import { stringify } from '../stringify.js';
 
 const { magenta } = chalk;
@@ -31,7 +31,7 @@ export type ValidatedRawTx = {
   writtenDate?: Moment | string | null,
   postDate?: Moment | string | null,
   transferacct?: string, // on futures accounts only, this is the account name to use for cash transfers in/out
-  isStart?: boolean, // it's either true, or the key isn't here at all
+  isStart?: boolean, 
   stmtacct?: string, // original "account" string from sheet (for futures w/ multiple statement origins)
   stmtlineno?: number, // on futures accounts, this is the lineno from the original statement
   errors?: string[],
@@ -53,7 +53,7 @@ export function assertValidatedRawTx(t: any): asserts t is ValidatedRawTx {
   if (t.writtenDate && typeof t.writtenDate !== 'string' && !isMoment(t.writtenDate)) errs.push(`writtenDate (${t.writtenDate}) is not a string or Moment`);
   if (t.postDate && typeof t.postDate !== 'string' && !isMoment(t.postDate)) errs.push(`postDate (${t.postDate}) is not a string or Moment`);
   if (t.transferacct && typeof t.transferacct !== 'string') errs.push(`transferacct (${t.transferacct}) is not a string`);
-  if ('isStart' in t && t.isStart !== true) errs.push(`isStart (${t.isStart}) exists, but is not true`);
+  if ('isStart' in t && typeof t.isStart !== 'boolean') errs.push(`isStart (${t.isStart}) exists, but is not boolean`);
   if (t.acct) {
     try { assertAccountInfo(t.acct) }
     catch(e: any) {
@@ -100,7 +100,7 @@ export function assertAccountSettings(o: any): asserts o is AccountSettings {
   if (!o) {
     errs.push('Settings is null');
   } else if (!o.accounttype || typeof o.accounttype !== 'string') {
-    errs.push('Settings has no accounttype');
+    errs.push(`Settings (${stringify(o)}) has no accounttype`);
   } else {
     if (o.acctname && typeof o.acctname !== 'string') {
       errs.push('Settings has acctname ('+magenta(o.acctname)+'), but it is not a string');
@@ -150,10 +150,10 @@ export function assertAccountInfo(a: any): asserts a is AccountInfo {
   if (!a.filename || typeof a.filename !== 'string') errs.push(`AccountInfo has no filename`);
   if ('settings' in a) {
     try { 
-      assertAccountSettings(a) 
+      assertAccountSettings(a.settings) 
     } catch(e: any) {
       e = MultiError.wrap(e, `Settings (${stringify(a.settings)}) is not a valid AccountSettings`);
-      errs.concat(e.msgs());
+      errs.push(...e.msgs());
     }
   }
   if ('lines' in a) errs.push('AccountInfo cannot have lines');
@@ -182,27 +182,27 @@ export type AccountTx = {
 export function assertAccountTx(l: any): asserts l is AccountTx {
   const errs: string[] = [];
   if (!l) throw new MultiError({ msg: [ `Line must be truthy` ]});
+  try { 
+    assertAccountInfo(l.acct) 
+  } catch(e: any) {
+    e = LineError.wrap(e, l, `line.acct is not a valid AccountInfo`);
+    errs.push(...e.msgs());
+  }
   if (!l.date || !isMoment(l.date)) errs.push(`date (${l.date.toString()}) is not a Moment`);
   if (typeof l.description !== 'string') errs.push(`description (${l.description}) is not a string`);
   if (typeof l.amount !== 'number') errs.push(`amount (${l.amount}) is not a number`);
   if ('splitamount' in l && typeof l.splitamount !== 'number') errs.push(`splitamount (${l.splitamount}) is not a number`);
   if (typeof l.balance !== 'number') errs.push(`balance (${l.balance}) is not a number`);
-  if (!l.category || typeof l.category !== 'string') errs.push(`category (${l.category}) is empty or not a string`);
+  if (!l.category || l.category == '' || typeof l.category !== 'string') errs.push(`category (${l.category}) is empty or not a string`);
   if ('note' in l && typeof l.note !== 'string' && typeof l.note !== 'number' && typeof l.note !== 'object' && typeof l.note !== 'boolean') errs.push(`note (${l.note}) is not a string, number, object, array, or boolean`);
   if ('writtenDate' in l && (!l.writtenDate || !isMoment(l.writtenDate))) errs.push(`writtenDate (${l.writtenDate.toString()}) is not a Moment`);
   if ('postDate' in l && (!l.postDate || !isMoment(l.postDate))) errs.push(`postDate (${l.postDate.toString()}) is not a Moment`);
   if ('is_error' in l && l.is_error !== false) errs.push(`is_error exists, but it is not false`);
-  if ('isStart' in l && l.isStart !== true) errs.push(`isStart exists, but it is not true`);
-  try { 
-    assertAccountInfo(l.acct) 
-  } catch(e: any) {
-    e = LineError.wrap(e, l, `line.acct is not a valid AccountInfo`);
-    errs.concat(e.msgs());
-  }
+  if ('isStart' in l && typeof l.isStart !== 'boolean') errs.push(`isStart exists, but it is not boolean, it is ${typeof l.isStart} instead`);
   if ('stmtacct' in l && typeof l.stmtacct !== 'string') errs.push(`stmtacct (${l.stmtacct}) is not a string`);
   if (typeof l.lineno !== 'number') errs.push(`lineno (${l.lineno}) is not a number`);
   if (l.stmtlineno && typeof l.stmtlineno !== 'number') errs.push(`stmtlineno (${l.stmtlineno}) is not a number`);
-  if (errs.length > 1) throw new LineError({ msg: errs, line: l });
+  if (errs.length > 0) throw new LineError({ msg: errs, line: l });
 }
 
 export type OriginLine = {
@@ -241,7 +241,7 @@ export function assertOriginAccount(o: any): asserts o is OriginAccount {
       try { assertOriginLine(line) }
       catch(e: any) {
         e = MultiError.wrap(e, `OriginLine failed validation`);
-        errs.concat(e.msgs());
+        errs.push(...e.msgs());
       }
     }
   }
@@ -262,8 +262,8 @@ export function assertAccount(a: any): asserts a is Account {
   if (!a.filename || typeof a.filename !== 'string') errs.push(`Account has no filename`);
   try { assertAccountSettings(a.settings) }
   catch(e: any) { 
-    e = MultiError.wrap(e, `Account settings are invalid`);
-    errs.concat(e.msgs());
+    e = AccountError.wrap(e, a, `Account settings are invalid`);
+    errs.push(...e.msgs());
   }
   if (!a.lines) {
     errs.push(`Account has no lines`);
@@ -271,16 +271,16 @@ export function assertAccount(a: any): asserts a is Account {
     for (const line of a.lines) {
       try { assertAccountTx(line)}
       catch(e: any) {
-        e = MultiError.wrap(e, `Line failed AccountTx validation`);
-        errs.concat(e.msgs());
+        e = LineError.wrap(e, line, `Line failed AccountTx validation`);
+        errs.push(...e.msgs());
       }
     }
   }
   if ('origin' in a) {
     try { assertOriginAccount(a.origin) }
     catch(e: any) {
-      e = MultiError.wrap(e, `Account has origin, but origin does not pass validation`);
-      errs.concat(e.msgs());
+      e = AccountError.wrap(e, a, `Account has origin, but origin does not pass validation`);
+      errs.push(...e.msgs());
     }
   }
   if (errs.length > 0) {

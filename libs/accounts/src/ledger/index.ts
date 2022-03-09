@@ -63,7 +63,7 @@ function totalSummaryStr(accts: { lines: any[] }[]) {
 function throwIfErrors(accts: { errors?: string[] }[]) {
   let allerrs = [] as string[];
   for (const acct of accts) {
-    if (acct.errors) allerrs = allerrs.concat(acct.errors);
+    if (acct.errors) allerrs.push(...acct.errors);
   }
   if (allerrs.length > 0) {
     throw new MultiError({ msg: allerrs });
@@ -79,7 +79,7 @@ function promoteLineErrorsToAcct(accts: ValidatedRawSheetAccount[]): ValidatedRa
       if (line.errors) {
         foundone = true;
         if (!acct.errors) acct.errors = [];
-        acct.errors.concat(line.errors);
+        acct.errors.push(...line.errors);
       }
     }
     if (foundone) {
@@ -184,6 +184,7 @@ export async function* loadInSteps(
       step: 'assertAllAccounts',
       errors,
       accts,
+      vaccts: validrawaccts,
     };
     if (!accts || errors && errors.length > 0) {
       throw new MultiError({ msg: errors || `Accts is null after assertAllAccounts!` });
@@ -206,7 +207,19 @@ export async function* loadInSteps(
     accts = res.accts;
   
     status(magenta(`********     separateTaxMkt   ********: ${totalSummaryStr(accts)}`));
-    const finalaccts = separateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
+    let finalaccts;
+    try {
+      finalaccts = separateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
+    } catch(e: any) {
+      e = MultiError.wrap(e, `Failed to separate out tax/mkt accounts`);
+      errors = e.msgs();
+      yield {
+        step: 'separateTaxMkt',
+        errors,
+        accts
+      };
+      throw e;
+    }
 
     status(magenta(`********       finished       ********: ${finalSummaryStr(finalaccts)}`));
     yield {

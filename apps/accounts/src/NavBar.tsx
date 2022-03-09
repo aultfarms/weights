@@ -39,17 +39,14 @@ export const NavBar = observer(() => {
     }
     handleCloseNavMenu();
   }
-  const menuItemClickedUser = (setting: string) => () => {
-    info('clicked user = ', setting);
+  const menuItemClickedUser = (_setting: string) => () => {
     handleCloseUserMenu();
   }
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
-    info('setting Anhor El Nav = ');
     setAnchorElNav(event.currentTarget);
   };
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    info('setting Anhor El User = ');
     setAnchorElUser(event.currentTarget);
   };
 

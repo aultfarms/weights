@@ -12,22 +12,54 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import ReactJson from 'react-json-view';
 
-const warn = debug('accounts#AcctViewer:info');
+const warn = debug('accounts#AcctViewer:warn');
+const info = debug('accounts#AcctViewer:info');
 
-export const AcctViewer = observer(function AcctViewer({ acct, vacct }: { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account }) {
-
+export const AcctViewer = observer(function AcctViewer(
+  { acct, vacct, centerline }: 
+  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null }
+) {
   const a = acct || vacct;
   if (!a)  {
     warn('WARNING: you have to give either an Account or a ValidatedRawSheetAccount');
     return <React.Fragment />;
   }
+  let { lines, origin, ...withoutLines } = a;
 
-  const { lines, origin, ...withoutLines } = a;
+  const windowsize = 250;
+  let focusonline: null | number = null;
+  if (typeof centerline === 'number') {
+   focusonline = centerline;
+  } else {
+   centerline = windowsize/2;
+  }
+
+  let start = centerline - (windowsize/2);
+  if (start < 0) start = 0;
+  const end = start + windowsize;
+  info('will show lines from start = ', start, ' to end ', end);
+
+  // Only show 1000 lines
+  let showlines = lines;
+  if (lines.length > windowsize) {
+    warn('Ledger has > 1000 lines, only showing 1000 lines around line ',centerline);
+    showlines = lines.slice(start, end);
+  }
+
+  // If we were asked to focus on a line, scroll there after render
+  React.useEffect(() => {
+    if (focusonline !== null) {
+      const el = document.getElementById(`ledger-line-lineno${focusonline}`);
+      if (!el) return;
+      el.scrollIntoView();
+    }
+  }, [ focusonline, lines ]);
 
   const isasset = a.settings.accounttype !== 'cash' && a.settings.accounttype !== 'futures-cash';
 
   return (
     <Paper elevation={1}>
+      <div>Showing lines {start+1} through { end < lines.length ? end : lines.length } of {lines.length}<br/></div>
       <div style={{
         display: 'flex', 
         flexDirection: 'row', 
@@ -42,6 +74,7 @@ export const AcctViewer = observer(function AcctViewer({ acct, vacct }: { vacct?
         <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
           <TableHead>
             <TableRow>
+              <TableCell>#</TableCell>
               <TableCell>date</TableCell>
               <TableCell align="right">description</TableCell>
               <TableCell align="right">who</TableCell>
@@ -51,17 +84,19 @@ export const AcctViewer = observer(function AcctViewer({ acct, vacct }: { vacct?
               { !isasset ? '' : 
                 <TableCell align="right">Asset Expectations</TableCell>
               }
-              <TableCell align="right">note</TableCell>
-              <TableCell align="right">everything</TableCell>
+              <TableCell>note</TableCell>
+              <TableCell>everything</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {lines.map((line, index) => (
+            {showlines.map((line, index) => (
               <TableRow
                 key={`acctline-${index}`}
+                id={`ledger-line-lineno${line.lineno}`}
                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
               >
-                <TableCell component="th" scope="row">
+                <TableCell align="right">{line.lineno}</TableCell>
+                <TableCell component="th" style={{ minWidth: '75px' }} scope="row">
                   {(line.date && isMoment(line.date)) 
                     ? line.date.format('YYYY-MM-DD')
                     : line.date
@@ -81,13 +116,15 @@ export const AcctViewer = observer(function AcctViewer({ acct, vacct }: { vacct?
                   </TableCell>
                 }
 
-                <TableCell align="right">
+                <TableCell>
                   { typeof line.note !== 'object'
                     ? line.note
-                    : <ReactJson src={line.note || {}} collapsed={1} />
+                    : <ReactJson src={line.note || {}} displayDataTypes={false} name={null} collapsed={1} />
                   }
                 </TableCell>
-                <TableCell align="right"><ReactJson src={line} collapsed={true} displayDataTypes={false} /></TableCell>
+                <TableCell>
+                  <ReactJson src={line} collapsed={true} displayDataTypes={false} name={null} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody> 

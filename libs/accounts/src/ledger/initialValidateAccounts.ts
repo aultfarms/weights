@@ -5,7 +5,7 @@ import debug from 'debug';
 import chalk from 'chalk';
 import settingsParser from './settings-parser.js';
 import numeral from 'numeral';
-import { MultiError } from '../err.js';
+import { AccountError } from '../err.js';
 import { stringify } from '../stringify.js';
 import rfdc from 'rfdc';
 import { 
@@ -19,7 +19,7 @@ import {
 } from './types.js';
 
 const deepclone = rfdc({ proto: true });
-const { green, magenta, yellow, red } = chalk;
+const { magenta, red } = chalk;
 const info = debug('af/accounts#initialValidateAccounts:info');
 //const trace = debug('af/accounts#initialValidateAccounts:info');
 
@@ -100,7 +100,7 @@ function getAccountSettings(
       // Merge any parsed settings into final settings
       const parsed = settingsParser(str);
       if (typeof parsed !== 'object') {
-        throw new MultiError({ msg: `A column in the SETTINGS line ${l.lineno} parsed to a non-object.  String to parse was: ${str}` });
+        throw new AccountError({ acct, msg: `A column in the SETTINGS line ${l.lineno} parsed to a non-object.  String to parse was: ${str}` });
       }
       settings = { 
         ...settings,
@@ -120,10 +120,13 @@ function getAccountSettings(
     return null;
   }
 
+  /*
   // Tell user what settings we found:
   if (Object.keys(settings).length > 0) {
     info(yellow('        Found Settings for account ')+green(acct.name)+yellow(stringify(settings)));
   }
+  */
+
   // Send settings back to put into the acct object
   return settings;
 }
@@ -185,7 +188,7 @@ export default function(
     //----------------------------------------------------
     // Grab the full set of column names (some objects may not have all keys)
     const colnamesobj: { [key: string]: true } = {};
-    for (const l of ret.lines) {
+    for (const l of acct.lines) {
       for (const k of Object.keys(l)) {
         colnamesobj[k] = true;
       }
@@ -207,7 +210,7 @@ export default function(
       try {
         assertValidatedRawTx(l);
       } catch(e: any) {
-        e = MultiError.wrap(e, `Account ${ret.name}, Raw line ${i} failed initial validation`);
+        e = AccountError.wrap(e, acctinfo, `Raw line ${i} failed initial validation`);
         l = {
           ...l,
           acct: acctinfo,
@@ -226,12 +229,18 @@ export default function(
       return ret;
     }
 
+    if (ret.lines.length < 1) {
+      // Can't validate column names if there are no lines
+      info('Account ', acct.name, ' has no transactions');
+      return ret;
+    }
+
     //------------------------------------------------------------
     // Verify that we have all the columns/settings we need for each account
     try {
       switch(ret.settings.accounttype) {
         case 'cash':
-          assertDateOrWrittenPost(ret);
+          assertDateOrWrittenPost(ret, colnames);
           assertColumns(ret, colnames, [ 'description', 'balance', 'who', 'category' ]);
         break;
         case 'asset':
@@ -272,20 +281,20 @@ export default function(
         break;
       }
     } catch(e: any) {
-      e = MultiError.wrap(e, `failed column/setting validation`);
-      ret.errors.concat(e.msgs());
+      e = AccountError.wrap(e, acctinfo, `failed column/setting validation`);
+      ret.errors.push(...e.msgs());
     }
     return ret;
   });
 }
 
-function assertSettings(acct: { settings: AccountSettings }, required: string[]) {
+function assertSettings(acct: { name: string, settings: AccountSettings }, required: string[]) {
   const missing: string[] = [];
   for (const r of required) {
     if (!(r in acct.settings)) missing.push(r);
   }
   if (missing.length > 0) {
-    throw new MultiError({ msg: `Missing the following required SETTINGS: ${missing.join(',')}` });
+    throw new AccountError({ acct, msg: `Missing the following required SETTINGS: ${missing.join(',')}` });
   }
 }
 
@@ -295,15 +304,14 @@ function assertColumns(acct: RawSheetAccount, colnames: string[], required: stri
     if (!colnames.find(n => n === r)) missing.push(r);
   }
   if (missing.length > 0) {
-    throw new MultiError({ msg: `Missing the following required columns in ${acct.name}: ${missing.join(', ')}.  The columns that it has are: ${colnames.join(', ')}` });
+    throw new AccountError({ acct, msg: `Missing the following required columns in ${acct.name}: ${missing.join(', ')}.  The columns that it has are: ${colnames.join(', ')}.` });
   }
 }
 
-function assertDateOrWrittenPost(acct: RawSheetAccount) {
-  const l = acct.lines[0];
-  if (!('date' in l)) {
-    if (!('writtenDate' in l) || !('postDate' in l)) {
-      throw new MultiError({ msg: `Did not have either (date column) or (writtenDate and postDate columns).` });
+function assertDateOrWrittenPost(acct: RawSheetAccount, colnames: string[]) {
+  if (!colnames.find(c => c === 'date')) {
+    if (!colnames.find(c => c === 'writtenDate') || !colnames.find(c => c === 'postDate')) {
+      throw new AccountError({ acct, msg: `Did not have either (date column) or (writtenDate and postDate columns).  The columns that it has are: ${colnames.join(', ')}` });
     }
   }
 }

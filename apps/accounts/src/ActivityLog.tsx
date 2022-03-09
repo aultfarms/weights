@@ -6,6 +6,7 @@ import { escape } from 'html-escaper';
 import ErrorIcon from '@mui/icons-material/Error';
 import CheckIcon from '@mui/icons-material/Check';
 import { Errors } from './Errors';
+import { linenoPrefix, accountPrefix } from './state/util';
 
 import ansispan from 'ansispan';
 import htmlparse from 'html-react-parser';
@@ -23,15 +24,19 @@ function preprocessMessage(msg: string): React.ReactElement{
 export const ActivityLog = observer(() => {
   const { state, actions } = React.useContext(context);
 
-  const showAccount = (acctname: string) => () => {
+  const showAccount = (acctname: string, lineno?: string | null) => () => {
     actions.selectedAccountName(acctname);
+    if (typeof lineno === 'string') {
+      actions.selectedAccountLine(lineno);
+    }
     actions.page('ledger');
   };
 
   const viewAccountForMessage = (msg: string) => {
-    const parts = msg.match(/^ACCOUNT ([^:]+):/);
-    if (!parts?.[1]) return '';
-    return <a href="#" onClick={showAccount(parts[1])}>View Ledger</a>;
+    const lineno = linenoPrefix(msg);
+    const account = accountPrefix(msg);
+    if (!account) return '';
+    return <a href="#" onClick={showAccount(account,lineno)}>View Ledger</a>;
   }
 
   return (

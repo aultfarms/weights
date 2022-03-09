@@ -22,7 +22,6 @@ export default function(
 ): ValidatedRawSheetAccount[] {
   return accts.map(acct => { 
     if (!status) status = info;
-    status('Standardizing account: '+acct.name);
 
     if (acct.errors && acct.errors.length > 0) {
       status(`Account ${acct.name} has errors, skipping`);
@@ -125,10 +124,9 @@ export default function(
         return ret;
       } catch(e: any) {
         e = LineError.wrap(e, line, `Line standardization failed.`);
-        return {
-          ...line,
-          errors: line.errors ? line.errors.concat(e.msgs()) : e.msgs(),
-        };
+        if (!line.errors) line.errors = [];
+        line.errors.push(...e.msgs());
+        return line;
       }
     });
 

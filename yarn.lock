@@ -3663,15 +3663,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^17.0.12":
-  version: 17.0.12
-  resolution: "@types/react-dom@npm:17.0.12"
-  dependencies:
-    "@types/react": "*"
-  checksum: 9754e1d0c0107310eab35a2eb1dad45f6ef0a41e562c23a29d6bf723a29c8a2036c4acd6a1a1422bf7cf956d431e41b154608dd917f6e69c7ab0d87720c5e27e
-  languageName: node
-  linkType: hard
-
 "@types/react-dom@npm:^17.0.13":
   version: 17.0.13
   resolution: "@types/react-dom@npm:17.0.13"
@@ -4332,77 +4323,6 @@ __metadata:
   resolution: "account-paster@workspace:apps/account-paster"
   dependencies:
     "@yarnpkg/sdks": ^2.6.0-rc.4
-  languageName: unknown
-  linkType: soft
-
-"accounts-afterfirsteject@workspace:apps/accounts-afterfirsteject":
-  version: 0.0.0-use.local
-  resolution: "accounts-afterfirsteject@workspace:apps/accounts-afterfirsteject"
-  dependencies:
-    "@aultfarms/accounts": "workspace:^"
-    "@babel/core": ^7.16.0
-    "@emotion/react": ^11.8.1
-    "@emotion/styled": ^11.8.1
-    "@mui/icons-material": ^5.4.4
-    "@mui/material": ^5.4.4
-    "@pmmmwh/react-refresh-webpack-plugin": ^0.5.3
-    "@svgr/webpack": ^5.5.0
-    "@types/debug": ^4
-    "@types/node": ^16.11.26
-    "@types/react": ^17.0.39
-    "@types/react-dom": ^17.0.12
-    babel-jest: ^27.4.2
-    babel-loader: ^8.2.3
-    babel-plugin-named-asset-import: ^0.3.8
-    babel-preset-react-app: ^10.0.1
-    bfj: ^7.0.2
-    browserslist: ^4.18.1
-    camelcase: ^6.2.1
-    case-sensitive-paths-webpack-plugin: ^2.4.0
-    chalk: 4
-    css-loader: ^6.5.1
-    css-minimizer-webpack-plugin: ^3.2.0
-    debug: ^4.3.3
-    dotenv: ^10.0.0
-    dotenv-expand: ^5.1.0
-    eslint: ^8.3.0
-    eslint-config-react-app: ^7.0.0
-    eslint-webpack-plugin: ^3.1.1
-    file-loader: ^6.2.0
-    fs-extra: ^10.0.0
-    html-webpack-plugin: ^5.5.0
-    identity-obj-proxy: ^3.0.0
-    jest: ^27.4.3
-    jest-resolve: ^27.4.2
-    jest-watch-typeahead: ^1.0.0
-    mini-css-extract-plugin: ^2.4.5
-    mobx: ^6.4.2
-    mobx-react-lite: ^3.3.0
-    postcss: ^8.4.4
-    postcss-flexbugs-fixes: ^5.0.2
-    postcss-loader: ^6.2.1
-    postcss-normalize: ^10.0.1
-    postcss-preset-env: ^7.0.1
-    prompts: ^2.4.2
-    react: ^17.0.2
-    react-app-polyfill: ^3.0.0
-    react-dev-utils: ^12.0.0
-    react-dom: ^17.0.2
-    react-refresh: ^0.11.0
-    resolve: ^1.20.0
-    resolve-url-loader: ^4.0.0
-    sass-loader: ^12.3.0
-    semver: ^7.3.5
-    source-map-loader: ^3.0.0
-    style-loader: ^3.3.1
-    tailwindcss: ^3.0.2
-    terser-webpack-plugin: ^5.2.5
-    tslib: ^2.3.1
-    typescript: ^4.6.2
-    webpack: ^5.64.4
-    webpack-dev-server: ^4.6.0
-    webpack-manifest-plugin: ^4.0.2
-    workbox-webpack-plugin: ^6.4.1
   languageName: unknown
   linkType: soft
 

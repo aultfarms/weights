@@ -1,8 +1,18 @@
 import { observable, autorun } from 'mobx';
 import type { ledger } from '@aultfarms/accounts';
+import { stepResult } from './actions';
 import debug from 'debug';
 
-const warn = debug('accounts#state:info');
+const warn = debug('accounts#state:warn');
+const info = debug('accounts#state:info');
+
+// year-indexed balance sheets and profit/loss statements (tax & mkt)
+export type IndexedStatements<T> = {
+  [year: string]: {
+    tax: T,
+    mkt: T,
+  }
+};
 
 export type Config = {
   accountsLocation: {
@@ -20,20 +30,28 @@ export type ActivityMessage = {
   type: 'good' | 'bad',
 };
 
+// things that are too big to fit in the state without crashing browser
+export type BigData = { rev: number };
+
 
 export type State = {
   page: 'activity' | 'ledger' | 'balance' | 'profit',
   config: Config,
   activityLog: ActivityMessage[],
   errors: string[],
-  stepResult: ledger.StepResult | null,
+  stepResult: BigData,
   selectedAccountName: string, 
+  selectedAccountLine: number | null, 
   selectedAccount: {  // computed automatically from selectedAccountName
     name: string,
     vacct?: ledger.ValidatedRawSheetAccount,
     acct?: ledger.Account,
   } | null,
+  balancesheets: BigData,
+  profitlosses: BigData,
 };
+
+
 
 // Figure out the config: load from localStorage, but have default
 const defaultConfig: Config = {
@@ -62,11 +80,13 @@ export const state = observable<State>({
   config: config,
   activityLog: [],
   errors: [],
-  stepResult: null,
+  stepResult: { rev: 0 },
   selectedAccountName: '',
+  selectedAccountLine: null,
   selectedAccount: null,
+  balancesheets: { rev: 0 },
+  profitlosses: { rev: 0 },
 });
-
 
 // Every time the state.config changes, save it to localStorage:
 autorun(() => {
@@ -76,11 +96,14 @@ autorun(() => {
 // Keep state.selectedAccount in sync with state.selectedAccountName: you set the name,
 // this will find the account and set it.
 autorun(() => {
+  info('autorunning account determiner from account name');
   if (!state.selectedAccountName) {
     state.selectedAccount = null;
     return;
   }
-  if (!state.stepResult) {
+  const sr = stepResult();
+  // access state.stepResult so that we are properly autorun when it changes
+  if (!sr || state.stepResult.rev < 0) {
     state.selectedAccount = null;
     return;
   }
@@ -88,9 +111,9 @@ autorun(() => {
   const name = state.selectedAccountName;
   let acct: ledger.Account | null | undefined = null;
   let vacct: ledger.ValidatedRawSheetAccount | null | undefined = null;
-  if (state.stepResult.final) {
-    acct = state.stepResult.final.mkt.accts.find(a => a.name === name);
-    if (!acct) acct = state.stepResult.final.tax.accts.find(a => a.name === name);
+  if (sr.final) {
+    acct = sr.final.mkt.accts.find(a => a.name === name);
+    if (!acct) acct = sr.final.tax.accts.find(a => a.name === name);
     if (!acct) {
       warn('stepResult has a final, but could not find selectedAccount ', name, ' in mkt or in tax');
       state.selectedAccount = null;
@@ -99,8 +122,8 @@ autorun(() => {
     state.selectedAccount = { name, acct };
     return;
   }
-  if (state.stepResult.accts) {
-    acct = state.stepResult.accts.find(a => a.name === name);
+  if (sr.accts) {
+    acct = sr.accts.find(a => a.name === name);
     if (!acct) {
       warn('stepResult has accts, but could not find selectedAccount', name);
       state.selectedAccount = null;
@@ -108,8 +131,8 @@ autorun(() => {
     state.selectedAccount = { name, acct };
     return;
   }
-  if (state.stepResult.vaccts) {
-    vacct = state.stepResult.vaccts.find(a => a.name === name);
+  if (sr.vaccts) {
+    vacct = sr.vaccts.find(a => a.name === name);
     if (!vacct) {
       warn('stepResult has vaccts, but could not find selectedAccount', name);
       state.selectedAccount = null;
@@ -120,3 +143,9 @@ autorun(() => {
   state.selectedAccount = null;
 });
 
+/*
+autorun(() => {
+  if (state.stepResult?.done && state.stepResult?.final) {
+    state.ledger = state.stepResult.final;
+  }
+});*/
