@@ -77,10 +77,11 @@ export const BalanceSheets = observer(function BalanceSheets() {
       numcategorylevels = nl;
     }
   }
+  const maxlevel = state.balance.level < numcategorylevels ? state.balance.level : numcategorylevels;
 
   const displayCategoryHeader = () => {
     const ret = [];
-    for (let i=0; i < numcategorylevels; i++) {
+    for (let i=0; i < maxlevel; i++) {
       ret.push(
         <TableCell key={`cattablecell-${i}`}>
           Level {i+1}
@@ -146,7 +147,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
     const ret = [];
     const parts = catname.split('-');
     const level = parts.length - 1;
-    for (let i=0; i < numcategorylevels; i++) {
+    for (let i=0; i < maxlevel; i++) {
       if (i === level) {
         ret.push(<TableCell>{parts[level]}</TableCell>);
       } else {
@@ -177,7 +178,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
 
   const displayRootRow = () => {
     const ret = [];
-    for (let i=0; i < numcategorylevels; i++) {
+    for (let i=0; i < maxlevel; i++) {
       ret.push(<TableCell/>);
     }
     for (const year of years) {
