@@ -13,18 +13,11 @@ import pkg from '../package.json';
 const warn = debug('accounts#App:info');
 
 // STOPPED HERE XXX
-// Basic React app w/ mobx is done.  This app now needs:
-// XX 1: console output, collapsable (console-feed)
-// 2: config page w/ localstorage (google paths)
-// XXX 3: load ledger by default on startup from stored path
-// XXX 4: show all errors on main screen
-// XXX 5: button to create balance sheet and p&l  (download vs. in google)
-// 6: debug assets since all current ones have incorrect prior's
-// 6: display general combined tax/mkt ledgers (toggle for tax/mkt)
-// 7: display balance sheet on balance sheet page
-// 8: display P&L on P&L page
-// 9: download button on each balance and P&L page
-// 10: add category listing for new categories this year, maybe also missing categories
+// MVP is done.  Now add helpful checks:
+// - check for transfer as zero
+// - check for loan-principal as zero
+// - check for dates that are > 4 months different than their neighbors (i.e. mistyped year on date)
+// - add lookup feature for category to show all lines that hit that category (year?)
 
 export const App = observer(function App() {
   const ctx = React.useContext(context);

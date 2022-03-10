@@ -24,7 +24,13 @@ export function combinePrefixedMsgs(errs: string[] | ActivityMessage[]): typeof 
   const nones: ActivityMessage[] = [];
   const prefixed: { [prefix: string]: ActivityMessage } = {};
   for (const e of amerrors) {
-    const pfx = linenoPrefix(e.msg) || accountPrefix(e.msg);
+    let pfx = '';
+    if (accountPrefix(e.msg)) {
+      pfx += `${accountPrefix(e.msg)}-`;
+      if (linenoPrefix(e.msg)) {
+        pfx += linenoPrefix(e.msg);
+      }
+    }
     if (!pfx) {
       nones.push(e);
     } else {

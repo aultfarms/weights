@@ -45,6 +45,41 @@ export default function(
       origin: acct.origin ? omit('lines')(acct.origin) : undefined,
     };
 
+    let latestReasonableDate: Moment | null = null;
+    let latestReasonableDateLineno: number | null = null;
+    function throwIfDateIsUnreasonable(date: string | Moment | null | undefined, l: ValidatedRawTx, type: string) {
+      if (!date) return; // not all lines have all types of dates, so this is not an error
+      if (date === 'SPLIT') return;
+      const d = typeof date === 'string' ? moment(date, 'YYYY-MM-DD') : date;
+      if (!d.isValid()) {
+        throw new LineError({ line: l, msg: `${type} (${date}) does not have the right format of YYYY-MM-DD.` });
+      }
+      if (!latestReasonableDate) {
+        latestReasonableDate = d;
+        latestReasonableDateLineno = l.lineno;
+      }
+      const diff = Math.abs(d.diff(latestReasonableDate,'days'));
+      try {
+        if (l.acct.settings.accounttype.match(/cash/) && diff > 300) {
+          throw new LineError({ 
+            line: l, 
+            msg: `${type} (${d.format('YYYY-MM-DD')}) is more than 300 days away from the previous valid date `+
+                 `(${latestReasonableDate.format('YYYY-MM-DD')}) from line `+
+                 `${latestReasonableDateLineno}.  This is an error since it is a cash account.  `+
+                 `Did you put the wrong year on this line?  If it is correct, insert a $0 transaction with a closer date.` });
+        } else if (d.isBefore(latestReasonableDate) && diff > 30) {
+          throw new LineError({ 
+            line: l, 
+            msg: `${type} (${d.format('YYYY-MM-DD')}) is before the previous valid date `+
+                 `(${latestReasonableDate.format('YYYY-MM-DD')}) from line `+
+                 `${latestReasonableDateLineno} by more than 30 days.  `+
+                 `Did you put the wrong year on this line?` });
+        }
+      } finally {
+        latestReasonableDate = d;
+        latestReasonableDateLineno = l.lineno;
+      }
+    }
     acct.lines = util.mapSkipErrors(acct.lines, line => {
       try {
         line.acct = acctinfo;
@@ -80,6 +115,10 @@ export default function(
         const date: Moment | string | null = exists(line.date) // a "date" column overrides any written/post dates
           ? parseDate(line.date)
           : parseDateFromWrittenOrPost(line, is_debit);
+        throwIfDateIsUnreasonable(line.date, line, 'date');
+        // Don't check the written/post dates because a late cashing check could have them
+        // far apart.  Since we already checked for reasonableness on the "date", which is what
+        // everything uses from here on out, that is sufficient.
         const writtenDate: Moment | string | null = exists(line.writtenDate)
           ? parseDate(line.writtenDate)
           : date; // for non-check accounts w/o a written/post, default them to just the date already on the line

@@ -149,8 +149,8 @@ export const ProfitLoss = observer(function ProfitLoss() {
     const ret = [];
     for (const y of showyears.sort().reverse()) {
       if (y === state.profitloss.expandYear) {
-        ret.push(<TableCell>{y} Debit</TableCell>);
-        ret.push(<TableCell>{y} Credit</TableCell>);
+        ret.push(<TableCell align="right" valign="bottom">{y} Debit</TableCell>);
+        ret.push(<TableCell align="right" valign="bottom">{y} Credit</TableCell>);
       }
       ret.push(
         <TableCell align="right">
@@ -171,7 +171,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
     }
     return ret;
   };
-      
+
   const displayNameCellsForCatname = (catname: string) => {
     const ret = [];
     const parts = catname.split('-');
@@ -186,6 +186,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
     return ret;
   };
 
+  const emptyStyle = { backgroundColor: '#FFCCFF' };
   const displayAmountsForCatname = (catname: string) => {
     const ret = [];
     for (const year of showyears) {
@@ -207,14 +208,12 @@ export const ProfitLoss = observer(function ProfitLoss() {
         amt = '';
         dbt = '';
         cdt = '';
-        // account doesn't exist
-        info('Account ',catname, 'does not exist in year ', year, 'and type', state.profitloss.type, ' error was: ', e);
       }
       if (year === state.profitloss.expandYear) {
-        ret.push(<TableCell align="right">{dbt}</TableCell>);
-        ret.push(<TableCell align="right">{cdt}</TableCell>);
+        ret.push(<TableCell style={!dbt ? emptyStyle : {}} align="right">{dbt}</TableCell>);
+        ret.push(<TableCell style={!cdt ? emptyStyle : {}}align="right">{cdt}</TableCell>);
       }
-      ret.push(<TableCell align="right">{amt}</TableCell>);
+      ret.push(<TableCell style={!amt ? emptyStyle : {}} align="right">{amt}</TableCell>);
     }
     return ret;
   }
@@ -246,15 +245,37 @@ export const ProfitLoss = observer(function ProfitLoss() {
     return catname.split('-').length === 1;
   };
 
+  const notZeroStyle = { backgroundColor: '#FFCCCC' };
   const displayCategoryRow = (catname: string, index: number) => {
     const level = catname.split('-').length;
     if (level > state.profitloss.level) return <React.Fragment />;
+
+    // transfers and loan-principle should be net $0, color them red if not
+    let style = imp(catname) ? importantStyle : {};
+    if (catname.match(/transfer/) || catname.match('loan')) {
+      // Want "red" on top-level loan category if loan-principal is not zero,
+      // so we have to check here for both situations
+      if (!catname.match('loan') || catname === 'loan' || catname.match('loan-principal')) {
+        for (const year of showyears) {
+          const tree = pls[year]![state.profitloss.type].categories;
+          const cattree = profitloss.getCategory(tree, catname);
+          if (!cattree) continue; // category is not in this one
+          const amt = profitloss.amount(cattree);
+          if (!(Math.abs(amt) < 0.01)) {
+            info('transfer/loan category is not $0!!!!!!!!!!!!!!!!!!');
+            style = notZeroStyle;
+            break; // no need to keep looking
+          }
+        }
+      }
+    }
+
     return (
       <TableRow
         key={`catprofitlossline-${index}`}
         id={`profitlosscat-${catname}`}
         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-        style={imp(catname) ? importantStyle : {}}
+        style={style}
       >
         {displayNameCellsForCatname(catname)}
         {displayAmountsForCatname(catname)}

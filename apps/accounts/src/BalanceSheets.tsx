@@ -157,6 +157,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
     return ret;
   };
 
+  const emptyStyle = { backgroundColor: '#FFCCFF' };
   const displayBalancesForCatname = (catname: string) => {
     const ret = [];
     for (const year of years) {
@@ -171,7 +172,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
         // account doesn't exist
         info('Account ',catname, 'does not exist in year ', year, 'and type', state.balance.type, ' at yearend, error was: ', e);
       }
-      ret.push(<TableCell align="right">{bal}</TableCell>);
+      ret.push(<TableCell style={!bal ? emptyStyle : {}} align="right">{bal}</TableCell>);
     }
     return ret;
   }

@@ -5,8 +5,9 @@ import debug from 'debug';
 import chalk from 'chalk';
 import settingsParser from './settings-parser.js';
 import numeral from 'numeral';
-import { AccountError } from '../err.js';
+import { AccountError, LineError } from '../err.js';
 import { stringify } from '../stringify.js';
+import moment, { Moment } from 'moment';
 import rfdc from 'rfdc';
 import { 
   RawSheetAccount,
@@ -210,7 +211,7 @@ export default function(
       try {
         assertValidatedRawTx(l);
       } catch(e: any) {
-        e = AccountError.wrap(e, acctinfo, `Raw line ${i} failed initial validation`);
+        e = LineError.wrap(e, l, `Raw line failed initial validation`);
         l = {
           ...l,
           acct: acctinfo,
