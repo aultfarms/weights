@@ -94,3 +94,19 @@ export const balanceLevel = action('balanceLevel', (newval: number) => {
 export const balanceMsg = action('balanceMsg', (msg: string) => {
   state.balance.msg = msg;
 });
+
+export const profitlossType = action('profitlossType', (type: 'tax' | 'mkt') => {
+  state.profitloss.type = type;
+});
+
+export const profitlossLevel = action('profitlossLevel', (newval: number) => {
+  state.profitloss.level = newval;
+});
+
+export const profitlossMsg = action('profitlossMsg', (msg: string) => {
+  state.profitloss.msg = msg;
+});
+
+export const profitlossExpandYear = action('profitlossExpandYear', (y: string) => {
+  state.profitloss.expandYear = y;
+});

@@ -53,7 +53,13 @@ export type State = {
     type: 'mkt' | 'tax',
     level: number,
     msg: string,
-  }
+  },
+  profitloss: {
+    type: 'mkt' | 'tax',
+    level: number,
+    msg: string,
+    expandYear: string,
+  },
 };
 
 
@@ -95,6 +101,12 @@ export const state = observable<State>({
     type: 'mkt',
     level: 4,
     msg: '',
+  },
+  profitloss: {
+    type: 'mkt',
+    level: 4,
+    msg: '',
+    expandYear: (new Date()).toISOString().replace(/-.*$/g,'')
   },
 });
 

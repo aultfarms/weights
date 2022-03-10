@@ -1,6 +1,6 @@
 import moment from 'moment';
 import momentrange from 'moment-range';
-import { categorize, CategoryTree, getCategory, amount, AmountConfig, credit, debit } from './categorize.js';
+import { categorize, CategoryTree, treeToCategoryNames, getCategory, amount, AmountConfig, credit, debit } from './categorize.js';
 import { isStart, moneyEquals } from '../ledger/util.js';
 import type { FinalAccounts, AccountTx } from '../ledger/types.js';
 import { MultiError } from '../err.js';
@@ -9,7 +9,7 @@ import rfdc from 'rfdc';
 
 export { profitLossToWorkbook } from './exporter.js';
 
-export { CategoryTree, getCategory, amount, AmountConfig, credit, debit }; // bump up to top level because it is useful
+export { CategoryTree, treeToCategoryNames, getCategory, amount, AmountConfig, credit, debit }; // bump up to top level because it is useful
 export { moneyEquals }; // mainly for tests
 
 const deepclone = rfdc({ proto: true });

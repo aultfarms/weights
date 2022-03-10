@@ -54,6 +54,31 @@ export function credit(cat: CategoryTree, cfg?: AmountConfig): number {
   return amount(cat, { ...cfg, type: 'credit' });
 }
 
+export type CatIndex = {
+  [cat: string]: true
+};
+export function treeToCategoryNames(
+  tree: CategoryTree, 
+  catindex: CatIndex, // mutates catindex
+  opts: { excludeRoot?: boolean },
+  parentstr?: string,
+): void {
+  if (typeof parentstr !== 'string') {
+    parentstr = '';
+  }
+  if (tree.name !== 'root' || !opts.excludeRoot) {
+    if (parentstr) parentstr += '-';
+    parentstr += tree.name;
+    catindex[parentstr] = true;
+  }
+  if (tree.children) {
+    for (const c of Object.values(tree.children)) {
+      treeToCategoryNames(c, catindex, opts, parentstr);
+    }
+  }
+};
+
+
 export function getCategory(cat: CategoryTree, name: string): CategoryTree | null {
   if (!cat) return null;
   const parts = name.split('-');

@@ -6,6 +6,7 @@ import { NavBar } from './NavBar';
 import { ActivityLog } from './ActivityLog';
 import { Ledger } from './Ledger';
 import { BalanceSheets } from './BalanceSheets';
+import { ProfitLoss } from './ProfitLoss';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import pkg from '../package.json';
 
@@ -42,7 +43,7 @@ export const App = observer(function App() {
       case 'activity': return <ActivityLog />;
       case 'ledger': return <Ledger />;
       case 'balance': return <BalanceSheets />;
-      case 'profit': return <div>Profit not yet implemented</div>;
+      case 'profit': return <ProfitLoss />;
     }
   }
 
