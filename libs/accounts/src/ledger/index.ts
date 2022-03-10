@@ -27,13 +27,14 @@ import {
   assertFinalAccounts,
   RawSheetAccount,
   ValidatedRawSheetAccount,
+  ValidatedRawTx,
   StatusFunction,
 } from './types.js';
 
 export { 
   // Exported types:
   RawSheetAccount, ValidatedRawSheetAccount, AccountSettings, assertAccountSettings,
-  Account, assertAccount, AccountTx, assertAccountTx, 
+  Account, assertAccount, AccountTx, assertAccountTx, ValidatedRawTx,
   CompositeAccount, assertCompositeAccount, FinalAccounts, assertFinalAccounts,
   MultiError,
 

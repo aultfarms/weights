@@ -16,9 +16,18 @@ import numeral from 'numeral';
 const warn = debug('accounts#AcctViewer:warn');
 const info = debug('accounts#AcctViewer:info');
 
+function num(n: number | undefined) {
+  if (!n) return '';
+  const str = numeral(n).format('$0,0.00');
+  if (n < 0) {
+    return <span style={{color: 'red'}}>{str}</span>
+  }
+  return str;
+}
+
 export const AcctViewer = observer(function AcctViewer(
-  { acct, vacct, centerline }: 
-  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null }
+  { acct, vacct, centerline, categoryFilter }: 
+  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null, categoryFilter: string | 'All' }
 ) {
   const a = acct || vacct;
   if (!a)  {
@@ -26,6 +35,11 @@ export const AcctViewer = observer(function AcctViewer(
     return <React.Fragment />;
   }
   let { lines, origin, ...withoutLines } = a;
+
+  let filterlines = (lines as ledger.ValidatedRawTx[]);
+  if (categoryFilter && categoryFilter !== 'All') {
+    filterlines = filterlines.filter(l => l.category?.match(categoryFilter));
+  }
 
   const windowsize = 250;
   let focusonline: null | number = null;
@@ -41,10 +55,10 @@ export const AcctViewer = observer(function AcctViewer(
   info('will show lines from start = ', start, ' to end ', end);
 
   // Only show 1000 lines
-  let showlines = lines;
-  if (lines.length > windowsize) {
+  let showlines = filterlines;
+  if (filterlines.length > windowsize) {
     warn('Ledger has > 1000 lines, only showing 1000 lines around line ',centerline);
-    showlines = lines.slice(start, end);
+    showlines = filterlines.slice(start, end);
   }
 
   // If we were asked to focus on a line, scroll there after render
@@ -54,15 +68,13 @@ export const AcctViewer = observer(function AcctViewer(
       if (!el) return;
       el.scrollIntoView();
     }
-  }, [ focusonline, lines ]);
+  }, [ focusonline, filterlines ]);
 
   const isasset = a.settings.accounttype !== 'cash' && a.settings.accounttype !== 'futures-cash';
 
-  // numeral format:
-  const f = '$0,0.00';
   return (
     <Paper elevation={1}>
-      <div>Showing lines {start+1} through { end < lines.length ? end : lines.length } of {lines.length}<br/></div>
+      <div>Showing lines {start+1} through { end < filterlines.length ? end : filterlines.length } of {filterlines.length}<br/></div>
       <div style={{
         display: 'flex', 
         flexDirection: 'row', 
@@ -84,7 +96,7 @@ export const AcctViewer = observer(function AcctViewer(
               <TableCell align="right">category</TableCell>
               <TableCell align="right">amount</TableCell>
               <TableCell align="right">balance</TableCell>
-              { !isasset ? '' : 
+              { !isasset ? <React.Fragment/> : 
                 <TableCell align="right">Asset Expectations</TableCell>
               }
               <TableCell>note</TableCell>
@@ -108,13 +120,13 @@ export const AcctViewer = observer(function AcctViewer(
                 <TableCell align="right">{line.description}</TableCell>
                 <TableCell align="right">{line.who}</TableCell>
                 <TableCell align="right">{line.category}</TableCell>
-                <TableCell align="right">{numeral(line.amount).format(f)}</TableCell>
-                <TableCell align="right">{numeral(line.balance).format(f)}</TableCell>
+                <TableCell align="right">{num(line.amount)}</TableCell>
+                <TableCell align="right">{num(line.balance)}</TableCell>
                 { !isasset ? '' :
                   <TableCell align="right">
                     {'assetTxType' in line ? <div>{`Tx Type: ${line.assetTxType}`}</div> : '' }
-                    {'expectedCurrentValue' in line ? <div>{`expectedCurrentValue: ${numeral(line.expectedCurrentValue).format(f)}`}</div> : '' }
-                    {'expectedPriorValue' in line ? <div>{`expectedPriorValue: ${numeral(line.expectedPriorValue).format(f)}`}</div> : '' }
+                    {'expectedCurrentValue' in line ? <div>{`expectedCurrentValue: ${num(line.expectedCurrentValue)}`}</div> : '' }
+                    {'expectedPriorValue' in line ? <div>{`expectedPriorValue: ${num(line.expectedPriorValue)}`}</div> : '' }
                     {'priorDate' in line ? <div>{`Prior Date: ${line.priorDate.format('YYYY-MM-DD')}`}</div> : '' }
                   </TableCell>
                 }

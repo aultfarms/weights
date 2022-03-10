@@ -38,18 +38,18 @@ export const errors = action('errorrs', (errs: string[]) => {
 });
 
 export const selectedAccountName = action('selectedAccountName', (sel: string | null) => {
-  state.selectedAccountName = sel || '';
+  state.selectedAccount.name = sel || '';
 });
 export const selectedAccountLine = action('selectedAccountLine', (line: string | number | null) => {
-  if (line === null) return state.selectedAccountLine = null;
-  if (typeof line === 'number') return state.selectedAccountLine = line;
+  if (line === null) return state.selectedAccount.line = null;
+  if (typeof line === 'number') return state.selectedAccount.line = line;
   // otherwise, it's a string
   line = +(line);
   if (isNaN(line)) {
     warn('line (',line,') was a string, but it converted to NaN instead of a number');
-    state.selectedAccountLine = null;
+    state.selectedAccount.line = null;
   }
-  return state.selectedAccountLine = line;
+  return state.selectedAccount.line = line;
 });
 
 let _stepResult: accountsLib.ledger.StepResult | null = null;
@@ -82,6 +82,32 @@ export const profitlosses = action('profitlosses', (pls?: typeof _profitlosses):
   state.profitlosses.rev++;
   _profitlosses = pls;
 });
+
+let _selectedAcctAcct: accountsLib.ledger.Account | null = null;
+export const selectedAccountAcct = action('selectedAccountAcct', (saa?: typeof _selectedAcctAcct): typeof _selectedAcctAcct| void => {
+  if (typeof saa === 'undefined') return _selectedAcctAcct;
+  if (state.selectedAccount.acct.rev < 0) return null;
+  state.selectedAccount.acct.rev++;
+  _selectedAcctAcct = saa;
+});
+
+let _selectedAcctVAcct: accountsLib.ledger.ValidatedRawSheetAccount | null = null;
+export const selectedAccountVAcct = action('selectedAccountVAcct', (sav?: typeof _selectedAcctVAcct): typeof _selectedAcctVAcct| void => {
+  if (typeof sav === 'undefined') return _selectedAcctVAcct;
+  if (state.selectedAccount.vacct.rev < 0) return null;
+  state.selectedAccount.vacct.rev++;
+  _selectedAcctVAcct = sav;
+});
+
+export const selectedAccountType = action('selectedAccountType', (type: 'tax' | 'mkt') => {
+  state.selectedAccount.type = type;
+});
+
+export const selectedAccountCategory = action('selectedAccountCategory', (cat: string | 'All') => {
+  state.selectedAccount.category = cat;
+});
+
+
 
 export const balanceType = action('balanceType', (type: 'tax' | 'mkt') => {
   state.balance.type = type;

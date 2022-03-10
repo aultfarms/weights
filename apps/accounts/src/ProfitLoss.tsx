@@ -262,7 +262,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
           if (!cattree) continue; // category is not in this one
           const amt = profitloss.amount(cattree);
           if (!(Math.abs(amt) < 0.01)) {
-            info('transfer/loan category is not $0!!!!!!!!!!!!!!!!!!');
+            info('transfer/loan category ',catname,'is not $0');
             style = notZeroStyle;
             break; // no need to keep looking
           }

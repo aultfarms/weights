@@ -1,6 +1,6 @@
 import { observable, autorun } from 'mobx';
 import type { ledger } from '@aultfarms/accounts';
-import { stepResult } from './actions';
+import { stepResult, selectedAccountAcct, selectedAccountVAcct } from './actions';
 import debug from 'debug';
 
 const warn = debug('accounts#state:warn');
@@ -33,20 +33,20 @@ export type ActivityMessage = {
 // things that are too big to fit in the state without crashing browser
 export type BigData = { rev: number };
 
-
 export type State = {
   page: 'activity' | 'ledger' | 'balance' | 'profit',
   config: Config,
   activityLog: ActivityMessage[],
   errors: string[],
   stepResult: BigData,
-  selectedAccountName: string, 
-  selectedAccountLine: number | null, 
-  selectedAccount: {  // computed automatically from selectedAccountName
-    name: string,
-    vacct?: ledger.ValidatedRawSheetAccount,
-    acct?: ledger.Account,
-  } | null,
+  selectedAccount: {
+    name: string | 'All',
+    line: number | null,
+    type: 'tax' | 'mkt',
+    category: string | 'All',
+    acct: BigData,
+    vacct: BigData,
+  },
   balancesheets: BigData,
   profitlosses: BigData,
   balance: {
@@ -92,9 +92,14 @@ export const state = observable<State>({
   activityLog: [],
   errors: [],
   stepResult: { rev: 0 },
-  selectedAccountName: '',
-  selectedAccountLine: null,
-  selectedAccount: null,
+  selectedAccount: {
+    name: '',
+    line: null,
+    type: 'mkt',
+    category: 'All',
+    acct: { rev: 0 },
+    vacct: { rev: 0 },
+  },
   balancesheets: { rev: 0 },
   profitlosses: { rev: 0 },
   balance: {
@@ -119,50 +124,73 @@ autorun(() => {
 // this will find the account and set it.
 autorun(() => {
   info('autorunning account determiner from account name');
-  if (!state.selectedAccountName) {
-    state.selectedAccount = null;
+  if (!state.selectedAccount.name) {
+    selectedAccountAcct(null);
+    selectedAccountVAcct(null);
     return;
   }
   const sr = stepResult();
   // access state.stepResult so that we are properly autorun when it changes
   if (!sr || state.stepResult.rev < 0) {
-    state.selectedAccount = null;
+    selectedAccountAcct(null);
+    selectedAccountVAcct(null);
     return;
   }
 
-  const name = state.selectedAccountName;
+  const name = state.selectedAccount.name;
   let acct: ledger.Account | null | undefined = null;
   let vacct: ledger.ValidatedRawSheetAccount | null | undefined = null;
+  const compositeToAcct = (cacct: ledger.CompositeAccount, name: 'All') => ({
+    name,
+    filename: 'none',
+    settings: { accounttype: ('cash' as ledger.AccountSettings['accounttype']) },
+    lines: cacct.lines,
+  });
+
   if (sr.final) {
-    acct = sr.final.mkt.accts.find(a => a.name === name);
-    if (!acct) acct = sr.final.tax.accts.find(a => a.name === name);
+    if (name === 'All') {
+      acct = compositeToAcct(sr.final[state.selectedAccount.type], name);
+    } else {
+      acct = sr.final[state.selectedAccount.type].accts.find(a => a.name === name);
+    }
     if (!acct) {
-      warn('stepResult has a final, but could not find selectedAccount ', name, ' in mkt or in tax');
-      state.selectedAccount = null;
+      warn('stepResult has a final, but could not find selectedAccount ', name, ' in ',state.selectedAccount.type);
+      selectedAccountAcct(null);
+      selectedAccountVAcct(null);
       return;
     }
-    state.selectedAccount = { name, acct };
+    selectedAccountAcct(acct);
     return;
   }
   if (sr.accts) {
-    acct = sr.accts.find(a => a.name === name);
+    acct = sr.accts.filter(a => {
+      switch(state.selectedAccount.type) {
+        case 'mkt': return a.settings.mktonly;
+        case 'tax': return a.settings.taxonly;
+      }
+    }).find(a => a.name === name);
     if (!acct) {
-      warn('stepResult has accts, but could not find selectedAccount', name);
-      state.selectedAccount = null;
+      warn('stepResult has accts, but could not find selectedAccount', name, ' in type ', state.selectedAccount.type);
+      selectedAccountAcct(null);
+      selectedAccountVAcct(null);
+      return;
     }
-    state.selectedAccount = { name, acct };
+    selectedAccountAcct(acct);
     return;
   }
   if (sr.vaccts) {
     vacct = sr.vaccts.find(a => a.name === name);
     if (!vacct) {
       warn('stepResult has vaccts, but could not find selectedAccount', name);
-      state.selectedAccount = null;
+      selectedAccountAcct(null);
+      selectedAccountVAcct(null);
     }
-    state.selectedAccount = { name, vacct };
+    selectedAccountVAcct(vacct);
     return;
   }
-  state.selectedAccount = null;
+  selectedAccountAcct(null);
+  selectedAccountVAcct(null);
+  return;
 });
 
 /*
