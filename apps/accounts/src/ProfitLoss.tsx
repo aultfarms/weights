@@ -21,8 +21,8 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import xlsx from 'xlsx-js-style';
 
-const warn = debug('accounts#BalanceSheets:warn');
-const info = debug('accounts#BalanceSheets:info');
+const warn = debug('accounts#ProfitLoss:warn');
+const info = debug('accounts#ProfitLoss:info');
 
 function num(n: number) {
   const str = numeral(n).format('$0,0.00');
@@ -57,13 +57,13 @@ export const ProfitLoss = observer(function ProfitLoss() {
   }
 
   const displayYearSelector = () => {
-    const options = [];
+    const options = [ <MenuItem value={''}>None</MenuItem> ];
     for (const year of years) {
       options.push(<MenuItem value={year}>{year}</MenuItem>);
     }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', padding: 10 }}>
-        Year to Expand:
+        Year:
         <Select 
           onChange={(evt: SelectChangeEvent) => actions.profitlossExpandYear(evt.target.value as string)}
           value={state.profitloss.expandYear}
@@ -79,7 +79,11 @@ export const ProfitLoss = observer(function ProfitLoss() {
   const pls = actions.profitlosses();
   if (!pls) return <div>No profit/loss statements available yet</div>;
 
-  const years = Object.keys(pls).sort().reverse();
+  let years = Object.keys(pls).sort().reverse();
+  let showyears = years;
+  if (state.profitloss.expandYear) {
+    showyears = [ state.profitloss.expandYear ];
+  }
 
   let catindex: { [cat: string]: true } = {};
   for (const year of years) {
@@ -124,26 +128,26 @@ export const ProfitLoss = observer(function ProfitLoss() {
     const fullpath = `${state.config.saveLocation.path}/${filename}`;
     if (direction === 'up') {
       actions.activity(`Uploading file to Google at ${fullpath}...`);
-      actions.balanceMsg(`Uploading file to Google at ${fullpath}...`);
+      actions.profitlossMsg(`Uploading file to Google at ${fullpath}...`);
       await google.uploadXlsxWorkbookToGoogle({ 
         parentpath: state.config.saveLocation.path,
         filename,
         workbook: wb,
       });
       actions.activity(`Upload successful to path ${fullpath}...`);
-      actions.balanceMsg(`Upload successful to path ${fullpath}...`);
+      actions.profitlossMsg(`Upload successful to path ${fullpath}...`);
     } else {
       actions.activity(`Downloading ${filename}`);
-      actions.balanceMsg(`Downloading ${filename}`);
+      actions.profitlossMsg(`Downloading ${filename}`);
       xlsx.writeFile(wb, filename, { bookType: 'xlsx' });
       actions.activity(`${filename} downloaded successfully`);
-      actions.balanceMsg(`${filename} downloaded successfully`);
+      actions.profitlossMsg(`${filename} downloaded successfully`);
     }
   };
 
   const displayYearTotalsHeader = () => {
     const ret = [];
-    for (const y of years.sort().reverse()) {
+    for (const y of showyears.sort().reverse()) {
       if (y === state.profitloss.expandYear) {
         ret.push(<TableCell>{y} Debit</TableCell>);
         ret.push(<TableCell>{y} Credit</TableCell>);
@@ -184,7 +188,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
 
   const displayAmountsForCatname = (catname: string) => {
     const ret = [];
-    for (const year of years) {
+    for (const year of showyears) {
       let amt: string | React.ReactElement = '';
       let dbt: string | React.ReactElement = '';
       let cdt: string | React.ReactElement = '';
@@ -220,7 +224,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
     for (let i=0; i < maxlevel; i++) {
       ret.push(<TableCell/>);
     }
-    for (const year of years) {
+    for (const year of showyears) {
       const pl = pls[year]![state.profitloss.type];
       if (year === state.profitloss.expandYear) {
         // debit and credit
@@ -247,7 +251,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
     if (level > state.profitloss.level) return <React.Fragment />;
     return (
       <TableRow
-        key={`catbalanceline-${index}`}
+        key={`catprofitlossline-${index}`}
         id={`profitlosscat-${catname}`}
         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
         style={imp(catname) ? importantStyle : {}}

@@ -106,7 +106,7 @@ export const state = observable<State>({
     type: 'mkt',
     level: 4,
     msg: '',
-    expandYear: (new Date()).toISOString().replace(/-.*$/g,'')
+    expandYear: '',
   },
 });
 
