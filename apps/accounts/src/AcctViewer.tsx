@@ -10,6 +10,9 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import Button from '@mui/material/Button';
 import ReactJson from 'react-json-view';
 import numeral from 'numeral';
 
@@ -29,6 +32,8 @@ export const AcctViewer = observer(function AcctViewer(
   { acct, vacct, centerline, categoryFilter }: 
   { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null, categoryFilter: string | 'All' }
 ) {
+  const [startLine, setStartLine] = React.useState(0);
+
   const a = acct || vacct;
   if (!a)  {
     warn('WARNING: you have to give either an Account or a ValidatedRawSheetAccount');
@@ -44,9 +49,9 @@ export const AcctViewer = observer(function AcctViewer(
   const windowsize = 250;
   let focusonline: null | number = null;
   if (typeof centerline === 'number') {
-   focusonline = centerline;
+    focusonline = centerline;
   } else {
-   centerline = windowsize/2;
+    centerline = windowsize/2 + startLine
   }
 
   let start = centerline - (windowsize/2);
@@ -71,10 +76,32 @@ export const AcctViewer = observer(function AcctViewer(
   }, [ focusonline, filterlines ]);
 
   const isasset = a.settings.accounttype !== 'cash' && a.settings.accounttype !== 'futures-cash';
+  
+  const handleMove = (dirname: 'left' | 'right') => () => {
+    const dir = dirname === 'left' ? -1 : 1;
+    setStartLine(startLine + (dir * windowsize));
+  };
 
   return (
     <Paper elevation={1}>
-      <div>Showing lines {start+1} through { end < filterlines.length ? end : filterlines.length } of {filterlines.length}<br/></div>
+      <div>
+        Showing lines {start+1}
+        &nbsp;through { end < filterlines.length ? end : filterlines.length } 
+        &nbsp;of {filterlines.length}
+        {start > 0 
+          ? <Button onClick={handleMove('left')} size="small">
+             <KeyboardArrowLeftIcon onClick={handleMove('left')} />
+           </Button>
+          : <React.Fragment/>
+        }
+        {end < filterlines.length
+          ? <Button onClick={handleMove('right')} size="small">
+             <KeyboardArrowRightIcon onClick={handleMove('right')} />
+           </Button>
+          : <React.Fragment/>
+        }
+        <br/>
+      </div>
       <div style={{
         display: 'flex', 
         flexDirection: 'row', 
@@ -90,6 +117,7 @@ export const AcctViewer = observer(function AcctViewer(
           <TableHead>
             <TableRow>
               <TableCell>#</TableCell>
+              { a.name === 'All' ? <TableCell>account</TableCell> : <React.Fragment/> }
               <TableCell>date</TableCell>
               <TableCell align="right">description</TableCell>
               <TableCell align="right">who</TableCell>
@@ -111,6 +139,7 @@ export const AcctViewer = observer(function AcctViewer(
                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
               >
                 <TableCell align="right">{line.lineno}</TableCell>
+                { a.name === 'All' ? <TableCell>{line.acct.name}</TableCell> : <React.Fragment/> }
                 <TableCell component="th" style={{ minWidth: '75px' }} scope="row">
                   {(line.date && isMoment(line.date)) 
                     ? line.date.format('YYYY-MM-DD')
