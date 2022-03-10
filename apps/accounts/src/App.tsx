@@ -6,6 +6,8 @@ import { NavBar } from './NavBar';
 import { ActivityLog } from './ActivityLog';
 import { Ledger } from './Ledger';
 import { BalanceSheets } from './BalanceSheets';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
+import pkg from '../package.json';
 
 const warn = debug('accounts#App:info');
 
@@ -45,9 +47,14 @@ export const App = observer(function App() {
   }
 
   return (
-    <div>
-      <NavBar />
-      {displayPage()}
-    </div>
-  )
+    <HelmetProvider>
+      <Helmet>
+        <title>AF/Accounts - v{pkg.version}</title>
+      </Helmet>
+      <div>
+        <NavBar />
+        {displayPage()}
+      </div>
+    </HelmetProvider>
+  );
 });
