@@ -256,9 +256,13 @@ export const ProfitLoss = observer(function ProfitLoss() {
       // Want "red" on top-level loan category if loan-principal is not zero,
       // so we have to check here for both situations
       if (!catname.match('loan') || catname === 'loan' || catname.match('loan-principal')) {
+        let matchcatname = catname;
+        if (catname === 'loan') { // loan should only be read if "loan-principal" below it will be red
+          matchcatname = 'loan-principal';
+        }
         for (const year of showyears) {
           const tree = pls[year]![state.profitloss.type].categories;
-          const cattree = profitloss.getCategory(tree, catname);
+          const cattree = profitloss.getCategory(tree, matchcatname);
           if (!cattree) continue; // category is not in this one
           const amt = profitloss.amount(cattree);
           if (!(Math.abs(amt) < 0.01)) {
