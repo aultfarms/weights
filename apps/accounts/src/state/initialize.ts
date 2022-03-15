@@ -114,7 +114,8 @@ export const onInitialize = action('onInitialize', async () => {
   }
 
   const startDate = '2020-12-31';
-  activity(`Checking that all notes have required structure for these categories since ${startDate}: ${Object.keys(ledger.categorySchemas).join(', ')}`);
+  const printcats = Object.keys(ledger.categorySchemas).map(k => k.split('!')[0]).join(', ');
+  activity(`Checking that all notes have required structure for these categories since ${startDate}: ${printcats}`);
   for (const type of ([ 'tax', 'mkt' ] as ('tax' | 'mkt')[]) ) {
     try {
       const results = ledger.validateNotesAllSchemas({account: final[type], startDate });

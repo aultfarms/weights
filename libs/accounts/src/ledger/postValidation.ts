@@ -8,6 +8,7 @@ import debug from 'debug';
 const trace = debug('af/accounts#ledger/postValidation:trace'); export { JSONSchema8 };
 //const numberpat = '-?[0-9]+(\.[0-9]+)?';
 const outidpat = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z0-9]';
+const incomingidpat = '[A-Z0-9]:[A-Z]{3}[0-9]{2}-[0-9]';
 export const categorySchemas: { [cat: string]: JSONSchema8 } = {
   // Any category name is the "startsWith" first, then any exclude's from that
   // come after sales-grain. i.e. sales-grain!sales-grain-trucking will exclude sales-grain-trucking
@@ -26,7 +27,7 @@ export const categorySchemas: { [cat: string]: JSONSchema8 } = {
     },
     required: [ 'gallons' ],
   },
-  'sales-cattle': {
+  'sales-cattle!sales-cattle-advance': {
     oneOf: [ // could have one outid or multiple outid's
       {
         type: 'object',
@@ -53,15 +54,32 @@ export const categorySchemas: { [cat: string]: JSONSchema8 } = {
       },
     ],
   },
-  'cattle-purchase-cattle': {
-    type: 'object',
-    properties: {
-      head: { type: 'number' },
-      loads: { type: 'number' },
-      weight: { type: 'number' }, // BKTKY:AUG20-1
-      incomingid: { type: 'string', pattern: '[A-Z]:[A-Z]{3}[0-9]{2}-[0-9]' },
-    },
-    required: [ 'head', 'loads', 'weight', 'incomingid' ],
+  'cattle-purchase-cattle!cattle-purchase-cattle-fifoadj': {
+    oneOf: [
+      {
+        type: 'object',
+        properties: {
+          head: { type: 'number' },
+          loads: { type: 'number' },
+          weight: { type: 'number' }, // BKTKY:AUG20-1
+          incomingid: { type: 'string', pattern: incomingidpat },
+        },
+        required: [ 'head', 'loads', 'weight', 'incomingid' ],
+      },
+      {
+        type: 'object',
+        properties: {
+          head: { type: 'number' },
+          loads: { type: 'number' },
+          weight: { type: 'number' }, // BKTKY:AUG20-1
+          incomingids: { 
+            type: 'array',
+            items: { type: 'string', pattern: incomingidpat },
+          },
+        },
+        required: [ 'head', 'loads', 'weight', 'incomingids' ],
+      },
+    ],
   },
   'crop-seed-corn': {
     type: 'object',

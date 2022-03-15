@@ -36,8 +36,11 @@ const parseOneItem = (str: string, acc?: Thing): Thing | number | boolean | stri
   if (key.match(/s$/) && !isJSON(str) && probablyNotANumber(val) && hasComma(val)) {
     // key name ends in "s" and value has commas and is not JSON, put it into an array
     val = val.split(',').map((v: string) => v.trim());
+  } else if (!isJSON(val) && val.match(/:/)) {
+    // It does not make sense to recursively parse a key:value situation
+    // such as incomingid: TPKA:DEC20-1.  In that case, the string legit has a colon, so just use it.
   } else {
-    // Otherwise, it's a normal situation so just recursively parse (could be json)
+    // Otherwise, recursively parse again
     val = parseOneItem(val, acc || {});
   }
   const ret = acc ? { ...acc } : {};
