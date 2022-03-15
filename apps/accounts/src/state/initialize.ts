@@ -113,14 +113,15 @@ export const onInitialize = action('onInitialize', async () => {
     return;
   }
 
-  activity(`Checking that all notes have required structure for these categories since 2020: ${Object.keys(ledger.categorySchemas).join(', ')}`);
+  const startDate = '2020-12-31';
+  activity(`Checking that all notes have required structure for these categories since ${startDate}: ${Object.keys(ledger.categorySchemas).join(', ')}`);
   for (const type of ([ 'tax', 'mkt' ] as ('tax' | 'mkt')[]) ) {
     try {
-      const results = ledger.validateNotesAllSchemas({account: final[type], startDate: '2020-01-01'});
+      const results = ledger.validateNotesAllSchemas({account: final[type], startDate });
       for (const [catname, caterrors] of Object.entries(results)) {
         if (caterrors) {
           for (const e of caterrors) {
-            const le = new err.LineError({ line: e.line, msg: `${type}: Line had category ${catname}, but note failed validation with this error: ${e.error} `});
+            const le = new err.LineError({ line: e.line, msg: `${type}: Line had category ${e.line.category}, but note failed validation with this error: ${e.error} `});
             activity(le.msgs(),'bad');
             errors(le.msgs());
           }
