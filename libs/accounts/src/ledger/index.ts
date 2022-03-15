@@ -13,6 +13,7 @@ import validateBalances from './validateBalances.js';
 import separateTaxMkt from './separateTaxMkt.js';
 import { ledger2Str, line2Str } from './util.js';
 import { MultiError } from '../err.js';
+import { JSONSchema8, categorySchemas, validateNoteSchemaForCatgory, validateNotesAllSchemas } from './postValidation.js';
 
 import {
   Account,
@@ -36,11 +37,12 @@ export {
   RawSheetAccount, ValidatedRawSheetAccount, AccountSettings, assertAccountSettings,
   Account, assertAccount, AccountTx, assertAccountTx, ValidatedRawTx,
   CompositeAccount, assertCompositeAccount, FinalAccounts, assertFinalAccounts,
-  MultiError,
+  MultiError, JSONSchema8,
 
   // Exported individual functions to make them individually testable
   initialValidateAccounts, assetsToTxAccts, standardize, 
   splits, assertAllAccounts, validateBalances, separateTaxMkt,
+  validateNoteSchemaForCatgory, categorySchemas, validateNotesAllSchemas,
 
   // Helper functions
   ledger2Str, line2Str,

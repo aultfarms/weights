@@ -23,6 +23,9 @@ export type Config = {
     place: 'google' | 'dir',
     path: string,
   },
+  validations: {
+    retroActiveStartDate: string,
+  },
 };
 
 export type ActivityMessage = {
@@ -74,6 +77,9 @@ const defaultConfig: Config = {
     place: 'google',
     path: '/Ault Farms Shared/LiveData/BalanceProfitLoss'
   },
+  validations: {
+    retroActiveStartDate: '2020-01-01',
+  },
 };
 let config = defaultConfig;
 
@@ -83,6 +89,7 @@ try {
     config = localConfig;
   }
 } catch (e) {
+  warn('Could not parse localStorage["accounts-config"]');
   // JSON parse failed
 }
 

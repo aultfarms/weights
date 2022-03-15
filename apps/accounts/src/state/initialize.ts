@@ -3,7 +3,7 @@ import { action } from 'mobx';
 import { state, IndexedStatements } from './state';
 import { activity, errors, stepResult, balancesheets, profitlosses } from './actions';
 import debug from 'debug';
-import { ledger as ledger, balance, profitloss, google } from '@aultfarms/accounts';
+import { ledger as ledger, err, balance, profitloss, google } from '@aultfarms/accounts';
 
 const info= debug("accounts#initialize:info");
 const warn = debug("accounts#initialize:warn");
@@ -111,6 +111,25 @@ export const onInitialize = action('onInitialize', async () => {
     }
     activity('Error: could not load accounts', 'bad');
     return;
+  }
+
+  activity(`Checking that all notes have required structure for these categories since 2020: ${Object.keys(ledger.categorySchemas).join(', ')}`);
+  for (const type of ([ 'tax', 'mkt' ] as ('tax' | 'mkt')[]) ) {
+    try {
+      const results = ledger.validateNotesAllSchemas({account: final[type], startDate: '2020-01-01'});
+      for (const [catname, caterrors] of Object.entries(results)) {
+        if (caterrors) {
+          for (const e of caterrors) {
+            const le = new err.LineError({ line: e.line, msg: `${type}: Line had category ${catname}, but note failed validation with this error: ${e.error} `});
+            activity(le.msgs(),'bad');
+            errors(le.msgs());
+          }
+        }
+      }
+    } catch(e: any) {
+      activity(`ERROR: could not validate notes, error was: ${e.toString()}`, 'bad');
+      errors(e.toString());
+    }
   }
 
 });
