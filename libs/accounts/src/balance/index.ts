@@ -4,6 +4,7 @@ import debug from 'debug';
 //import numeral from 'numeral';
 //import clitable from 'cli-table';
 import { MultiError } from '../err.js';
+import { isSameDayOrBefore } from '../util.js';
 
 // to simplify tests
 export { moneyEquals } from '../ledger/util.js';
@@ -110,7 +111,7 @@ export function balanceForAccountOnDate(d: Moment, acct: Account): number {
   let prev = null;
   for (const l of acct.lines) {
     // First line date not before or on same day as our search date
-    if (!l.date.isSameOrBefore(d)) {
+    if (!isSameDayOrBefore(l.date, d)) { //l.date.isSameOrBefore(d)) {
       if (!prev) return 0; // first line in account is not same/before date
       return prev.balance;
     }

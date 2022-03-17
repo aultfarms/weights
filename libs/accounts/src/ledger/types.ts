@@ -188,15 +188,17 @@ export function assertAccountTx(l: any): asserts l is AccountTx {
     e = LineError.wrap(e, l, `line.acct is not a valid AccountInfo`);
     errs.push(...e.msgs());
   }
-  if (!l.date || !isMoment(l.date)) errs.push(`date (${l.date.toString()}) is not a Moment`);
+  if (!l.date) errs.push(`Line has no date`);
+  else if (!isMoment(l.date)) errs.push(`date (${l.date}) is not a Moment, which means it was not readable as YYYY-MM-DD format`);
+  else if (!l.date.isValid()) errs.push(`date (${l.date}) is not valid, which means it was of the format YYYY-MM-DD like 2021-01-01`);
   if (typeof l.description !== 'string') errs.push(`description (${l.description}) is not a string`);
   if (typeof l.amount !== 'number') errs.push(`amount (${l.amount}) is not a number`);
   if ('splitamount' in l && typeof l.splitamount !== 'number') errs.push(`splitamount (${l.splitamount}) is not a number`);
   if (typeof l.balance !== 'number') errs.push(`balance (${l.balance}) is not a number`);
   if (!l.category || l.category == '' || typeof l.category !== 'string') errs.push(`category (${l.category}) is empty or not a string`);
   if ('note' in l && typeof l.note !== 'string' && typeof l.note !== 'number' && typeof l.note !== 'object' && typeof l.note !== 'boolean') errs.push(`note (${l.note}) is not a string, number, object, array, or boolean`);
-  if ('writtenDate' in l && (!l.writtenDate || !isMoment(l.writtenDate))) errs.push(`writtenDate (${l.writtenDate.toString()}) is not a Moment`);
-  if ('postDate' in l && (!l.postDate || !isMoment(l.postDate))) errs.push(`postDate (${l.postDate.toString()}) is not a Moment`);
+  if ('writtenDate' in l && (!l.writtenDate || !isMoment(l.writtenDate))) errs.push(`writtenDate (${l.writtenDate}) is not a Moment`);
+  if ('postDate' in l && (!l.postDate || !isMoment(l.postDate))) errs.push(`postDate (${l.postDate}) is not a Moment`);
   if ('is_error' in l && l.is_error !== false) errs.push(`is_error exists, but it is not false`);
   if ('isStart' in l && typeof l.isStart !== 'boolean') errs.push(`isStart exists, but it is not boolean, it is ${typeof l.isStart} instead`);
   if ('stmtacct' in l && typeof l.stmtacct !== 'string') errs.push(`stmtacct (${l.stmtacct}) is not a string`);

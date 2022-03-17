@@ -134,5 +134,68 @@ export const onInitialize = action('onInitialize', async () => {
     }
   }
 
+  // Debugging: grab every category, filter all the lines in "All" to that category
+  // loop through 2020, 2021, 2022
+  // Sum up all those credit/debit's, compare with profit/loss's total.  
+  // If they don't match, you can always compare the lines then
+  /*
+  const unique_categories = final.mkt.lines.map(l => l.category).filter((val, index, self) => self.indexOf(val) === index);
+  for (const cat of unique_categories) {
+    let lines = final.mkt.lines.filter(l => l.category.startsWith(cat));
+    for (const year of [2021, 2020]) {
+      let amt = 0;
+      let cdt = 0;
+      let dbt = 0;
+      const yearlines = lines.filter(l => l.date.year() === year);
+      for (const l of yearlines) {
+        amt += l.amount;
+        if (l.amount > 0) cdt += l.amount;
+        if (l.amount < 0) dbt += l.amount;
+      }
+      // Now, check this year's profit-loss amount for this category:
+      const pls = profitlosses();
+      if (!pls) throw new Error('somehow we have no profitosses');
+      const pl = (pls[''+year]!.mkt as profitloss.ProfitLoss);
+      const tree = profitloss.getCategory(pl.categories, cat);
+      let plamt = 0;
+      let plcdt = 0;
+      let pldbt = 0;
+      if (tree) {
+        plamt = profitloss.amount(tree);
+        plcdt = profitloss.credit(tree);
+        pldbt = profitloss.debit(tree);
+      }
+      if (cat === 'START') continue;
+      if (!(Math.abs(plamt - amt) < 0.01)) {
+        info(`Have ${yearlines.length} lines in yearlines, and ${tree!.transactions.length} in tree.transactions`);
+        if (tree) {
+          info(`Have ${Object.keys(tree.children).length} children on tree`);
+        }
+        for (const [index, l] of yearlines.entries()) {
+          const plline = tree!.transactions[index];
+          if (!plline) info(`Line ${index} exists in yearlines but not in transactions`);
+          else {
+            if (plline.date !== l.date || plline.amount !== l.amount) {
+              info(`Line ${index} is different! (date,amt) => allcat (${l.date.format('YYYY-MM-DDTHH:mm:ss')}, ${l.amount}) vs. p&l (${plline.date.format('YYYY-MM-DDTHH:mm:ss')}, ${plline.amount})`);
+            }
+          }
+        }
+        throw new Error(`PROFITLOSS FAILURE: year ${year}, category ${cat}: plamt (${plamt}) !== amt (${amt})`);
+      }
+    }
+  }*/
+
+  /*
+  // Using the "all" account, find the balance, and add up all the transactions.  Figure out 
+  // which one is wrong compared to what's on the web.
+  for (const year of [ 2020, 2021, 2022 ]) {
+    const mktlines = final.mkt.lines.filter(l => l.date.year() === year);
+    const bal = mktlines[mktlines.length-1]!.balance;
+    const plval = mktlines.reduce((acc,l) => acc+l.amount, 0);
+    info(`For All: Balance for ${year} is: ${bal}`);
+    info(`For All: P&L for ${year} is: ${plval}`);
+  }
+  */
+  
 });
 

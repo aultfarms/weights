@@ -3,6 +3,8 @@ import { LineError } from '../err.js';
 import type { Moment } from 'moment';
 import type { DateRange }from 'moment-range';
 import { stringify } from '../stringify.js';
+import debug from 'debug';
+const info = debug('af/accounts#profit-loss/categorize');
 
 export type AmountConfig = {
   start?: Moment,
@@ -28,7 +30,6 @@ export function amount(cat: CategoryTree, cfg?: AmountConfig): number {
   // if this one does not contain the only one we want, we're done
   if (only && !containsCategory(cat,only) && !underCategory(cat,only)) return 0;
   // total of transactions at this level plus amounts of children
-
   const mysum = cat.transactions.reduce((sum,tx) => {
     if (type === 'credit' && tx.amount < 0) return sum; // credits are positive
     if (type === 'debit'  && tx.amount > 0) return sum; // debits are negative
@@ -41,8 +42,9 @@ export function amount(cat: CategoryTree, cfg?: AmountConfig): number {
   const childrensum = Object.values(cat.children).reduce((sum,child) => {
     return sum + amount(child,cfg);
   },0);
-
-  return mysum + childrensum;
+  const ret = mysum + childrensum;
+  if (Math.abs(ret) < 0.01) return 0; // If you don't do this, you get a NaN from numeral sometimes
+  return ret;
 }
 
 export function debit(cat: CategoryTree, cfg?: AmountConfig): number {

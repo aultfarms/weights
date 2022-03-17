@@ -7,6 +7,7 @@ import { stringify } from '../stringify.js';
 import { moneyEquals, weHave, line2Str } from './util.js';
 import { MultiError, AccountError, LineError } from '../err.js';
 import type { ValidatedRawSheetAccount, OriginLine, AccountInfo } from './types.js';
+import { isSameDayOrAfter, isSameDayOrBefore } from '../util.js';
 //import { ledger2Str } from './util.js';
 
 const { isMoment } = moment;
@@ -34,6 +35,7 @@ type AssetTx = {
   balance?: number,
 };
 
+/*
 // Is d2 the same day or after d1?
 function isSameDayOrAfter(d1: Moment, d2: Moment): boolean {
   if (d1.format('YYYY-MM-DD') === d2.format('YYYY-MM-DD')) return true; // same day
@@ -45,6 +47,7 @@ function isSameDayOrBefore(d1: Moment, d2: Moment): boolean {
   if (d1.format('YYYY-MM-DD') === d2.format('YYYY-MM-DD')) return true; // same day
   return d1.isSameOrBefore(d2);
 }
+*/
 
 function safesetNumber(n: any): number {
   if (!n) return 0; // handles undefined, 0, ''

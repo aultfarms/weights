@@ -1,12 +1,13 @@
-const ledger = require('/Users/aultac/Financial/Farm/2020-AF/Accounts/lib');
-const util = require('/Users/aultac/Financial/Farm/2020-AF/Accounts/lib/util');
-const exporter = require('./exporter');
 const moment = require('moment-range').extendMoment(require('moment'));
 const argv = require('minimist')(process.argv.slice(2));
 const _ = require('lodash');
-const chalk = require('chalk');
 const { table } = require('table');
 const numeral = require('numeral');
+
+(async () => {
+
+const chalk = (await import('chalk')).default;
+const accounts = await import('@aultfarms/accounts');
 
 const pad = (str, width) => {
   let n = str;
@@ -18,6 +19,11 @@ const padCurrency = (val,width) => pad(numeral(val).format('$0,000.00'), width |
 
 let general_ledger = null;
 
+const accountsdir = argv.d;
+if (!accountsdir) {
+  console.log('ERROR: You must specify the path to your local accounts dir with -d <dir>');
+  process.exit(1);
+}
 const startarg = argv.s || argv.start;
 if (!startarg) {
   console.log('ERROR: You must at least specify a start date for tallies as YYYY-MM-DD with -s or --start');
@@ -60,7 +66,8 @@ const accumulate = (transactions, paths) => _.reduce(transactions, (acc,t,i) => 
 
 
 let haveerror = false;
-ledger()
+accounts.spreadsheets.readAccountsFromDir({ accountsdir })
+.then(rawaccts => accounts.ledger.loadAll({ rawaccts }))
 .then(all_transactions => {
   general_ledger = all_transactions;
 
@@ -72,7 +79,7 @@ ledger()
 
   .tap(ts => console.log('Before date filter, have ',ts.length,' entries'))
 
-  .filter(t => !util.isStart(t) && t.date && t.date.isValid() && timerange.contains(t.date))
+  .filter(t => !t.isStart && t.date && t.date.isValid() && timerange.contains(t.date))
 
   .tap(ts => console.log('After date filter, have ',ts.length,' entries'))
 
@@ -141,4 +148,4 @@ ledger()
   }
 })
 
-
+})();

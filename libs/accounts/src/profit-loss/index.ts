@@ -60,22 +60,22 @@ export function profitLoss(
       year,
       name: 'End '+year+'Q4',
       yearend: true,
-      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-12-31 11:59:59')), 
+      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-12-31 23:59:59')), 
     },
     { 
       year,
       name: 'End '+year+'Q3',
-      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-09-30 11:59:59')), 
+      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-09-30 23:59:59')), 
     },
     { 
       year,
       name: 'End '+year+'Q2',
-      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-06-30 11:59:59')), 
+      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-06-30 23:59:59')), 
     },
     { 
       year,
       name: 'End '+year+'Q1',
-      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-03-31 11:59:59')), 
+      timerange: range(moment(year+'-01-01 00:00:00'), moment(year+'-03-31 23:59:59')), 
     },
   ];
 

@@ -13,7 +13,7 @@ export const Errors = observer(function App() {
   const sr = actions.stepResult();
 
   return (
-    <div style={ state.errors.length < 1 ? good : bad }>
+    <div style={ { ...(state.errors.length < 1 ? good : bad), padding: '10px' } }>
       { state.errors.length < 1 
         ? 'No errors currently' 
         : `There are ${state.errors.length} total errors.`
