@@ -252,9 +252,13 @@ export const ProfitLoss = observer(function ProfitLoss() {
 
     // transfers and loan-principle should be net $0, color them red if not
     let style = imp(catname) ? importantStyle : {};
-    if (catname.match(/transfer/) || catname.match('loan')) {
+    if (
+      catname.match(/transfer/) ||  // anything transfer should be zeros all the way down
+      catname.match('loan') ||      // loan-principal should be zero, so light up loan as red too if it's not
+      (catname.match(/-payment$/) && state.profitloss.type === 'mkt')  // any -payment from invoices should be zero only in mkt (invoice accounts don't show up in tax)
+    ) {
       // Want "red" on top-level loan category if loan-principal is not zero,
-      // so we have to check here for both situations
+      // so we have to check here for all situations
       if (!catname.match('loan') || catname === 'loan' || catname.match('loan-principal')) {
         let matchcatname = catname;
         if (catname === 'loan') { // loan should only be read if "loan-principal" below it will be red
@@ -266,7 +270,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
           if (!cattree) continue; // category is not in this one
           const amt = profitloss.amount(cattree);
           if (!(Math.abs(amt) < 0.01)) {
-            info('transfer/loan category ',catname,'is not $0');
+            info('transfer/loan/payment category ',catname,'is not $0');
             style = notZeroStyle;
             break; // no need to keep looking
           }
