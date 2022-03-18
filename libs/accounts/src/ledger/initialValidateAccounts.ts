@@ -246,7 +246,7 @@ export default function(
         break;
         case 'asset':
           // All asset accounts need these things:
-          assertColumns(ret, colnames, [ 'category', 'description', 'purchaseDate', 'purchaseValue', 
+          assertColumns(ret, colnames, [ 'category', 'description', 'purchaseDate', /*'purchaseValue',*/ // If there are no purchases in a given year, the purchaseValue could be empty
                                 'mktPriorValue', 'mktCurrentValue', 'mktCurrentDepr', 
                                 'saleDate', 'saleValue' ]);
           // Only tax-basis accounts (i.e. !mktonly) need these additional things:
