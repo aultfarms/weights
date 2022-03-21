@@ -20,7 +20,7 @@ const warn = debug('accounts#AcctViewer:warn');
 const info = debug('accounts#AcctViewer:info');
 
 function num(n: number | undefined) {
-  if (!n) return '';
+  if (!n && n !== 0) return '';
   const str = numeral(n).format('$0,0.00');
   if (n < 0) {
     return <span style={{color: 'red'}}>{str}</span>

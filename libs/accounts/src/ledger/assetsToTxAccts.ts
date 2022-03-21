@@ -72,6 +72,26 @@ function balanceAtDate(date: Moment, acct: ValidatedRawSheetAccount) {
   return balance;
 }
 
+// Throw if there is a purchase that is not identical, otherwise return true if 
+// this initialLine can safely be added as a unique purchase, and false if not.
+// Used for purchase and sale lines
+function ensureOnlyOneOfAssetTxType(lines: AssetTx[], candidate: AssetTx): boolean {
+  for (const l of lines) {
+    if (l.assetTxType === candidate.assetTxType) {
+      if (l.date.format('YYYY-MM-DD') === candidate.date.format('YYYY-MM-DD')) {
+        return false; // already have an identical one, false means "do not use candidate"
+      }
+      throw new LineError({ line: l, msg: `There is already a ${candidate.assetTxType} `+
+        `transaction for this account (from line ${l.originLine.lineno} of ${l.originLine.acct.filename}), `+
+        `and it is for a different date (${l.date.format('YYYY-MM-DD')}) or amount (${l.amount}) than `+
+        `the new line (from line ${candidate.originLine.lineno} of ${candidate.originLine.acct.filename}), `+
+        `which has date (${candidate.date.format('YYYY-MM-DD')}) and amount (${candidate.amount}).`
+      });
+    }
+  }
+  return true; // this candidate is ok to include because we have no other tx like it.
+}
+
 
 function assetLinesToAccts(accumulator: ValidatedRawSheetAccount[], acct: ValidatedRawSheetAccount): void {
 
@@ -326,7 +346,10 @@ export default function(
               // If we have a date but we do not have a value, then don't insert a purchase. (old things we don't remember).
               // If we DO have a value, then go ahead and use that
               if (weHave(value)) {
-                const date = l.purchaseDate || l.initialDate; // default purchaseDate, fallback initialDate
+                const date = l.purchaseDate || l.initialDate; // default purchaseDate (asset), fallback initialDate (inventory)
+                
+                // If the date is NOT between the priorDate on the account and the asOf date on the account,
+                // then this is just a copy of the original asset purchase in a subsequent year account.
                 initialLine = {
                   ...deepclone(linetemplate),
                   date: moment(date, 'YYYY-MM-DD'),
@@ -425,9 +448,20 @@ export default function(
             }
   
             const lines_to_push: AssetTx[] = [];
-            if (initialLine) lines_to_push.push(initialLine);
-            if (priorAsOfLine) lines_to_push.push(priorAsOfLine);
-            if (saleLine) lines_to_push.push(saleLine);
+            // Since you can keep a sale/purchase around in the books as a reference, make sure we don't push
+            // multiple sales or purchases
+            if (initialLine) {
+              if (ensureOnlyOneOfAssetTxType(acc.lines, initialLine)) {
+                lines_to_push.push(initialLine);
+                // priorAsOfLine is to fixup expectedPriorValue for old purchases that started before our ledger history
+                if (priorAsOfLine) lines_to_push.push(priorAsOfLine);
+              }
+            }
+            if (saleLine) {
+              if (ensureOnlyOneOfAssetTxType(acc.lines, saleLine)) {
+                lines_to_push.push(saleLine);
+              }
+            }
             if (asOfLine) lines_to_push.push(asOfLine);
   
             if (lines_to_push.length < 1) {
