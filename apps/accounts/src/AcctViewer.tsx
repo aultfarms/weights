@@ -154,8 +154,8 @@ export const AcctViewer = observer(function AcctViewer(
                 { !isasset ? '' :
                   <TableCell align="right">
                     {'assetTxType' in line ? <div>{`Tx Type: ${line.assetTxType}`}</div> : '' }
-                    {'expectedCurrentValue' in line ? <div>{`expectedCurrentValue: ${num(line.expectedCurrentValue)}`}</div> : '' }
-                    {'expectedPriorValue' in line ? <div>{`expectedPriorValue: ${num(line.expectedPriorValue)}`}</div> : '' }
+                    {'expectedCurrentValue' in line ? <div>expectedCurrentValue: {num(line.expectedCurrentValue)}</div> : '' }
+                    {'expectedPriorValue' in line ? <div>expectedPriorValue: {num(line.expectedPriorValue)}</div> : '' }
                     {'priorDate' in line ? <div>{`Prior Date: ${line.priorDate.format('YYYY-MM-DD')}`}</div> : '' }
                   </TableCell>
                 }
