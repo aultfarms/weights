@@ -8,6 +8,13 @@ import TextField from '@mui/material/TextField';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import ToggleButton from '@mui/material/ToggleButton';
 import { AcctViewer } from './AcctViewer';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { selectedAccountName } from './state/actions';
+import moment from 'moment';
 
 
 const warn = debug('accounts#RawAccountsChooser:warn');
@@ -33,6 +40,10 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
 
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
+
+  // For some reason, mobx locks the page if we initialize the selectedAccount.name to 'All'.
+  // Trying a one-time useEffect to see if we can select All just on the first run
+  React.useEffect(() => { if (!state.selectedAccount.name) selectedAccountName('All') }, []); // array means run once
 
   const sr = actions.stepResult(); 
   // access state.stepResult.rev so we are updated when it changes
@@ -74,6 +85,15 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
     const onChange = (_evt: any, name: string | null) => {
       actions.selectedAccountName(name);
     };
+    /*
+    const onKeyDown = (evt: any) => {
+      if (evt.key === 'Enter') {
+        evt.defaultMuiPrevented = true;
+        actions.selectedAccountName(evt.target.value);
+        evt.target.blur();
+      }
+    };
+    */
     return <Autocomplete
       disablePortal
       id="account-chooser"
@@ -81,6 +101,7 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
       sx={{ width: 500 }}
       renderInput={(params) => <TextField {...params} label="Choose account to view" />}
       autoSelect
+      autoHighlight
       value={state.selectedAccount.name || 'All'}
       onChange={onChange}
       style={{ padding: '10px' }}
@@ -107,6 +128,32 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
     );
   }
 
+  const displayYearSelector = () => {
+    const years = [];
+    const end = moment().year()+2;
+    for (let i=2016; i <= end; i++) {
+      years.push(i);
+    }
+    const options = [ <MenuItem value={''}>None</MenuItem> ];
+    for (const year of years) {
+      options.push(<MenuItem value={year}>{year}</MenuItem>);
+    }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', padding: 10 }}>
+        Year:
+        <Select 
+          onChange={(evt: SelectChangeEvent) => actions.selectedAccountYear(evt.target.value as string)}
+          value={state.selectedAccount.year+''}
+          label="Year"
+          style={{ minWidth: '100px', maxHeight: '30px' }}
+        >
+          {options}
+        </Select>
+      </div>
+    );
+  };
+
+
   const saa = actions.selectedAccountAcct();
   const sav = actions.selectedAccountVAcct();
   const displayCategoryFilter = () => {
@@ -122,6 +169,13 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
     const onChange = (_evt: any, name: string | null) => {
       actions.selectedAccountCategory(name || 'All');
     };
+    const onKeyDown = (evt: any) => {
+      if (evt.key === 'Enter') {
+        evt.defaultMuiPrevented = true;
+        actions.selectedAccountCategory(evt.target.value);
+        evt.target.blur();
+      }
+    };
     return <Autocomplete
       disablePortal
       id="category-chooser"
@@ -131,8 +185,22 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
       autoSelect
       value={state.selectedAccount.category || 'All'}
       onChange={onChange}
+      onKeyDown={onKeyDown}
       style={{ padding: '10px' }}
     />;
+  }
+
+  const displayCategoryExactCheckbox = () => {
+    if (!saa && !sav) return <React.Fragment/>;
+    const checked = state.selectedAccount.categoryExact;
+    const onChange = (evt: any) => {
+      actions.selectedAccountCategoryExact(evt.target.checked);
+    };
+    return (
+      <FormGroup>
+        <FormControlLabel labelPlacement="bottom" control={<Checkbox onChange={onChange} checked={checked}/>} label="Exact?" />
+      </FormGroup>
+    );
   }
 
   const displayAcct = () => {
@@ -144,6 +212,8 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
           acct={saa} 
           centerline={state.selectedAccount.line} 
           categoryFilter={state.selectedAccount.category} 
+          categoryExact={state.selectedAccount.categoryExact}
+          year={state.selectedAccount.year}
         />
       );
     }
@@ -153,6 +223,8 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
           vacct={sav} 
           centerline={state.selectedAccount.line} 
           categoryFilter={state.selectedAccount.category} 
+          categoryExact={state.selectedAccount.categoryExact}
+          year={state.selectedAccount.year}
         />
       );
     }
@@ -164,8 +236,10 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
       <div style={{ paddingLeft: '10px', paddingRight: '10px', display: 'flex', flexDirection: 'row' }}>
         {chooseAccount()}
         {(saa || sav) ? displayCategoryFilter() : <React.Fragment/>}
+        {(saa || sav) ? displayCategoryExactCheckbox() : <React.Fragment/>}
         <div style={{ flexGrow: 1 }}></div>
         {displayTypeChooser()}
+        {displayYearSelector()}
       </div>
       {displayAcct()}
     </div>

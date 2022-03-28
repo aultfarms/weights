@@ -47,8 +47,11 @@ export type State = {
     line: number | null,
     type: 'tax' | 'mkt',
     category: string | 'All',
+    categoryExact: boolean,
+    year: string | number,
     acct: BigData,
     vacct: BigData,
+    scroll: number,
   },
   balancesheets: BigData,
   profitlosses: BigData,
@@ -56,12 +59,14 @@ export type State = {
     type: 'mkt' | 'tax',
     level: number,
     msg: string,
+    scroll: number,
   },
   profitloss: {
     type: 'mkt' | 'tax',
     level: number,
     msg: string,
     expandYear: string,
+    scroll: number,
   },
 };
 
@@ -104,8 +109,11 @@ export const state = observable<State>({
     line: null,
     type: 'mkt',
     category: 'All',
+    categoryExact: false,
+    year: '',
     acct: { rev: 0 },
     vacct: { rev: 0 },
+    scroll: 0,
   },
   balancesheets: { rev: 0 },
   profitlosses: { rev: 0 },
@@ -113,12 +121,14 @@ export const state = observable<State>({
     type: 'mkt',
     level: 4,
     msg: '',
+    scroll: 0,
   },
   profitloss: {
     type: 'mkt',
     level: 4,
     msg: '',
     expandYear: '',
+    scroll: 0,
   },
 });
 

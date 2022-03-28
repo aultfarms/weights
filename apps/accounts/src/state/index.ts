@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 import { state, IndexedStatements } from './state';
 import * as actions from './actions';
+import { initialize } from './initialize';
 export type { IndexedStatements };
 
 export type State = typeof state;
@@ -14,6 +15,4 @@ export type Context = {
 export const initialContext = { state, actions };
 export const context = createContext<Context>(initialContext);
 
-if ('onInitialize' in actions) {
-  (actions as any).onInitialize();
-}
+if (initialize) initialize(); // returns a promise, but we won't wait for it

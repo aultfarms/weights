@@ -29,8 +29,8 @@ function num(n: number | undefined) {
 }
 
 export const AcctViewer = observer(function AcctViewer(
-  { acct, vacct, centerline, categoryFilter }: 
-  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null, categoryFilter: string | 'All' }
+  { acct, vacct, centerline, categoryFilter, categoryExact, year }: 
+  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null, categoryFilter: string | 'All', categoryExact: boolean, year: string | number }
 ) {
   const [startLine, setStartLine] = React.useState(0);
 
@@ -43,7 +43,24 @@ export const AcctViewer = observer(function AcctViewer(
 
   let filterlines = (lines as ledger.ValidatedRawTx[]);
   if (categoryFilter && categoryFilter !== 'All') {
-    filterlines = filterlines.filter(l => l.category?.match(categoryFilter));
+    if (categoryExact) {
+      filterlines = filterlines.filter(l => l.category === categoryFilter);
+    } else {
+      filterlines = filterlines.filter(l => l.category?.match(categoryFilter));
+    }
+  }
+  if (year) {
+    year = +(year);
+    filterlines = filterlines.filter(l => {
+      if (!l.date) return false;
+      if (typeof l.date === 'string') {
+        const parts = l.date.split('-');
+        const y = parts[0]; // YYYY-MM-DD
+        if (y === (''+year)) return true;
+        return false;
+      }
+      return l.date.year() === +(year);
+    });
   }
 
   const windowsize = 250;
@@ -109,7 +126,7 @@ export const AcctViewer = observer(function AcctViewer(
         alignContent: 'center' 
       }} >
         <div>Account Info:</div>
-        <ReactJson src={withoutLines} collapsed={1} displayDataTypes={false} />
+        <ReactJson src={withoutLines} collapsed={1} displayDataTypes={false} name={null} enableClipboard={false} />
         {/* todo: add origin info */}
       </div>
       <TableContainer component={Paper} sx={{ maxHeight: 700 }}>
@@ -163,11 +180,11 @@ export const AcctViewer = observer(function AcctViewer(
                 <TableCell>
                   { typeof line.note !== 'object'
                     ? line.note
-                    : <ReactJson src={line.note || {}} displayDataTypes={false} name={null} collapsed={1} />
+                    : <ReactJson src={line.note || {}} displayDataTypes={false} name={null} collapsed={1}  enableClipboard={false} />
                   }
                 </TableCell>
                 <TableCell>
-                  <ReactJson src={line} collapsed={true} displayDataTypes={false} name={null} />
+                  <ReactJson src={line} collapsed={true} displayDataTypes={false} name={null} enableClipboard={false} />
                 </TableCell>
               </TableRow>
             ))}

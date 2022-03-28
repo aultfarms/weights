@@ -1,14 +1,13 @@
 
-import { action } from 'mobx';
 import { state, IndexedStatements } from './state';
-import { activity, errors, stepResult, balancesheets, profitlosses } from './actions';
+import { activity, errors, stepResult, balancesheets, profitlosses, selectedAccountName } from './actions';
 import debug from 'debug';
 import { ledger as ledger, err, balance, profitloss, google } from '@aultfarms/accounts';
 
 const info= debug("accounts#initialize:info");
 const warn = debug("accounts#initialize:warn");
 
-export const onInitialize = action('onInitialize', async () => {
+export const initialize = async () => {
 
   if (state.config.accountsLocation.place !== 'google') {
     activity('ERROR: any place other that google is not currently supported');
@@ -134,6 +133,28 @@ export const onInitialize = action('onInitialize', async () => {
     }
   }
 
+  activity(`Checking for any transactions labeled with top-level categories that should have been more specific since ${startDate}`);
+  for (const type of ([ 'tax', 'mkt' ] as ('tax' | 'mkt')[]) ) {
+    try {
+      const errs = ledger.validateNoOneLevelCategories({account: final[type], startDate });
+      if (!errs) continue;
+      for (const {line, error} of errs) {
+        const le = new err.LineError({ line, msg: error });
+        activity(le.msgs(),'bad');
+        errors(le.msgs());
+      }
+    } catch(e: any) {
+      activity(`ERROR: could not validate notes, error was: ${e.toString()}`, 'bad');
+      errors(e.toString());
+    }
+  }
+
+  // Finally, select the final market account by default, then autorun should grab the final.mkt
+  // Currently, this is broken, it hangs the webpage.  I think I need to use "computed" from mobx,
+  // and then maybe I don't need "BigData"?
+  //selectedAccountName('All');
+  
+
   // Debugging: grab every category, filter all the lines in "All" to that category
   // loop through 2020, 2021, 2022
   // Sum up all those credit/debit's, compare with profit/loss's total.  
@@ -197,5 +218,5 @@ export const onInitialize = action('onInitialize', async () => {
   }
   */
   
-});
+};
 

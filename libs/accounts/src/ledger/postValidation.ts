@@ -5,6 +5,7 @@ import type { AccountTx } from './types.js';
 import ajvLib from 'ajv';
 import type { JSONSchema8 } from 'jsonschema8';
 import debug from 'debug';
+import { isSameDayOrAfter } from '../util.js';
 const trace = debug('af/accounts#ledger/postValidation:trace'); export { JSONSchema8 };
 //const numberpat = '-?[0-9]+(\.[0-9]+)?';
 const outidpat = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z0-9]';
@@ -173,4 +174,31 @@ export function validateNotesAllSchemas(
     res[catname] = validateNoteSchemaForCatgory({account, catname, schema, startDate});
   }
   return res;
+}
+
+export function validateNoOneLevelCategories(
+  {account, startDate, exclude=['medicine', 'charity', 'START']}:
+  { account: { lines: AccountTx[] },
+    startDate: string | Moment,
+    exclude?: string[],
+  }
+): { line: AccountTx, error: string}[] | null {
+  const errs: { line: AccountTx, error: string}[] = [];
+  if (typeof startDate === 'string') {
+    startDate = moment(startDate, 'YYYY-MM-DD');
+  }
+  const lines = account.lines.filter(l => isSameDayOrAfter(l.date, (startDate as Moment)));
+  for (const l of lines) {
+    if (!l.category.match('-')) { // no dashes means top-level
+      // Is this category on the exclude list?
+      if (!exclude.find(ex => ex === l.category)) {
+        let error = `Line has a top-level category (${l.category}) that is not on the list of allowable top-level categories (${exclude?.join(', ')}).`;
+        if (l.category === 'miscellaneous') {
+          error += '  Did you mean miscellaneous-activity?';
+        }
+        errs.push({ line: l, error });
+      }
+    }
+  }
+  return errs.length > 0 ? errs : null;
 }

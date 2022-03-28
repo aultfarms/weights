@@ -5,9 +5,6 @@ import { combinePrefixedMsgs } from './util';
 import debug from 'debug';
 import type * as accountsLib from '@aultfarms/accounts';
 
-export { onInitialize } from './initialize';
-
-
 const warn = debug("accounts#actions:warn");
 const info = debug("accounts#actions:info");
 
@@ -31,14 +28,15 @@ export const activity = action('activity', (msg: string | string[] | ActivityMes
   // Combine any like-prefixed messages together:
   msgs = (combinePrefixedMsgs(msgs) as typeof msgs);
   info(msgs.map(m=>m.msg).join('\n'));
-  state.activityLog = [...state.activityLog, ...msgs ]; });
+  state.activityLog = [...state.activityLog, ...msgs ]; 
+});
 
 export const errors = action('errorrs', (errs: string[]) => {
   state.errors.push(...(combinePrefixedMsgs(errs) as typeof errs));
 });
 
 export const selectedAccountName = action('selectedAccountName', (sel: string | null) => {
-  state.selectedAccount.name = sel || '';
+  state.selectedAccount.name = sel || 'All';
 });
 export const selectedAccountLine = action('selectedAccountLine', (line: string | number | null) => {
   if (line === null) return state.selectedAccount.line = null;
@@ -106,6 +104,16 @@ export const selectedAccountType = action('selectedAccountType', (type: 'tax' | 
 export const selectedAccountCategory = action('selectedAccountCategory', (cat: string | 'All') => {
   state.selectedAccount.category = cat;
 });
+export const selectedAccountCategoryExact = action('selectedAccountCategoryExact', (exact: boolean) => {
+  state.selectedAccount.categoryExact = exact;
+});
+export const selectedAccountYear = action('selectedAccountYear', (year: string | number) => {
+  state.selectedAccount.year = year;
+});
+export const selectedAccountScroll = action('selectedAccountScroll', (scroll: number) => {
+  state.selectedAccount.scroll = scroll;
+});
+
 
 
 
@@ -119,6 +127,10 @@ export const balanceLevel = action('balanceLevel', (newval: number) => {
 
 export const balanceMsg = action('balanceMsg', (msg: string) => {
   state.balance.msg = msg;
+});
+
+export const balanceScroll = action('balanceScroll', (scroll: number) => {
+  state.balance.scroll = scroll;
 });
 
 export const profitlossType = action('profitlossType', (type: 'tax' | 'mkt') => {
@@ -136,3 +148,8 @@ export const profitlossMsg = action('profitlossMsg', (msg: string) => {
 export const profitlossExpandYear = action('profitlossExpandYear', (y: string) => {
   state.profitloss.expandYear = y;
 });
+
+export const profitlossScroll = action('profitlossScroll', (scroll: number) => {
+  state.profitloss.scroll = scroll;
+});
+

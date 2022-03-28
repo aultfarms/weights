@@ -20,6 +20,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import xlsx from 'xlsx-js-style';
+import { maintainScroll } from './util';
 
 const warn = debug('accounts#ProfitLoss:warn');
 const info = debug('accounts#ProfitLoss:info');
@@ -35,6 +36,8 @@ function num(n: number) {
 export const ProfitLoss = observer(function ProfitLoss() {
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
+
+  maintainScroll('profitloss-container', actions.profitlossScroll, state.profitloss.scroll);
 
   const displayTypeChooser = () => {
     const toggleType = (_evt: React.MouseEvent<HTMLElement>, val: 'mkt' | 'tax') => {
@@ -176,9 +179,13 @@ export const ProfitLoss = observer(function ProfitLoss() {
     const ret = [];
     const parts = catname.split('-');
     const level = parts.length - 1;
+    const navigate = () => {
+      actions.page('ledger');
+      actions.selectedAccountCategory(catname);
+    }
     for (let i=0; i < maxlevel; i++) {
       if (i === level) {
-        ret.push(<TableCell>{parts[level]}</TableCell>);
+        ret.push(<TableCell><a href="#" onClick={navigate}>{parts[level]}</a></TableCell>);
       } else {
         ret.push(<TableCell></TableCell>);
       }
@@ -320,7 +327,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
       { !state.profitloss.msg ? '' :
         <div style={{ paddingLeft: '10px' }}>{state.profitloss.msg}</div>
       }
-      <TableContainer component={Paper} sx={{ maxHeight: 700 }}>
+      <TableContainer id="profitloss-container" component={Paper} sx={{ maxHeight: 700 }}>
         <Table stickyHeader sx={{ minWidth: 650 }} size="small">
           <TableHead>
             <TableRow>

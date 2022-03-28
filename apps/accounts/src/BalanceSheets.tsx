@@ -18,6 +18,7 @@ import Button from '@mui/material/Button';
 import DownloadIcon from '@mui/icons-material/Download';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import xlsx from 'xlsx-js-style';
+import { maintainScroll } from './util';
 
 const warn = debug('accounts#BalanceSheets:warn');
 const info = debug('accounts#BalanceSheets:info');
@@ -33,6 +34,8 @@ function num(n: number) {
 export const BalanceSheets = observer(function BalanceSheets() {
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
+
+  maintainScroll('balancesheet-container', actions.balanceScroll, state.balance.scroll);
 
   const displayTypeChooser = () => {
     const toggleType = (_evt: React.MouseEvent<HTMLElement>, val: 'mkt' | 'tax') => {
@@ -147,9 +150,13 @@ export const BalanceSheets = observer(function BalanceSheets() {
     const ret = [];
     const parts = catname.split('-');
     const level = parts.length - 1;
+    const navigate = () => {
+      actions.page('ledger');
+      actions.selectedAccountName(catname);
+    }
     for (let i=0; i < maxlevel; i++) {
       if (i === level) {
-        ret.push(<TableCell>{parts[level]}</TableCell>);
+        ret.push(<TableCell><a href="#" onClick={navigate}>{parts[level]}</a></TableCell>);
       } else {
         ret.push(<TableCell></TableCell>);
       }
@@ -240,7 +247,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
       { !state.balance.msg ? '' :
         <div style={{ paddingLeft: '10px' }}>{state.balance.msg}</div>
       }
-      <TableContainer component={Paper} sx={{ maxHeight: 700 }}>
+      <TableContainer id="balancesheet-container" component={Paper} sx={{ maxHeight: 700 }}>
         <Table stickyHeader sx={{ minWidth: 650 }} size="small">
           <TableHead>
             <TableRow>

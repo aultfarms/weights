@@ -13,7 +13,13 @@ import validateBalances from './validateBalances.js';
 import separateTaxMkt from './separateTaxMkt.js';
 import { ledger2Str, line2Str } from './util.js';
 import { MultiError } from '../err.js';
-import { JSONSchema8, categorySchemas, validateNoteSchemaForCatgory, validateNotesAllSchemas } from './postValidation.js';
+import { 
+  JSONSchema8, 
+  categorySchemas, 
+  validateNoteSchemaForCatgory, 
+  validateNotesAllSchemas,
+  validateNoOneLevelCategories,
+} from './postValidation.js';
 
 import {
   Account,
@@ -43,6 +49,7 @@ export {
   initialValidateAccounts, assetsToTxAccts, standardize, 
   splits, assertAllAccounts, validateBalances, separateTaxMkt,
   validateNoteSchemaForCatgory, categorySchemas, validateNotesAllSchemas,
+  validateNoOneLevelCategories,
 
   // Helper functions
   ledger2Str, line2Str,
