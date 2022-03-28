@@ -68,6 +68,8 @@ export function getAccountBalance(
   const parts = accountName.split('-');
   if (parts.length < 1) throw new MultiError({ msg: 'accountName was empty' });
   let cur = balanceSheet.tree; // start at 'root'
+  if (accountName === 'root') return cur.balance;
+
   for (let [index, part] of parts.entries()) {
     if (!cur.children[part]) {
       if (index === 0) { // if the first part, try prefixing with tax. or mkt.

@@ -30,6 +30,28 @@ function num(n: number) {
   }
   return str;
 }
+// Same as num, but prints things in thousands (i.e. "K").  Used for deltas.
+function numK(n: number) {
+  if (Math.abs(n) < 1000) return <React.Fragment />;
+  n = n / 1000;
+  let str = numeral(n).format('$0,0') + 'K';
+  if (n > 0) str = '+'+str;
+  let prefixspaces = 5
+  const absn = Math.abs(n);
+  if (absn >= 10) prefixspaces--;
+  if (absn >= 100) prefixspaces--;
+  if (n < 0) prefixspaces--;
+  for (let i=0; i < prefixspaces; i++) {
+    str = ' ' + str;
+  }
+
+  str = ` | (${str})`;
+  if (n < 0) {
+    return <span style={{color: 'red'}}>{str}</span>
+  }
+  return <span style={{color: 'green'}}>{str}</span>
+}
+
 
 export const BalanceSheets = observer(function BalanceSheets() {
   const ctx = React.useContext(context);
@@ -155,7 +177,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
       actions.selectedAccountName(catname);
     }
     for (let i=0; i < maxlevel; i++) {
-      if (i === level) {
+      if (i === level && catname !== 'root') {
         ret.push(<TableCell><a href="#" onClick={navigate}>{parts[level]}</a></TableCell>);
       } else {
         ret.push(<TableCell></TableCell>);
@@ -169,21 +191,30 @@ export const BalanceSheets = observer(function BalanceSheets() {
     const ret = [];
     for (const year of years) {
       let bal: string | React.ReactElement = '';
+      let delta: string | React.ReactElement = '';
       try {
-        bal = num(balance.getAccountBalance({ 
+        let balnum = balance.getAccountBalance({ 
           balanceSheet: bss[year]![state.balance.type].yearend!,
           accountName: catname,
-        }));
+        });
+        bal = num(balnum);
+        if (bss[+(year)-1]?.[state.balance.type].yearend) {
+          const prevbalnum = balance.getAccountBalance({ 
+            balanceSheet: bss[+(year)-1]![state.balance.type].yearend!,
+            accountName: catname,
+          });
+          delta = numK(balnum - prevbalnum);
+        }
       } catch(e: any) {
         bal = '';
         // account doesn't exist
         info('Account ',catname, 'does not exist in year ', year, 'and type', state.balance.type, ' at yearend, error was: ', e);
       }
-      ret.push(<TableCell style={!bal ? emptyStyle : {}} align="right">{bal}</TableCell>);
+      ret.push(<TableCell style={!bal ? emptyStyle : {}} align="right">{bal}{delta}</TableCell>);
     }
     return ret;
   }
-
+/*
   const displayRootRow = () => {
     const ret = [];
     for (let i=0; i < maxlevel; i++) {
@@ -195,12 +226,12 @@ export const BalanceSheets = observer(function BalanceSheets() {
     }
     return <TableRow>{ret}</TableRow>;
   }
-
+*/
   const importantStyle = {
     backgroundColor: 'rgba(200, 255, 120, .3)',
   };
   const imp = (catname: string) => {
-    return catname.split('-').length === 1;
+    return catname.split('-').length === 1 && catname !== 'root';
   };
 
   const displayCategoryRow = (catname: string, index: number) => {
@@ -256,7 +287,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {displayRootRow()}
+            {displayCategoryRow('root', 0)}
             {/* catnames has every possible level of cat name, in order */}
             {catnames.map((catname, index) => displayCategoryRow(catname, index))}
           </TableBody> 

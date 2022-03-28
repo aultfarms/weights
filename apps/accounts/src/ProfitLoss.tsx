@@ -33,6 +33,29 @@ function num(n: number) {
   return str;
 }
 
+// Same as num, but prints things in thousands (i.e. "K").  Used for deltas.
+function numK(n: number) {
+  if (Math.abs(n) < 1000) return <React.Fragment />;
+  n = n / 1000;
+  let str = numeral(n).format('$0,0') + 'K';
+  if (n > 0) str = '+'+str;
+  let prefixspaces = 5
+  const absn = Math.abs(n);
+  if (absn >= 10) prefixspaces--;
+  if (absn >= 100) prefixspaces--;
+  if (n < 0) prefixspaces--;
+  for (let i=0; i < prefixspaces; i++) {
+    str = ' ' + str;
+  }
+
+  str = ` | (${str})`;
+  if (n < 0) {
+    return <span style={{color: 'red'}}>{str}</span>
+  }
+  return <span style={{color: 'green'}}>{str}</span>
+}
+
+
 export const ProfitLoss = observer(function ProfitLoss() {
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
@@ -184,7 +207,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
       actions.selectedAccountCategory(catname);
     }
     for (let i=0; i < maxlevel; i++) {
-      if (i === level) {
+      if (i === level && catname !== 'root') {
         ret.push(<TableCell><a href="#" onClick={navigate}>{parts[level]}</a></TableCell>);
       } else {
         ret.push(<TableCell></TableCell>);
@@ -194,15 +217,20 @@ export const ProfitLoss = observer(function ProfitLoss() {
   };
 
   const emptyStyle = { backgroundColor: '#FFCCFF' };
-  const displayAmountsForCatname = (catname: string) => {
+  const displayAmountsForCatname = (catname: string | 'root') => {
     const ret = [];
     for (const year of showyears) {
       let amt: string | React.ReactElement = '';
       let dbt: string | React.ReactElement = '';
       let cdt: string | React.ReactElement = '';
+      let deltanum: null | number = null;
       const pl = pls[year]![state.profitloss.type];
+      let prevpl = null;
+      if (pls[+(year)-1]) prevpl = pls[+(year)-1]![state.profitloss.type];
       try {
         const cat = profitloss.getCategory(pl.categories, catname);
+        const prevcat = !prevpl ? null : profitloss.getCategory(prevpl.categories, catname);
+
         if (!cat) {
           throw new Error(`Category ${catname} not found`);
         }
@@ -210,46 +238,32 @@ export const ProfitLoss = observer(function ProfitLoss() {
           dbt = num(profitloss.debit(cat));
           cdt = num(profitloss.credit(cat));
         }
-        amt = num(profitloss.amount(cat));
+        const amtnum = profitloss.amount(cat);
+        amt = num(amtnum);
+        if (prevcat) {
+          deltanum = amtnum - profitloss.amount(prevcat);
+        }
       } catch(e: any) {
+        deltanum = null;
         amt = '';
         dbt = '';
         cdt = '';
       }
+      const delta = !deltanum ? <React.Fragment /> : numK(deltanum);
       if (year === state.profitloss.expandYear) {
         ret.push(<TableCell style={!dbt ? emptyStyle : {}} align="right">{dbt}</TableCell>);
         ret.push(<TableCell style={!cdt ? emptyStyle : {}}align="right">{cdt}</TableCell>);
       }
-      ret.push(<TableCell style={!amt ? emptyStyle : {}} align="right">{amt}</TableCell>);
+      ret.push(<TableCell style={!amt ? emptyStyle : {}} align="right">{amt}{delta}</TableCell>);
     }
     return ret;
-  }
-
-  const displayRootRow = () => {
-    const ret = [];
-    for (let i=0; i < maxlevel; i++) {
-      ret.push(<TableCell/>);
-    }
-    for (const year of showyears) {
-      const pl = pls[year]![state.profitloss.type];
-      if (year === state.profitloss.expandYear) {
-        // debit and credit
-        const debit = profitloss.debit(pl.categories);
-        const credit = profitloss.credit(pl.categories);
-        ret.push(<TableCell align="right">{num(debit)}</TableCell>);
-        ret.push(<TableCell align="right">{num(credit)}</TableCell>);
-      }
-      const net = num(profitloss.amount(pl.categories));
-      ret.push(<TableCell align="right">{net}</TableCell>);
-    }
-    return <TableRow>{ret}</TableRow>;
   }
 
   const importantStyle = {
     backgroundColor: 'rgba(200, 255, 120, .3)',
   };
   const imp = (catname: string) => {
-    return catname.split('-').length === 1;
+    return catname.split('-').length === 1 && catname !== 'root';
   };
 
   const notZeroStyle = { backgroundColor: '#FFCCCC' };
@@ -257,7 +271,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
     const level = catname.split('-').length;
     if (level > state.profitloss.level) return <React.Fragment />;
 
-    // transfers and loan-principle should be net $0, color them red if not
+    // transfers and loan-principal should be net $0, color them red if not
     let style = imp(catname) ? importantStyle : {};
     if (
       catname.match(/transfer/) ||  // anything transfer should be zeros all the way down
@@ -336,7 +350,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {displayRootRow()}
+            {displayCategoryRow('root', 0)}
             {/* catnames has every possible level of cat name, in order */}
             {catnames.map((catname, index) => displayCategoryRow(catname, index))}
           </TableBody> 

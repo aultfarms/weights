@@ -83,6 +83,7 @@ export function treeToCategoryNames(
 
 export function getCategory(cat: CategoryTree, name: string): CategoryTree | null {
   if (!cat) return null;
+  if (name === 'root') return cat;
   const parts = name.split('-');
   const thislevel = parts[0];
   if (!thislevel) return null;
