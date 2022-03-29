@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 import debug from 'debug';
-import type { ledger } from '@aultfarms/accounts';
-import { isMoment } from 'moment';
+import { ledger, balance } from '@aultfarms/accounts';
+import moment, { isMoment, Moment } from 'moment';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -10,6 +10,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import Button from '@mui/material/Button';
@@ -21,6 +22,7 @@ const info = debug('accounts#AcctViewer:info');
 
 function num(n: number | undefined) {
   if (!n && n !== 0) return '';
+  if (Math.abs(n) < 0.01) n = 0;
   const str = numeral(n).format('$0,0.00');
   if (n < 0) {
     return <span style={{color: 'red'}}>{str}</span>
@@ -29,8 +31,8 @@ function num(n: number | undefined) {
 }
 
 export const AcctViewer = observer(function AcctViewer(
-  { acct, vacct, centerline, categoryFilter, categoryExact, year }: 
-  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, centerline?: number | null, categoryFilter: string | 'All', categoryExact: boolean, year: string | number }
+  { acct, vacct, accts, centerline, categoryFilter, categoryExact, year }: 
+  { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, accts?: ledger.Account[] | null, centerline?: number | null, categoryFilter: string | 'All', categoryExact: boolean, year: string | number }
 ) {
   const [startLine, setStartLine] = React.useState(0);
 
@@ -62,6 +64,10 @@ export const AcctViewer = observer(function AcctViewer(
       return l.date.year() === +(year);
     });
   }
+  // Keep track of all the running balances in this subset of transactions:
+  let running_balance_total = 0;
+  const filterbalances = filterlines.map(l => (running_balance_total += (l.amount || 0)));
+
 
   const windowsize = 250;
   let focusonline: null | number = null;
@@ -71,16 +77,21 @@ export const AcctViewer = observer(function AcctViewer(
     centerline = windowsize/2 + startLine
   }
 
+  let numpages = Math.ceil(filterlines.length / windowsize);
+  if (numpages < 0) numpages = 0;
   let start = centerline - (windowsize/2);
   if (start < 0) start = 0;
   const end = start + windowsize;
   info('will show lines from start = ', start, ' to end ', end);
+  const pagenum = start / windowsize + 1;
 
   // Only show 1000 lines
   let showlines = filterlines;
+  let showbalances = filterbalances;
   if (filterlines.length > windowsize) {
-    warn('Ledger has > 1000 lines, only showing 1000 lines around line ',centerline);
+    warn('Ledger has > '+windowsize+' lines, only showing around line ',centerline);
     showlines = filterlines.slice(start, end);
+    showbalances = filterbalances.slice(start,end);
   }
 
   // If we were asked to focus on a line, scroll there after render
@@ -95,28 +106,53 @@ export const AcctViewer = observer(function AcctViewer(
   const isasset = a.settings.accounttype !== 'cash' && a.settings.accounttype !== 'futures-cash';
   
   const handleMove = (dirname: 'left' | 'right') => () => {
-    const dir = dirname === 'left' ? -1 : 1;
-    setStartLine(startLine + (dir * windowsize));
+    let pagemove = pagenum;
+    if (pagemoveRef) pagemove = +(pagemoveRef.current?.value || 1);
+    let newstart = 0;
+    if (pagenum === pagemove) { // if the textbox has the current page number as the "move to", then just move one page at a time
+      const dir = dirname === 'left' ? -1 : 1;
+      newstart = startLine + (dir * windowsize);
+    } else { // otherwise, we have a specified page, move directly there
+      newstart = (pagemove-1) * windowsize;
+    }
+    setStartLine(newstart);
+    // Update the value in the textbox to the new page.  Can't control it directly because
+    // that re-renders on every keystroke, so we use an uncontrolled input
+    if (pagemoveRef && pagemoveRef.current) {
+      pagemoveRef.current.value = ''+(newstart / windowsize + 1);
+    }
   };
 
+  const balanceForDate = (d: string | Moment | null | undefined) => {
+    if (!accts || !d) {
+      console.log('ERROR: balanceForDate: have no accts (', accts, ')  OR have no date (',d,')!');
+      return 0;
+    }
+    if (typeof d === 'string') {
+      d = moment(d, 'YYYY-MM-DD');
+    }
+    let total = 0;
+    for (const a of accts) {
+      total += balance.balanceForAccountOnDate(d, a);
+    }
+    return total;
+  };
+
+  let pagemoveRef = React.useRef<HTMLInputElement>(null);
   return (
     <Paper elevation={1}>
       <div>
         Showing lines {start+1}
         &nbsp;through { end < filterlines.length ? end : filterlines.length } 
         &nbsp;of {filterlines.length}
-        {start > 0 
-          ? <Button onClick={handleMove('left')} size="small">
-             <KeyboardArrowLeftIcon onClick={handleMove('left')} />
-           </Button>
-          : <React.Fragment/>
-        }
-        {end < filterlines.length
-          ? <Button onClick={handleMove('right')} size="small">
-             <KeyboardArrowRightIcon onClick={handleMove('right')} />
-           </Button>
-          : <React.Fragment/>
-        }
+        &nbsp;(Page {pagenum} of {numpages})
+        <Button disabled={start < 1} onClick={handleMove('left')} size="small">
+          <KeyboardArrowLeftIcon />
+        </Button>
+        <TextField inputRef={pagemoveRef} size="small" margin="none" sx={{ width: '2ch' }} variant="standard" defaultValue={pagenum} />
+        <Button disabled={end >= filterlines.length} onClick={handleMove('right')} size="small">
+          <KeyboardArrowRightIcon />
+        </Button>
         <br/>
       </div>
       <div style={{
@@ -140,7 +176,8 @@ export const AcctViewer = observer(function AcctViewer(
               <TableCell align="right">who</TableCell>
               <TableCell align="right">category</TableCell>
               <TableCell align="right">amount</TableCell>
-              <TableCell align="right">balance</TableCell>
+              <TableCell align="right">acct balance</TableCell>
+              <TableCell align="right">balance here</TableCell>
               { !isasset ? <React.Fragment/> : 
                 <TableCell align="right">Asset Expectations</TableCell>
               }
@@ -168,7 +205,8 @@ export const AcctViewer = observer(function AcctViewer(
                 <TableCell align="right">{line.category}</TableCell>
                 <TableCell align="right">{num(line.amount)}</TableCell>
                 <TableCell align="right">{num(line.balance)}</TableCell>
-                { !isasset ? '' :
+                <TableCell align="right">{num(showbalances[index])}</TableCell>
+                { !isasset ? <React.Fragment /> :
                   <TableCell align="right">
                     {'assetTxType' in line ? <div>{`Tx Type: ${line.assetTxType}`}</div> : '' }
                     {'expectedCurrentValue' in line ? <div>expectedCurrentValue: {num(line.expectedCurrentValue)}</div> : '' }

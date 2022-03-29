@@ -26,6 +26,7 @@ const warn = debug('accounts#ProfitLoss:warn');
 const info = debug('accounts#ProfitLoss:info');
 
 function num(n: number) {
+  if (Math.abs(n) < 0.01) n = 0;
   const str = numeral(n).format('$0,0.00');
   if (n < 0) {
     return <span style={{color: 'red'}}>{str}</span>
@@ -312,6 +313,50 @@ export const ProfitLoss = observer(function ProfitLoss() {
     );
   };
 
+  const displayNetStartingBalancesRow = () => {
+
+    const displayStartingBalances = () => {
+      const ret = [];
+      for (const year of showyears) {
+        const pl = pls[year]![state.profitloss.type];
+        // Find the year-end pl to grab the starting balance lines
+        const yearend = pl.timeranges.find(tr => tr.yearend);
+        if (!yearend) {
+          warn('WARNING: P&L for year ', year, ' does not have a yearend timerange!');
+          continue;
+        }
+        const bal = yearend.startlines.reduce((sum,l) => sum + l.amount, 0); // starting balances were converted to amounts
+        if (year === state.profitloss.expandYear) {
+          ret.push(<TableCell align="right"></TableCell>);
+          ret.push(<TableCell align="right"></TableCell>);
+        }
+        ret.push(<TableCell align="right">{num(bal)}</TableCell>);
+      }
+      return ret;
+    }
+
+    const displayStartingNameCells = () => {
+      return (
+        <TableCell colSpan={maxlevel} key={`startingbal-namecell`}>
+          Net Starting Balances (not included in P&L)
+        </TableCell>
+      );
+    }
+
+
+    return (
+      <TableRow
+        key={`catprofitlossline-startingbal`}
+        id={`profitlosscat-startingbal`}
+        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+      >
+        {displayStartingNameCells()}
+        {displayStartingBalances()}
+      </TableRow>
+    );
+  };
+
+
   const marks = [];
   for (let i=0; i < numcategorylevels; i++) {
     marks.push({ value: i+1, label: ''+(i+1) });
@@ -351,6 +396,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
           </TableHead>
           <TableBody>
             {displayCategoryRow('root', 0)}
+            {displayNetStartingBalancesRow()}
             {/* catnames has every possible level of cat name, in order */}
             {catnames.map((catname, index) => displayCategoryRow(catname, index))}
           </TableBody> 

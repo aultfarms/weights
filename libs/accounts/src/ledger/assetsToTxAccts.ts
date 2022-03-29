@@ -497,6 +497,7 @@ export default function(
           const newfirst: AssetTx = {
             assetTxType: 'START',
             description: 'START',
+            isStart: true,
             originLine: { description: 'Synthetic Start' },
             category: first.category || 'UNKNOWN_ASSET_CATEGORY',
             date: moment(startdate, "YYYY-MM-DD"),

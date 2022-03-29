@@ -24,6 +24,7 @@ const warn = debug('accounts#BalanceSheets:warn');
 const info = debug('accounts#BalanceSheets:info');
 
 function num(n: number) {
+  if (Math.abs(n) < 0.01) n = 0;
   const str = numeral(n).format('$0,0.00');
   if (n < 0) {
     return <span style={{color: 'red'}}>{str}</span>
@@ -178,9 +179,9 @@ export const BalanceSheets = observer(function BalanceSheets() {
     }
     for (let i=0; i < maxlevel; i++) {
       if (i === level && catname !== 'root') {
-        ret.push(<TableCell><a href="#" onClick={navigate}>{parts[level]}</a></TableCell>);
+        ret.push(<TableCell key={`namecells=${i}`}><a href="#" onClick={navigate}>{parts[level]}</a></TableCell>);
       } else {
-        ret.push(<TableCell></TableCell>);
+        ret.push(<TableCell key={`namecells=${i}`}></TableCell>);
       }
     }
     return ret;

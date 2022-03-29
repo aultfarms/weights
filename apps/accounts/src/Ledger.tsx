@@ -19,6 +19,7 @@ import moment from 'moment';
 
 const warn = debug('accounts#RawAccountsChooser:warn');
 const info = debug('accounts#RawAccountsChooser:info');
+const trace = debug('accounts#RawAccountsChooser:trace');
 
 function linesToUniqueCategoryNamesArray(lines: ledger.AccountTx[] | ledger.ValidatedRawTx[]): string[] {
   const catindex: { [cat: string]: true } = {};
@@ -54,6 +55,7 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
 
   let accts: ledger.Account[] | ledger.ValidatedRawSheetAccount[] | null = null;
   if (sr.final) {
+    trace('Have final account, using that for list of all accounts');
     accts = sr.final[state.selectedAccount.type].accts;
   } else if (sr.accts) {
     accts = sr.accts.filter(a => {
@@ -207,9 +209,11 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
     const saa = actions.selectedAccountAcct();
     const sav = actions.selectedAccountVAcct();
     if (saa) {
+      trace('Using Acct');
       return (
         <AcctViewer 
-          acct={saa} 
+          acct={saa}
+          accts={accts ? (accts as ledger.Account[]) : null}
           centerline={state.selectedAccount.line} 
           categoryFilter={state.selectedAccount.category} 
           categoryExact={state.selectedAccount.categoryExact}
@@ -218,6 +222,7 @@ export const Ledger = observer(function Ledger(): React.ReactElement {
       );
     }
     if (sav) {
+      trace('Using VAcct');
       return (
         <AcctViewer 
           vacct={sav} 

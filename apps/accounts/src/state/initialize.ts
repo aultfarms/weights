@@ -1,8 +1,8 @@
-
+import moment from 'moment';
 import { state, IndexedStatements } from './state';
 import { activity, errors, stepResult, balancesheets, profitlosses, selectedAccountName } from './actions';
 import debug from 'debug';
-import { ledger as ledger, err, balance, profitloss, google } from '@aultfarms/accounts';
+import { util, ledger as ledger, err, balance, profitloss, google } from '@aultfarms/accounts';
 
 const info= debug("accounts#initialize:info");
 const warn = debug("accounts#initialize:warn");
@@ -153,70 +153,62 @@ export const initialize = async () => {
   // Currently, this is broken, it hangs the webpage.  I think I need to use "computed" from mobx,
   // and then maybe I don't need "BigData"?
   //selectedAccountName('All');
-  
 
-  // Debugging: grab every category, filter all the lines in "All" to that category
-  // loop through 2020, 2021, 2022
-  // Sum up all those credit/debit's, compare with profit/loss's total.  
-  // If they don't match, you can always compare the lines then
-  /*
-  const unique_categories = final.mkt.lines.map(l => l.category).filter((val, index, self) => self.indexOf(val) === index);
-  for (const cat of unique_categories) {
-    let lines = final.mkt.lines.filter(l => l.category.startsWith(cat));
-    for (const year of [2021, 2020]) {
-      let amt = 0;
-      let cdt = 0;
-      let dbt = 0;
-      const yearlines = lines.filter(l => l.date.year() === year);
-      for (const l of yearlines) {
-        amt += l.amount;
-        if (l.amount > 0) cdt += l.amount;
-        if (l.amount < 0) dbt += l.amount;
-      }
-      // Now, check this year's profit-loss amount for this category:
-      const pls = profitlosses();
-      if (!pls) throw new Error('somehow we have no profitosses');
-      const pl = (pls[''+year]!.mkt as profitloss.ProfitLoss);
-      const tree = profitloss.getCategory(pl.categories, cat);
-      let plamt = 0;
-      let plcdt = 0;
-      let pldbt = 0;
-      if (tree) {
-        plamt = profitloss.amount(tree);
-        plcdt = profitloss.credit(tree);
-        pldbt = profitloss.debit(tree);
-      }
-      if (cat === 'START') continue;
-      if (!(Math.abs(plamt - amt) < 0.01)) {
-        info(`Have ${yearlines.length} lines in yearlines, and ${tree!.transactions.length} in tree.transactions`);
-        if (tree) {
-          info(`Have ${Object.keys(tree.children).length} children on tree`);
-        }
-        for (const [index, l] of yearlines.entries()) {
-          const plline = tree!.transactions[index];
-          if (!plline) info(`Line ${index} exists in yearlines but not in transactions`);
-          else {
-            if (plline.date !== l.date || plline.amount !== l.amount) {
-              info(`Line ${index} is different! (date,amt) => allcat (${l.date.format('YYYY-MM-DDTHH:mm:ss')}, ${l.amount}) vs. p&l (${plline.date.format('YYYY-MM-DDTHH:mm:ss')}, ${plline.amount})`);
-            }
-          }
-        }
-        throw new Error(`PROFITLOSS FAILURE: year ${year}, category ${cat}: plamt (${plamt}) !== amt (${amt})`);
-      }
+/*
+// 1: are there any lines in mkt 'all' that do not exist in accounts?
+for (const l of final.mkt.lines) {
+  if (l.acct.name === 'SYNTHETIC_START' && l.amount === 0) continue;
+  const acct = final.mkt.accts.find(a => a.name === l.acct.name && a.filename === l.acct.filename);
+  if (!acct) { throw `ERROR: acct on line ${l.acct.name} at filename ${l.acct.filename} NOT FOUND in accounts`; }
+  const found = !!acct.lines.find(la => (
+    la.lineno   === l.lineno && 
+    la.amount   === l.amount && 
+    la.date.unix()     === l.date.unix() &&
+    la.who      === l.who && 
+    la.category === l.category && 
+    la.description === l.description
+  ));
+  if (!found) { 
+    if (l.amount !== 0 || l.balance !== 0) { // start lines don't make it
+      console.log(acct); console.log(l); throw `ERROR: line ${l.lineno} in acct ${l.acct.name} from 'all' lines NOT FOUND in account's lines.  Line printed to console above this exception.`;
     }
-  }*/
-
-  /*
-  // Using the "all" account, find the balance, and add up all the transactions.  Figure out 
-  // which one is wrong compared to what's on the web.
-  for (const year of [ 2020, 2021, 2022 ]) {
-    const mktlines = final.mkt.lines.filter(l => l.date.year() === year);
-    const bal = mktlines[mktlines.length-1]!.balance;
-    const plval = mktlines.reduce((acc,l) => acc+l.amount, 0);
-    info(`For All: Balance for ${year} is: ${bal}`);
-    info(`For All: P&L for ${year} is: ${plval}`);
   }
-  */
+}
+
+// 2: are there any lines in mkt accounts that do not exist in mkt 'all'?
+for (const acct of final.mkt.accts) {
+  for (const la of acct.lines) {
+    const found = !!final.mkt.lines.find(l => 
+      la.lineno   === l.lineno && 
+      la.amount   === l.amount && 
+      la.date.unix()     === l.date.unix() && 
+      la.who      === l.who && 
+      la.category === l.category && 
+      la.description === l.description
+    );
+    if (!found) { console.log(la);  throw `ERROR: line ${la.lineno} in acct ${la.acct.name} from account's lines NOT FOUND in 'all' lines.  Line printed to console above this exception.`; }
+  }
+}*/
+
+/*
+// Compare "All" balance at each year-end with all account balances on that date
+for (const year of [ 2020, 2021, 2022 ]) {
+  const yearend = moment(`${year}-12-31T23:59:59`, 'YYYY-MM-DDTHH:mm:ss');
+  let allbalance = balance.balanceForAccountOnDate(yearend, final.mkt);
+  let acctbalance = 0;
+  for (const a of final.mkt.accts) {
+    acctbalance += balance.balanceForAccountOnDate(yearend, a);
+  }
+  if (allbalance !== acctbalance) {
+    throw `ERROR: BALANCE CHECK FAILED year ${year}, allbalance = ${allbalance}, acctbalance = ${acctbalance}!!`;
+  }
+}
+
+
+
+throw `STOPPED HERE (state/initialize.ts).  REMOVE WHEN DONE DEBUGGING`;
+*/
+
   
 };
 

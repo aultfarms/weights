@@ -28,13 +28,14 @@ export type ProfitLossTimeRange = {
   yearend?: boolean,
   timerange: momentrange.DateRange,
   lines: AccountTx[],
+  startlines: AccountTx[], // all the "isStart" lines that got excluded from lines for P&L, they represent starting balances
   categories: CategoryTree,
 };
 
 export type ProfitLoss = {
   year: number,
   type: 'tax' | 'mkt',
-  lines: AccountTx[],
+  lines: AccountTx[],  // note these have the start lines included, use the timeranges
   timeranges: ProfitLossTimeRange[],
   categories: CategoryTree, // the full annual categories for the year, same as the fourth quarter
 };
@@ -87,10 +88,18 @@ export function profitLoss(
       t.date.isValid() && 
       r.timerange.contains(t.date)
     ));
+    const startlines = deepclone(lines.filter(t => 
+      isStart(t) && 
+      t.date && 
+      t.date.isValid() && 
+      r.timerange.contains(t.date)
+    ));
+
     timeranges.push({
       ...r,
       // Save the tx lines in the time range itself
       lines: tlines,
+      startlines,
       categories: categorize({ lines: tlines }),
     });
   };

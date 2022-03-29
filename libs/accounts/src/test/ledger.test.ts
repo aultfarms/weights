@@ -28,7 +28,7 @@ export default async function run(a: typeof ledger, rawaccts: ledger.RawSheetAcc
   testAssertAllAccounts(a);
   info('testing validateBalances');
   testValidateBalanaces(a);
-  info('testing separateTaxMkt');
+  info('testing sortAndSeparateTaxMkt');
   testSeparateTaxMkt(a);
   info('testing loadInSteps');  
   await testLoadInSteps(a, rawaccts);
@@ -259,7 +259,7 @@ function testSeparateTaxMkt(a: typeof ledger) {
   let accts4 = a.splits({ accts: accts3, status: () => {} });
   let accts5 = a.assertAllAccounts({ accts: accts4, status: () => {} });
   let accts6 = a.validateBalances({ accts: accts5 });
-  let res = a.separateTaxMkt({ accts: accts6.accts, status: () => {} });
+  let res = a.sortAndSeparateTaxMkt({ accts: accts6.accts, status: () => {} });
   info('passed no errors when separating tax/mkt');
 
   for (const type of ['tax', 'mkt']) {

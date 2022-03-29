@@ -10,7 +10,7 @@ import standardize from './standardize.js';
 import splits from './splits.js';
 import assertAllAccounts from './assertAllAccounts.js';
 import validateBalances from './validateBalances.js';
-import separateTaxMkt from './separateTaxMkt.js';
+import sortAndSeparateTaxMkt from './sortAndSeparateTaxMkt.js';
 import { ledger2Str, line2Str } from './util.js';
 import { MultiError } from '../err.js';
 import { 
@@ -47,7 +47,7 @@ export {
 
   // Exported individual functions to make them individually testable
   initialValidateAccounts, assetsToTxAccts, standardize, 
-  splits, assertAllAccounts, validateBalances, separateTaxMkt,
+  splits, assertAllAccounts, validateBalances, sortAndSeparateTaxMkt,
   validateNoteSchemaForCatgory, categorySchemas, validateNotesAllSchemas,
   validateNoOneLevelCategories,
 
@@ -124,7 +124,7 @@ type Steps = 'start' |
   'splits' | 
   'assertAllAccounts' | 
   'validateBalances' | 
-  'separateTaxMkt';
+  'sortAndSeparateTaxMkt';
 
 export type StepResult = {
   step: Steps,
@@ -210,21 +210,25 @@ export async function* loadInSteps(
       accts: res.accts,
     }
     // If balances are screwed up, then we can't get anything meaningful out of
-    // separateTaxMkt.  Therefore, throw here if we have any errors.
+    // sortAndSeparateTaxMkt.  Therefore, throw here if we have any errors.
     if (res.errors && res.errors.length > 0) {
       throw new MultiError({ msg: res.errors })
     }
     accts = res.accts;
+    // IMPORTANT: at this point, the lines have NOT been sorted by date.  They are in the order
+    // that the account spreadsheet had them.  When we look for account balances as of a date, we
+    // grab the last entry on that day.  Therefore, we have to sort all the lines by date in all the
+    // accounts and recompute the balances in order for them to be correct.  We do that in sortAndSeparateTaxMkt
   
-    status(magenta(`********     separateTaxMkt   ********: ${totalSummaryStr(accts)}`));
+    status(magenta(`********     sortAndSeparateTaxMkt   ********: ${totalSummaryStr(accts)}`));
     let finalaccts;
     try {
-      finalaccts = separateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
+      finalaccts = sortAndSeparateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
     } catch(e: any) {
       e = MultiError.wrap(e, `Failed to separate out tax/mkt accounts`);
       errors = e.msgs();
       yield {
-        step: 'separateTaxMkt',
+        step: 'sortAndSeparateTaxMkt',
         errors,
         accts
       };
@@ -233,7 +237,7 @@ export async function* loadInSteps(
 
     status(magenta(`********       finished       ********: ${finalSummaryStr(finalaccts)}`));
     yield {
-      step: 'separateTaxMkt',
+      step: 'sortAndSeparateTaxMkt',
       final: finalaccts,
       done: true,
     }

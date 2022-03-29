@@ -1,5 +1,5 @@
 import moment, { Moment } from 'moment';
-import type { Account, FinalAccounts } from '../ledger/index.js';
+import type { AccountTx, Account, FinalAccounts } from '../ledger/index.js';
 import debug from 'debug';
 //import numeral from 'numeral';
 //import clitable from 'cli-table';
@@ -104,7 +104,7 @@ function printTxTable(lines: AccountTx[]) {
 };
 */
 
-export function balanceForAccountOnDate(d: Moment, acct: Account): number {
+export function balanceForAccountOnDate(d: Moment, acct: { lines: AccountTx[] }): number {
   if (acct.lines.length < 1) {
     warn('balanceForAccountOnDate: account has no lines, returning 0');
     return 0;
@@ -114,7 +114,7 @@ export function balanceForAccountOnDate(d: Moment, acct: Account): number {
   for (const l of acct.lines) {
     // First line date not before or on same day as our search date
     if (!isSameDayOrBefore(l.date, d)) { //l.date.isSameOrBefore(d)) {
-      if (!prev) return 0; // first line in account is not same/before date
+      if (!prev) return 0; // first line in account that is not same/before search date
       return prev.balance;
     }
     prev = l;
