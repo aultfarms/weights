@@ -125,7 +125,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
     const bs = bss[year]![state.balance.type];
     const wb = balance.annualBalanceSheetToWorkbook(bs);
     console.log('workbook = ', wb);
-    const filename = `${year}-12-31_BalanceSheet_asAt${nowstr()}.xlsx`;
+    const filename = `${year}-12-31_BalanceSheet_${state.balance.type.toUpperCase()}_asAt${nowstr()}.xlsx`;
     const fullpath = `${state.config.saveLocation.path}/${filename}`;
     if (direction === 'up') {
       actions.activity(`Uploading file to Google at ${fullpath}...`);

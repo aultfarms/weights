@@ -151,7 +151,7 @@ export const ProfitLoss = observer(function ProfitLoss() {
   const handleUploadDownload = (year: string, direction: 'up' | 'down') => async () => {
     const pl = pls[year]![state.profitloss.type];
     const wb = profitloss.profitLossToWorkbook(pl);
-    const filename = `${year}-12-31_ProfitLoss_asAt${nowstr()}.xlsx`;
+    const filename = `${year}-12-31_ProfitLoss_${state.profitloss.type.toUpperCase()}_asAt${nowstr()}.xlsx`;
     const fullpath = `${state.config.saveLocation.path}/${filename}`;
     if (direction === 'up') {
       actions.activity(`Uploading file to Google at ${fullpath}...`);
