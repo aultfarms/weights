@@ -11,3 +11,7 @@ version as the one being used in @types/gapi.client.drive and @types/gapi.client
 I don't expect this to be a long-term solution because the next time you install @types/gapi.client.drive,
 it will likely pull a different version of @maxim_mazurok's library and you'll have to match it
 there again.
+
+
+    "@maxim_mazurok/gapi.client.drive": "3.0.20220116",
+    "@maxim_mazurok/gapi.client.sheets": "4.0.20220118",

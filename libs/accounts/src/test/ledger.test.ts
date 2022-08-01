@@ -31,7 +31,9 @@ export default async function run(a: typeof ledger, rawaccts: ledger.RawSheetAcc
   info('testing sortAndSeparateTaxMkt');
   testSeparateTaxMkt(a);
   info('testing loadInSteps');  
-  await testLoadInSteps(a, rawaccts);
+  const final = await testLoadInSteps(a, rawaccts);
+  info('testing accountToWorkbook');
+  testAccountToWorkbook(a, final.mkt);
 }
 
 function basicVerify(
@@ -275,7 +277,7 @@ function testSeparateTaxMkt(a: typeof ledger) {
   }
 }
 
-async function testLoadInSteps(a: typeof ledger, rawaccts: ledger.RawSheetAccount[]) { 
+async function testLoadInSteps(a: typeof ledger, rawaccts: ledger.RawSheetAccount[]): Promise<ledger.FinalAccounts> { 
   info('It should load all the example spreadsheets without error');
   if (rawaccts.length < 0) throw `You have no RawSheetAccount's to test`;
   // It should return an async generator:
@@ -312,4 +314,14 @@ async function testLoadInSteps(a: typeof ledger, rawaccts: ledger.RawSheetAccoun
   if (accts.length !== 36) throw `There should be 36 accounts in final.mkt, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
   info('passed right number of final tax and mkt accounts');
 
+  return step.final;
+}
+
+function testAccountToWorkbook(a: typeof ledger, acct: ledger.Account | ledger.CompositeAccount) {
+  info('It should convert the market account into a workbook');
+  const wb = a.accountToWorkbook(acct);
+  if (!wb || !wb.Sheets?.length) {
+    throw `accountToWorkbook failed to return a valid workbook with at least one sheet`;
+  }
+  info('passed convert market account to workbook');
 }

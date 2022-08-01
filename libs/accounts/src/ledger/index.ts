@@ -38,6 +38,8 @@ import {
   StatusFunction,
 } from './types.js';
 
+export { accountToWorkbook } from './exporter.js';
+
 export { 
   // Exported types:
   RawSheetAccount, ValidatedRawSheetAccount, AccountSettings, assertAccountSettings,

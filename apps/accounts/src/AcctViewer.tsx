@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 import debug from 'debug';
-import { ledger, balance } from '@aultfarms/accounts';
+import { ledger, balance, google } from '@aultfarms/accounts';
 import moment, { isMoment, Moment } from 'moment';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
@@ -13,9 +13,13 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import DownloadIcon from '@mui/icons-material/Download';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import Button from '@mui/material/Button';
 import ReactJson from 'react-json-view';
 import numeral from 'numeral';
+import xlsx from 'xlsx-js-style';
+import { context } from './state';
 
 const warn = debug('accounts#AcctViewer:warn');
 const info = debug('accounts#AcctViewer:info');
@@ -34,6 +38,9 @@ export const AcctViewer = observer(function AcctViewer(
   { acct, vacct, accts, centerline, categoryFilter, categoryExact, year }: 
   { vacct?: ledger.ValidatedRawSheetAccount, acct?: ledger.Account, accts?: ledger.Account[] | null, centerline?: number | null, categoryFilter: string | 'All', categoryExact: boolean, year: string | number }
 ) {
+  const ctx = React.useContext(context);
+  const { state, actions } = ctx;
+
   const [startLine, setStartLine] = React.useState(0);
 
   const a = acct || vacct;
@@ -123,6 +130,31 @@ export const AcctViewer = observer(function AcctViewer(
     }
   };
 
+  const handleUploadDownload = (direction: 'up' | 'down') => async () => {
+    const wb = ledger.accountToWorkbook({
+     ...a,
+     lines: filterlines
+    });
+    console.log('workbook = ', wb);
+    const now = moment();
+    const filename = `${now.format('YYYY-MM-DD')}_Account_${a?.name || ''}.xlsx`;
+    const fullpath = `${state.config.saveLocation.path}/${filename}`;
+    if (direction === 'up') {
+      actions.activity(`Uploading file to Google at ${fullpath}...`);
+      await google.uploadXlsxWorkbookToGoogle({ 
+        parentpath: state.config.saveLocation.path,
+        filename,
+        workbook: wb,
+      });
+      actions.activity(`Upload successful to path ${fullpath}...`);
+      actions.balanceMsg(`Upload successful to path ${fullpath}...`);
+    } else {
+      actions.activity(`Downloading ${filename}`);
+      xlsx.writeFile(wb, filename, { bookType: 'xlsx' });
+      actions.activity(`${filename} downloaded successfully`);
+    }
+  };
+
   const balanceForDate = (d: string | Moment | null | undefined) => {
     if (!accts || !d) {
       console.log('ERROR: balanceForDate: have no accts (', accts, ')  OR have no date (',d,')!');
@@ -152,6 +184,12 @@ export const AcctViewer = observer(function AcctViewer(
         <TextField inputRef={pagemoveRef} size="small" margin="none" sx={{ width: '2ch' }} variant="standard" defaultValue={pagenum} />
         <Button disabled={end >= filterlines.length} onClick={handleMove('right')} size="small">
           <KeyboardArrowRightIcon />
+        </Button>
+        <Button disabled={!a} onClick={handleUploadDownload('down')} size="small">
+          <DownloadIcon />
+        </Button>
+        <Button disabled={!a} onClick={handleUploadDownload('up')} size="small">
+          <CloudUploadIcon />
         </Button>
         <br/>
       </div>

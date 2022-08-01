@@ -55,10 +55,20 @@ const info = debug('af/accounts#test-node:info');
       const filename = `TEST-2020-${type}-BALANCE.xlsx`;
       spreadsheets.annualBalanceSheetToFile({abs, dirpath, filename});
       const result = sheetjs.readFile(`${dirpath}/${filename}`);
-      if (!result) throw `Output spreadsheet ${dirpath}/${filename} did not exist after xlsx.profitLossToFile`;
+      if (!result) throw `Output spreadsheet ${dirpath}/${filename} did not exist after xlsx.annualBalanceSheetToFile`;
       info(`created file ${dirpath}/${filename}`);
     }
     info(`passed node balance sheet to file`);
+
+    info(`testing node account to file`);
+    const acct = ledger.mkt;
+    const dirpath = `/tmp`;
+    const filename = `TEST-AccountToFile.xlsx`;
+    spreadsheets.accountToFile({ acct, dirpath, filename });
+    const result = sheetjs.readFile(`${dirpath}/${filename}`);
+    if (!result) throw `Output spreadsheet ${dirpath}/${filename} did not exist after xlsx.accountToFile`;
+    info(`passed node account to file`);
+
 
   } catch(e) {
     info(red('FAILED: tests threw exception: '), e);

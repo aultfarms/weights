@@ -85,12 +85,15 @@ export default function(
         // Don't check the written/post dates because a late cashing check could have them
         // far apart.  Since we already checked for reasonableness on the "date", which is what
         // everything uses from here on out, that is sufficient.
+        // IF THIS IS A SPLIT LINE, we want to keep null written or post dates because the split may fill them in
+        // from the parent and then adjust the effective date accordingly.  If this is not a split line, then just 
+        // default to the already-determined date so everything is filled out in the object.
         const writtenDate: Moment | string | null = exists(line.writtenDate)
           ? parseDate(line.writtenDate)
-          : date; // for non-check accounts w/o a written/post, default them to just the date already on the line
+          : (line.description !== 'SPLIT') ? date : null; // for non-check accounts w/o a written/post, default them to just the date already on the line
         const postDate: Moment | string | null = exists(line.postDate)
           ? parseDate(line.postDate)
-          : date; // for non-check accounts w/o a written/post, default them to just the date already on the line
+          : (line.description !== 'SPLIT') ? date : null; // for non-check accounts w/o a written/post, default them to just the date already on the line
 
         // Note:
         let note;

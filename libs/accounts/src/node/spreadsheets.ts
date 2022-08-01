@@ -7,7 +7,9 @@ import chalk from 'chalk';
 import debug from 'debug';
 import { profitLossToWorkbook, ProfitLoss } from '../profit-loss/index.js';
 import { annualBalanceSheetToWorkbook, AnnualBalanceSheet } from '../balance/index.js';
+import { accountToWorkbook, Account, CompositeAccount } from '../ledger/index.js';
 import { MultiError } from '../err.js';
+import moment from 'moment';
 
 const info = debug('af/accounts#reader:info');
 
@@ -79,4 +81,13 @@ export function annualBalanceSheetToFile(
   filename = filename || `${abs.year}_${abs.type}_BalanceSheet.xlsx`;
   const path = `${dirpath}/${filename}`;
   xlsx.writeFile(annualBalanceSheetToWorkbook(abs),path);
+}
+
+export function accountToFile(
+  { acct, dirpath, filename }:
+  { acct: Account | CompositeAccount, dirpath: string, filename: string }
+): void {
+  filename = filename || `${moment().format('YYYY-MM-DD-')}_Account_${(acct as Account).name || 'CompositeAccounts'}`;
+  const path = `${dirpath}/${filename}`;
+  xlsx.writeFile(accountToWorkbook(acct),path);
 }
