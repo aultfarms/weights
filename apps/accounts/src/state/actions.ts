@@ -3,7 +3,7 @@ import { action } from 'mobx';
 import { state, ActivityMessage, State, IndexedStatements } from './state';
 import { combinePrefixedMsgs } from './util';
 import debug from 'debug';
-import type * as accountsLib from '@aultfarms/accounts';
+import * as accountsLib from '@aultfarms/accounts';
 
 const warn = debug("accounts#actions:warn");
 const info = debug("accounts#actions:info");
@@ -153,3 +153,40 @@ export const profitlossScroll = action('profitlossScroll', (scroll: number) => {
   state.profitloss.scroll = scroll;
 });
 
+
+export const ten99 = action('ten99', (newval: accountsLib.ten99.Ten99Result): void => {
+  state.ten99.result = newval;
+});
+
+export const ten99Year = action('ten99Year', async (newval: string) => {
+  state.ten99.year = newval;
+});
+
+export const ten99Settings = action('ten99Settings', (newval: accountsLib.ten99.Ten99Settings): void => {
+  state.ten99.settings = newval;
+});
+
+export const computeTen99 = action('computeTen99', (): void => {
+  const ledger = stepResult()?.final;
+  if (!ledger) {
+    info('Attempted to computeTen99, but there is no valid account ledger');
+    return;
+  }
+  const year = +(state.ten99.year);
+  if (!year) {
+    info('Attempted to computeTen99, but there is no valid year');
+    return;
+  }
+  const settings = state.ten99.settings;
+  if (!settings) {
+    info('Attempted to computeTen99, but there are no valid settings');
+    return;
+  }
+  activity(`Computing 1099 for ${year}`, 'good');
+  ten99(accountsLib.ten99.ten99({ledger, year, settings}));
+  activity(`Done Computing 1099 for ${year}`, 'good');
+});
+
+export const ten99Msg = action('ten99Msg', (msg: string): void => {
+  state.ten99.msg = msg;
+});

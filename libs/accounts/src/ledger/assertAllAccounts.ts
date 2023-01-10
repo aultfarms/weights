@@ -47,13 +47,20 @@ export default function(
         const type = acct.settings.taxonly ? 'tax' : 'mkt';
         try {
           if (l.acct.settings.accounttype.match(/cash/) && diff > 300) {
-            errors.push(...(new LineError({ 
-              line: l, 
-              msg: `${type} (${l.date.format('YYYY-MM-DD')}) is more than 300 days (${diff} days) away from the previous valid date `+
-                   `(${latestReasonableDate.format('YYYY-MM-DD')}) from line `+
-                   `${latestReasonableDateLineno}.  This is an error since it is a cash account.  `+
-                   `Did you put the wrong year on this line?  If it is correct, insert a $0 transaction with a closer date.` 
-            })).msgs());
+
+            if (l.note && typeof l.note === 'object' && 'latecash' in l.note) {
+              info(`Line ${l.lineno} of ${l.acct.name} is more than 300 days (${diff} days) away from the previous valid date.  However, line.note has latecash key so we are ignoring it.`);
+            } else {
+              errors.push(...(new LineError({ 
+                line: l, 
+                msg: `${type} (${l.date.format('YYYY-MM-DD')}) is more than 300 days (${diff} days) away from the previous valid date `+
+                     `(${latestReasonableDate.format('YYYY-MM-DD')}) from line `+
+                     `${latestReasonableDateLineno}.  This is an error since it is a cash account.  `+
+                     `Did you put the wrong year on this line?  If it is correct, insert a $0 transaction with a closer date.  If you are absolutely `+
+                     `sure that this is correct, you can also add latecash: true to the note.`
+              })).msgs());
+            }
+
           } else if (l.date.isBefore(latestReasonableDate) && diff > 90) {
             if (l.note && typeof l.note === 'object' && 'latecash' in l.note) {
               info(`Line ${l.lineno} of ${l.acct.name} has date more than 90 days before previous line, but line.note has latecash key so we are ignoring it.`);

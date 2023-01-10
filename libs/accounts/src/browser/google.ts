@@ -9,6 +9,7 @@ const { red, yellow } = chalk;
 const info = debug('af/accounts#browser/google:info');
 
 import type { RawSheetAccount, StatusFunction } from '../ledger/types.js';
+import { importSettings, Ten99Settings } from '../ten99/index.js';
 
 export async function readAccountsFromGoogle(
   { status=null, accountsdir}:
@@ -69,6 +70,56 @@ export async function readAccountsFromGoogle(
   return accts;
 
 }
+
+
+export async function read1099SettingsFromGoogle(
+  { status=null, settingsdir}:
+  { status?: StatusFunction | null, settingsdir: string }
+): Promise<Ten99Settings> {
+  if (!status) status = info;
+  const path = settingsdir;
+  let lsfiles = null;
+  try {
+    lsfiles = await google.drive.ls({ path });
+  } catch(e: any) {
+    throw oerror.tag(e, `af/accounts#browser/google: failed to ls path ${path}`);
+  }
+  if (!lsfiles) throw new MultiError({ msg: `Failed to ls files at path ${path}` });
+  const settingsfile = lsfiles.contents.filter(f => f.name.match(/^1099Settings/) && f.kind === 'drive#file')[0];
+  if (!settingsfile) {
+    throw new MultiError({ msg: `Failed to find 1099Settings file at path ${path}` });
+  }
+  const filename = settingsfile.name;
+  const id = settingsfile.id;
+  let result: google.sheets.SpreadsheetJson | null = null;
+  if (filename.match(/xlsx$/)) {
+    // Download as regular xlsx file and make a workbook
+    const arraybuffer = await google.drive.getFileContents({ id });
+    const wb = xlsx.read(arraybuffer, { type: 'array' });
+    result = wb.SheetNames.reduce((acc,sheetname) => {
+      acc[sheetname] = xlsx.utils.sheet_to_json(wb, { raw: false });
+      return acc;
+    }, {} as google.sheets.SpreadsheetJson);
+  } else {
+    // Export the sheets file as an xlsx.
+    status(yellow('Reading:') + chalk.green(filename));
+    result = await google.sheets.spreadsheetToJson({ id });
+  }
+  if (!result) {
+    throw new MultiError({ msg: `WARNING: spreadsheetToJson or getFileContents returned null for file: ${filename}` });
+  }
+
+  const rawpeople = result['people'];
+  const rawcategories = result['categories'];
+  if (!rawpeople) {
+    throw new MultiError({ msg: `1099Settings did not have a 'people' sheet` });
+  }
+  if (!rawcategories) {
+    throw new MultiError({ msg: `1099Settings did not have a 'categories' sheet` });
+  }
+  return importSettings({ rawpeople, rawcategories });
+}
+
 
 const xlsxMimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 

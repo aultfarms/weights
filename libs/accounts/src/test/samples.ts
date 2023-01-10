@@ -106,7 +106,7 @@ export const testacctWithSettings: RawSheetAccount = {
 
 export const testacctAsset =   {
   "filename": "Account-Assets.xlsx",
-  "name": "bldg_imprv.2020",
+  "name": "bldg_imprv.2020TEST",
   "lines": [
     {
       "category": "SETTINGS",
@@ -129,13 +129,18 @@ export const testacctAsset =   {
       "category": "bldg-house-home-test.house",
       "parcelid": "11 22 33 444 555 020-004",
       "description": "Test House 1",
+      "purchaseDate": "1998-01-01",
+      "purchaseValue": "$70,000.00",
+      "taxAssetid": "90",
       "taxDescription": "bldg-house-home-test.house",
       "taxTotalDepr": "",
       "taxPriorValue": "",
       "taxCurrentValue": "",
       "mktPriorValue": "$70,000.00 ",
       "mktCurrentValue": "$60,000.00 ",
-      "mktCurrentDepr": "$10,000.00 "
+      "mktCurrentDepr": "$10,000.00 ",
+      "saleDate": "",
+      "saleValue": "",
     },
   ],
 };

@@ -133,7 +133,7 @@ function testAssetsToTxAccts(a: typeof ledger): void {
   let res = a.assetsToTxAccts({ accts });
   if (!res || !res[0]) throw `assetsToTxAccts returned null or no accounts`;
   if (res[0].errors && res[0].errors.length > 0) throw `Account had errors: ${res[0].errors.join('\n')}`;
-  if (res.length !== 1) throw `assetsToTxAccts should have only returned 1 asset account, instead it returned ${res.length} with names ${res.map(a => a.name).join(', ')}`;
+  if (res.length !== 2) throw `assetsToTxAccts should have returned 2 accounts: 1 tax and 1 mkt, instead it returned ${res.length} with names ${res.map(a => a.name).join(', ')}`;
   info('passed assetsToTxAccts on test asset account');
 
   info('It should not mess with a cash account');
@@ -217,8 +217,9 @@ function testAssertAllAccounts(a: typeof ledger) {
   let failed = false;
   try { 
     a.assertAllAccounts({ accts: accts1 })
-    failed = true;
-  } catch(e) { }
+  } catch(e) { 
+    failed = true
+  }
   if (!failed) throw `assertAllAccounts failed to throw on invalid accounts`;
   info('passed assertion on un-processed accounts');
 }
@@ -309,9 +310,9 @@ async function testLoadInSteps(a: typeof ledger, rawaccts: ledger.RawSheetAccoun
 
   info('It should have the right number of final tax and mkt accounts');
   let accts = step.final.tax.accts;
-  if (accts.length !== 24) throw `There should be 24 accounts in final.tax, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
+  if (accts.length !== 26) throw `There should be 26 accounts in final.tax, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
   accts = step.final.mkt.accts;
-  if (accts.length !== 36) throw `There should be 36 accounts in final.mkt, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
+  if (accts.length !== 37) throw `There should be 37 accounts in final.mkt, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
   info('passed right number of final tax and mkt accounts');
 
   return step.final;
@@ -320,7 +321,8 @@ async function testLoadInSteps(a: typeof ledger, rawaccts: ledger.RawSheetAccoun
 function testAccountToWorkbook(a: typeof ledger, acct: ledger.Account | ledger.CompositeAccount) {
   info('It should convert the market account into a workbook');
   const wb = a.accountToWorkbook(acct);
-  if (!wb || !wb.Sheets?.length) {
+  if (!wb || wb.SheetNames.length < 1) {
+    info('accountToWorkbook: FAIL: workbook has no sheets.  wb = ', wb);
     throw `accountToWorkbook failed to return a valid workbook with at least one sheet`;
   }
   info('passed convert market account to workbook');

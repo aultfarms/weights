@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { state, IndexedStatements } from './state';
-import { activity, errors, stepResult, balancesheets, profitlosses, selectedAccountName } from './actions';
+import { activity, errors, stepResult, balancesheets, profitlosses, selectedAccountName, ten99Settings } from './actions';
 import debug from 'debug';
 import { util, ledger as ledger, err, balance, profitloss, google } from '@aultfarms/accounts';
 
@@ -149,66 +149,14 @@ export const initialize = async () => {
     }
   }
 
-  // Finally, select the final market account by default, then autorun should grab the final.mkt
-  // Currently, this is broken, it hangs the webpage.  I think I need to use "computed" from mobx,
-  // and then maybe I don't need "BigData"?
-  //selectedAccountName('All');
-
-/*
-// 1: are there any lines in mkt 'all' that do not exist in accounts?
-for (const l of final.mkt.lines) {
-  if (l.acct.name === 'SYNTHETIC_START' && l.amount === 0) continue;
-  const acct = final.mkt.accts.find(a => a.name === l.acct.name && a.filename === l.acct.filename);
-  if (!acct) { throw `ERROR: acct on line ${l.acct.name} at filename ${l.acct.filename} NOT FOUND in accounts`; }
-  const found = !!acct.lines.find(la => (
-    la.lineno   === l.lineno && 
-    la.amount   === l.amount && 
-    la.date.unix()     === l.date.unix() &&
-    la.who      === l.who && 
-    la.category === l.category && 
-    la.description === l.description
-  ));
-  if (!found) { 
-    if (l.amount !== 0 || l.balance !== 0) { // start lines don't make it
-      console.log(acct); console.log(l); throw `ERROR: line ${l.lineno} in acct ${l.acct.name} from 'all' lines NOT FOUND in account's lines.  Line printed to console above this exception.`;
-    }
+  try {
+    activity(`Loading 1099Settings from Google as ${state.config.ten99Location.path}`);
+    ten99Settings(await google.read1099SettingsFromGoogle({ status: activity, settingsdir: state.config.ten99Location.path }));
+    activity(`Successfully loaded 1099Settings from Google at ${state.config.ten99Location.path}`);
+  } catch(e: any) {
+    activity(`FAIL: could not load 1099Settings from Google at ${state.config.ten99Location.path}`, 'bad');
+    errors(e.toString());
   }
-}
 
-// 2: are there any lines in mkt accounts that do not exist in mkt 'all'?
-for (const acct of final.mkt.accts) {
-  for (const la of acct.lines) {
-    const found = !!final.mkt.lines.find(l => 
-      la.lineno   === l.lineno && 
-      la.amount   === l.amount && 
-      la.date.unix()     === l.date.unix() && 
-      la.who      === l.who && 
-      la.category === l.category && 
-      la.description === l.description
-    );
-    if (!found) { console.log(la);  throw `ERROR: line ${la.lineno} in acct ${la.acct.name} from account's lines NOT FOUND in 'all' lines.  Line printed to console above this exception.`; }
-  }
-}*/
-
-/*
-// Compare "All" balance at each year-end with all account balances on that date
-for (const year of [ 2020, 2021, 2022 ]) {
-  const yearend = moment(`${year}-12-31T23:59:59`, 'YYYY-MM-DDTHH:mm:ss');
-  let allbalance = balance.balanceForAccountOnDate(yearend, final.mkt);
-  let acctbalance = 0;
-  for (const a of final.mkt.accts) {
-    acctbalance += balance.balanceForAccountOnDate(yearend, a);
-  }
-  if (allbalance !== acctbalance) {
-    throw `ERROR: BALANCE CHECK FAILED year ${year}, allbalance = ${allbalance}, acctbalance = ${acctbalance}!!`;
-  }
-}
-
-
-
-throw `STOPPED HERE (state/initialize.ts).  REMOVE WHEN DONE DEBUGGING`;
-*/
-
-  
 };
 

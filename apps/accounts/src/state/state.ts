@@ -1,7 +1,8 @@
 import { observable, autorun } from 'mobx';
-import type { ledger } from '@aultfarms/accounts';
+import type { ledger, ten99} from '@aultfarms/accounts';
 import { stepResult, selectedAccountAcct, selectedAccountVAcct } from './actions';
 import debug from 'debug';
+import moment from 'moment';
 
 const warn = debug('accounts#state:warn');
 const info = debug('accounts#state:info');
@@ -23,6 +24,10 @@ export type Config = {
     place: 'google' | 'dir',
     path: string,
   },
+  ten99Location: {
+    place: 'google' | 'dir',
+    path: string,
+  }
   validations: {
     retroActiveStartDate: string,
   },
@@ -37,7 +42,7 @@ export type ActivityMessage = {
 export type BigData = { rev: number };
 
 export type State = {
-  page: 'activity' | 'ledger' | 'balance' | 'profit',
+  page: 'activity' | 'ledger' | 'balance' | 'profit' | 'ten99',
   config: Config,
   activityLog: ActivityMessage[],
   errors: string[],
@@ -68,6 +73,12 @@ export type State = {
     expandYear: string,
     scroll: number,
   },
+  ten99: {
+    year: string,
+    result: ten99.Ten99Result | null,
+    settings: ten99.Ten99Settings | null,
+    msg: string,
+  },
 };
 
 
@@ -82,6 +93,10 @@ const defaultConfig: Config = {
     place: 'google',
     path: '/Ault Farms Shared/LiveData/BalanceProfitLoss'
   },
+  ten99Location: {
+    place: 'google',
+    path: '/Ault Farms Shared/LiveData/1099s'
+  },
   validations: {
     retroActiveStartDate: '2020-01-01',
   },
@@ -90,13 +105,16 @@ let config = defaultConfig;
 
 try {
   const localConfig = JSON.parse(localStorage.getItem('accounts-config') || '');
-  if (localConfig && localConfig.accountsLocation && localConfig.saveLocation) {
+  if (localConfig && localConfig.accountsLocation && localConfig.saveLocation && localConfig.ten99Location) {
     config = localConfig;
   }
 } catch (e) {
   warn('Could not parse localStorage["accounts-config"]');
   // JSON parse failed
 }
+// This either writes the default config, or just writes the same localConfig back.
+// There is an autorun the updates localStorage as config changes in the state.
+localStorage.setItem('accounts-config', JSON.stringify(config));
 
 export const state = observable<State>({
   page: 'activity',
@@ -129,6 +147,12 @@ export const state = observable<State>({
     msg: '',
     expandYear: '',
     scroll: 0,
+  },
+  ten99: {
+    year: moment().year().toString(),
+    result: null,
+    settings: null,
+    msg: '',
   },
 });
 

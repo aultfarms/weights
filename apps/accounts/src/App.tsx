@@ -7,6 +7,7 @@ import { ActivityLog } from './ActivityLog';
 import { Ledger } from './Ledger';
 import { BalanceSheets } from './BalanceSheets';
 import { ProfitLoss } from './ProfitLoss';
+import { Ten99 } from './Ten99';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import pkg from '../package.json';
 
@@ -37,6 +38,7 @@ export const App = observer(function App() {
       case 'ledger': return <Ledger />;
       case 'balance': return <BalanceSheets />;
       case 'profit': return <ProfitLoss />;
+      case 'ten99': return <Ten99 />;
     }
   }
 
