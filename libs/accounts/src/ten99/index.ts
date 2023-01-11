@@ -130,7 +130,10 @@ export function ten99(
     const missing_over_600bucks: string[] = [];
     // One more test: if that person made less than $600 from us, then they are legit to not be in the list:
     for (const m of missing) {
-      const persontotal = clines.reduce((sum,l) => (sum + l.amount), 0);
+      const persontotal = clines
+        .filter(l => l.who === m) // limit the category lines to only this missing person
+        .reduce((sum,l) => (sum + l.amount), 0); // sum up all the amounts
+
       if (Math.abs(persontotal) < 600) {
         trace(`Found person ${m} in accounts but missing in 1099s, but they made less than $600 so they can be excluded`);
         continue;

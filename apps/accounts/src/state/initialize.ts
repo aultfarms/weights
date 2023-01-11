@@ -7,6 +7,12 @@ import { util, ledger as ledger, err, balance, profitloss, google } from '@aultf
 const info= debug("accounts#initialize:info");
 const warn = debug("accounts#initialize:warn");
 
+async function breakExecution() {
+  info('Breaking execution');
+  await new Promise(resolve => setTimeout(resolve, 0)); // break up the execution to allow UI updates
+  info('Resuming execution');
+}
+
 export const initialize = async () => {
 
   if (state.config.accountsLocation.place !== 'google') {
@@ -35,6 +41,7 @@ export const initialize = async () => {
         activity('ERROR ON STEP: '+step.step, 'bad');
         break;
       }
+      await breakExecution();
     }
     if (!step) {
       activity('ERROR: no step!', 'bad');

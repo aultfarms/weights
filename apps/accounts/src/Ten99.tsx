@@ -94,7 +94,12 @@ export const Ten99 = observer(function Ten99() {
     }
   };
  
-  const missing: ten99.Ten99Result['missing_people_from_required_categories'] | null = state.ten99.result?.missing_people_from_required_categories || null;
+  let missing = state.ten99.result?.missing_people_from_required_categories || null;
+  if (missing && Object.keys(missing).length < 1) { // there aren't any missing people
+    missing = null;
+  }
+
+
 
   const displayMissing = () => {
     if (!missing) return '';
@@ -170,10 +175,11 @@ export const Ten99 = observer(function Ten99() {
               )}
               </TableBody>
             </Table>
+            <br/>
           </div>
         }
 
-        { !missing ? '' :
+        { !missing ? <div style={{ color: '#00BB00', paddingBottom: '5px' }}>No missing people detected</div> :
           <TableContainer id="ten99-missing-container" component={Paper} sx={{ maxHeight: 700 }}>
             <h3>Missing people:</h3>
             <div>
