@@ -39,5 +39,5 @@ echo -e "$CYAN--------> yarn build (try up to 4 times) $NOCOLOR" && \
 # Yep, build is non-deterministic.  Bleh
 trybuild && \
 echo -e "$CYAN--------> yarn deploy$NOCOLOR" && \
-yarn deploy
-
+yarn deploy && \
+echo -e "$CYAN--------> Successfully Deployed v$NEWVERSION"
