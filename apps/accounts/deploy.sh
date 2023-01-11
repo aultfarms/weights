@@ -12,10 +12,10 @@ trybuild () {
 }
 
 MONOREPODIR="/Users/aultac/repos/aultfarms/af-monorepo/apps/accounts"
-cd $MONOREPODIR
 OLDVERSION=`jq -r '.version' package.json`
 NEWVERSION=`echo $OLDVERSION | awk -F '.' '{printf("%d.%d.%d", $1, $2, $3+1)}'`
 
+cd $MONOREPODIR
 echo -e "$CYAN--------> Bumping version from $OLDVERSION to $NEWVERSION and commiting to git before push$NOCOLOR"
 jq ".version = \"$NEWVERSION\"" package.json > package-versionbump.json
 mv package-versionbump.json package.json
@@ -24,11 +24,11 @@ git commit -m "v$NEWVERSION deploy"
 echo -e "$CYAN--------> Push latest from master (did you remember to commit?)$NOCOLOR"
 git push
 
+cd ~/repos/aultfarms/accounts
 git pull monorepo master
 git push origin master
 # There are weird issues with yarn and react-scripts if you don't do it like this:
-cd ~/repos/aultfarms/accounts && 
-echo -e "$CYAN--------> root workspace yarn $NOCOLOR" && \
+echo -e "$CYAN--------> root workspace yarn $NOCOLOR"
 yarn && \
 cd apps/accounts && \
 echo -e "$CYAN--------> accounts yarn $NOCOLOR" && \

@@ -1,20 +1,19 @@
 import xlsx, { WorkBook } from 'xlsx-js-style'; //'sheetjs-style';
 import type { Annual1099 } from './index.js';
 
-
 // A handy function to wrap:
 const enc = (r: number,c: number) => xlsx.utils.encode_cell({c,r});
 
 export function ten99ToWorkbook(annual1099: Annual1099): WorkBook {
   const wb: WorkBook = {
-    SheetNames: [ '1099-summary', '1099-transactions', ],
+    SheetNames: [ '1099-summary', 'AllPeopleTransactions', ],
     Sheets: {
-      '1099-transactions': {},
       '1099-summary': {},
+      'AllPeopleTransactions': {},
     },
   };
-  const wst = wb.Sheets['1099-transactions']!;
   const wss = wb.Sheets['1099-summary']!;
+  const wst = wb.Sheets['AllPeopleTransactions']!;
   
   //--------------------------------------------
   // Transactions sheet:
@@ -29,7 +28,7 @@ export function ten99ToWorkbook(annual1099: Annual1099): WorkBook {
   let row = 1;
   for (const entry of annual1099) {
     wst[enc(row,0)] = { v: entry.person.name };
-    wst[enc(row,1)] = { v: entry.person.address };
+    wst[enc(row,1)] = { v: entry.person.address.replace('\n', '\r\n') };
     wst[enc(row,2)] = { v: entry.person.taxid };
     row++;
     for (const l of entry.lines) {
