@@ -1,5 +1,8 @@
 #! /bin/bash
 
+CYAN="\033[1;36m"
+NOCOLOR="\033[0m"
+
 sleepbuild () {
   sleep 1 && yarn build
 }
@@ -8,21 +11,33 @@ trybuild () {
   sleepbuild || sleepbuild || sleepbuild || sleepbuild
 }
 
-cd ~/repos/aultfarms/accounts/apps/accounts
+MONOREPODIR="/Users/aultac/repos/aultfarms/af-monorepo/apps/accounts"
+cd $MONOREPODIR
+OLDVERSION=`jq -r '.version' package.json`
+NEWVERSION=`echo $OLDVERSION | awk -F '.' '{printf("%d.%d.%d", $1, $2, $3+1)}'`
+
+echo -e "$CYAN--------> Bumping version from $OLDVERSION to $NEWVERSION and commiting to git before push$NOCOLOR"
+jq ".version = \"$NEWVERSION\"" package.json > package-versionbump.json
+mv package-versionbump.json package.json
+git add package.json
+git commit -m "v$NEWVERSION deploy"
+echo -e "$CYAN--------> Push latest from master (did you remember to commit?)$NOCOLOR"
+git push
+
 git pull monorepo master
 git push origin master
 # There are weird issues with yarn and react-scripts if you don't do it like this:
 cd ~/repos/aultfarms/accounts && 
-echo "--------> root workspace yarn " && \
+echo -e "$CYAN--------> root workspace yarn $NOCOLOR" && \
 yarn && \
 cd apps/accounts && \
-echo "--------> accounts yarn " && \
+echo -e "$CYAN--------> accounts yarn $NOCOLOR" && \
 yarn && \
-echo "--------> yarn build:libs " && \
+echo -e "$CYAN--------> yarn build:libs $NOCOLOR" && \
 yarn build:libs && \
-echo "--------> yarn build (try up to 4 times)" && \
+echo -e "$CYAN--------> yarn build (try up to 4 times) $NOCOLOR" && \
 # Yep, build is non-deterministic.  Bleh
 trybuild && \
-echo "--------> yarn deploy" && \
+echo -e "$CYAN--------> yarn deploy$NOCOLOR" && \
 yarn deploy
 
