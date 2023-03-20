@@ -1,4 +1,5 @@
 import { MultiError } from '../err.js';
+import JSON5 from 'json5';
 
 export type Thing = { [key: string]: any } | any[];
 
@@ -27,7 +28,13 @@ const maybeNumberOrBoolean = (str: string): number | boolean | string => {
 
 const parseOneItem = (str: string, acc?: Thing): Thing | number | boolean | string => {
   str = clean(str);
-  if (isJSON(str)) return JSON.parse(str);
+  if (isJSON(str)) {
+    try {
+      return JSON5.parse(str);
+    } catch (e: any) {
+      throw MultiError.wrap(e, `String looked like JSON but failed to parse as JSON.  String was: ${str}`);
+    }
+  }
   if (isPlainString(str)) return maybeNumberOrBoolean(str); // no colons, it's just a single value
   // Otherise, we have a colon, so parse the key and then recursively parse the value
   const matches = str.match(/^([^:]+):(.*)$/);
@@ -65,7 +72,13 @@ const parseOneItem = (str: string, acc?: Thing): Thing | number | boolean | stri
 // If any key ends in "s" (i.e. is plural), and has commas, it will be parsed as an array of things
 export default function(str: string): Thing | string | number | boolean | any[] {
   str = clean(str);
-  if (isJSON(str)) return JSON.parse(str);
+  if (isJSON(str)) {
+    try {
+      return JSON5.parse(str);
+    } catch(e: any) {
+      throw MultiError.wrap(e, `String looked like JSON but failed to parse as JSON.  String was: ${str}`);
+    }
+  }
   if (isPlainString(str)) return maybeNumberOrBoolean(str); // no colons, it's just a single value
 
   if (hasSemicolon(str)) {

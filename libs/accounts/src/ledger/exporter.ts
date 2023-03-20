@@ -1,6 +1,8 @@
 import xlsx, { WorkBook, WorkSheet } from 'xlsx-js-style'; //'sheetjs-style';
 import type { AccountTx, ValidatedRawTx, AccountSettings } from './types.js';
-import { isMoment, Moment } from 'moment';
+import moment, { Moment } from 'moment';
+
+const { isMoment } = moment;
 
 // Have to jump through some hoops to get TS and node both happy w/ moment-range:
 

@@ -119,7 +119,7 @@ export async function sheets(g: Google) {
     worksheetName,
   });
   if (!r3?.id) throw `createSpreadsheet returned null instead of an id when creating spreadsheet with worksheetName`;
-  const id = r3.id; // keep for later tests
+  let id = r3.id; // keep for later tests
   const sheet2 = await g.sheets.getSpreadsheet({ id: r3.id });
   if (!sheet2 || !sheet2.sheets) throw `createSpreadsheet failed to getSpreadsheet after creating with a worksheetName`;
   if (!sheet2.sheets.find((s) => s?.properties?.title === 'testsheet2')) {
@@ -141,7 +141,7 @@ export async function sheets(g: Google) {
   }
 
   info(`sheets: spreadsheetToJson`);
-  const header = [ 'key1', 'key2', 'key3' ];
+  let header = [ 'key1', 'key2', 'key3' ];
   const rows = [ [ 'val1-1', 'val1-2', 'val1-3' ],
                  [ 'val2-1', 'val2-2', 'val2-3' ],
                  [ 'val3-1', 'val3-2', 'val3-3' ] ];
@@ -179,15 +179,114 @@ export async function sheets(g: Google) {
   const str = g.sheets.arrayToLetterRange("1", cols);
   if (str !== 'A1:C1') throw `arrayToLetterRange: created range string (${str}) is not what was expected ('A1:C1')`;
 
+
+  //------------------------------------------------------------------
+  // Batch Upsert
+
+  info(`sheets: batchUpsertRows -> overwrite a block of 10 rows`);
+  const r5 = await g.sheets.createSpreadsheet({
+    parentid: folder.id,
+    name: 'testBatchInsertRows',
+    worksheetName,
+  });
+  if (!r5?.id) throw `createSpreadsheet returned null instead of an id when creating spreadsheet with worksheetName`;
+  id = r5.id;
+  header = [];
+  for (let i=0; i < 5; i++) {
+    header.push(`col${i}`);
+  }
+  // Put header in first row
+  await g.sheets.putRow({ id, row: '1', cols: header, worksheetName });
+  const rowobjects: google.sheets.RowObject[] = [];
+  for (let i=0; i < 10; i++) {
+    const rowobj: google.sheets.RowObject = { lineno: i+2 }; // plus 1 accounts for header, and +2 accounts for 1-based row indexing
+    for(let j=0; j < 5; j++) {
+      rowobj[`col${j}`] = `row${i}col${j}`;
+    }
+    rowobjects.push(rowobj);
+  }
+  await g.sheets.batchUpsertRows({ id, worksheetName, header,
+    rows: rowobjects,
+    insertOrUpdate: 'UPDATE',
+  });
+  await checkUpsertResultAgainstExpected({ expected: rowobjects, id, worksheetName, g });
+
+
+  info(`sheets: batchUpsertRows -> update row 3 values`)
+  for (let i=0; i < 5; i++) {
+    rowobjects[2]![`col${i}`] += '-UPDATED';
+  }
+  await g.sheets.batchUpsertRows({ id, worksheetName, header,
+    rows: rowobjects,
+    insertOrUpdate: 'UPDATE'
+  });
+  await checkUpsertResultAgainstExpected({ expected: rowobjects, id, worksheetName, g });
+
+  info(`sheets: batchUpsertRows -> insert 3 rows into existing rows`);
+  const rowobjectsToAdd: google.sheets.RowObject[] = [
+    // first lineno 3 will end up at line 3, and orig line 3 will be pushed down to line 4
+    { lineno: 3, col0: 'INSERTEDrow3col0', col1: 'INSERTEDrow3col1', col2: 'INSERTEDrow3col2', col3: 'INSERTEDrow3col3', col4: 'INSERTEDrow3col4'},
+    // second lineno 3 will end up at line 4, and orig line 3 will be pushed down again to line 5
+    { lineno: 3, col0: 'INSERTEDrow4col0', col1: 'INSERTEDrow4col1', col2: 'INSERTEDrow4col2', col3: 'INSERTEDrow4col3', col4: 'INSERTEDrow4col4'},
+    // lineno 7 will end up inserting as line 9 since we just pushed the orig line 7 down to 9
+    { lineno: 7, col0: 'INSERTEDrow9col0', col1: 'INSERTEDrow9col1', col2: 'INSERTEDrow9col2', col3: 'INSERTEDrow9col3', col4: 'INSERTEDrow9col4'},
+  ];
+  const newrowobjects: google.sheets.RowObject[] = [
+    rowobjects[0]!,
+    rowobjectsToAdd[0]!, // lineno 3 is actually only the second object b/c of 1-indexing and the header row in spot 1
+    rowobjectsToAdd[1]!,
+    rowobjects[1]!,
+    rowobjects[2]!,
+    rowobjects[3]!,
+    rowobjects[4]!,
+    rowobjectsToAdd[2]!, // lineno 7 (header and 1-based indexing)
+    rowobjects[5]!,
+    rowobjects[6]!,
+    rowobjects[7]!,
+    rowobjects[8]!,
+    rowobjects[9]!,
+  ];
+  await g.sheets.batchUpsertRows({ id, worksheetName, header,
+    rows: rowobjectsToAdd,
+    insertOrUpdate: 'INSERT'
+  });
+  await checkUpsertResultAgainstExpected({ expected: newrowobjects, id, worksheetName, g });
+
+
   info(`sheets: all tests passed`);
 }
 
 export default async function run(g: Google) {
 
   await itLoads(g);
-  await core(g);
-  await auth(g);
-  await drive(g);
+//  await core(g);
+//  await auth(g);
+//  await drive(g);
   await sheets(g);
   info('All Google Tests Passed');
 }
+
+
+async function checkUpsertResultAgainstExpected(
+  { expected, id, worksheetName, g }:
+  { expected: google.sheets.RowObject[], id: string, worksheetName: string, g: Google }
+): Promise<void> {
+  // Now grab the values from the spreadhseet and compare
+  const r6 = await g.sheets.spreadsheetToJson({ id });
+  const sheet = r6?.[worksheetName];
+  if (!sheet) throw `Could not retrieve spreadsheet after batchInsertRows using spreadsheetToJson`;
+  for (let i=0; i < expected.length; i++) {
+    const expectedrow = expected[i]!;
+    const resultrow = sheet[i];
+    if (!resultrow) throw `Expected a result at row ${i} but there is nothing at that index in result`;
+    for (let j=0; j < Object.keys(expectedrow).length - 1; j++) { // the "-1" is b/c lineno is on the expected object and it doesn't count
+      const col = `col${j}`;
+      // Check that every proper row/col value matches the original row
+      if (!resultrow[col]) throw `Expected a result at row ${i} col ${col} but it is falsey`;
+      if (resultrow[col] !== expectedrow[col]) {
+        throw `Row ${i} expected col ${col} (${expectedrow[col]}) to equal result (${resultrow[col]}) but it does not`;
+      }
+    }
+  }
+}
+

@@ -5,7 +5,7 @@ import { isPlainObject }from 'is-plain-object'
 import ansi from 'ansi-styles'
 import isRegexp from 'is-regexp';
 import isObject from 'is-obj';
-import getOwnEnumPropSymbols from 'get-own-enumerable-property-symbols';
+//import getOwnEnumPropSymbols from 'get-own-enumerable-property-symbols';
 
 
 type Color = 
@@ -194,7 +194,7 @@ function stringifyObject(input: object | any[], options: Options, pad?: string) 
 		if (isObject(input)) {
 			let objectKeys = [
 				...Object.keys(input),
-				...getOwnEnumPropSymbols(input),
+				//...getOwnEnumPropSymbols(input),
 			];
 
 			if (options.filter) {

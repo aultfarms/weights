@@ -8,6 +8,8 @@ import {
   Account,
   StatusFunction,
   assertAccount,
+  assertInventoryAccount,
+  assertLivestockInventoryAccount,
 } from './types.js';
 
 const info = debug('af/accounts#assertAllAccounts:info');
@@ -30,6 +32,13 @@ export default function(
 
     try { 
       assertAccount(acct);
+      if (acct.settings.accounttype === 'inventory') {
+        if (acct.settings.inventorytype === 'livestock') {
+          assertLivestockInventoryAccount(acct);
+        } else {
+          assertInventoryAccount(acct)
+        }
+      }
       newaccts.push(acct);
 
       // Check that all the dates on all the transactions seem reasonable (i.e. not too far away from each other)
@@ -49,7 +58,7 @@ export default function(
           if (l.acct.settings.accounttype.match(/cash/) && diff > 300) {
 
             if (l.note && typeof l.note === 'object' && 'latecash' in l.note) {
-              info(`Line ${l.lineno} of ${l.acct.name} is more than 300 days (${diff} days) away from the previous valid date.  However, line.note has latecash key so we are ignoring it.`);
+              info(`Line ${l.lineno} of ${l.acct?.name} is more than 300 days (${diff} days) away from the previous valid date.  However, line.note has latecash key so we are ignoring it.`);
             } else {
               errors.push(...(new LineError({ 
                 line: l, 
@@ -63,7 +72,7 @@ export default function(
 
           } else if (l.date.isBefore(latestReasonableDate) && diff > 90) {
             if (l.note && typeof l.note === 'object' && 'latecash' in l.note) {
-              info(`Line ${l.lineno} of ${l.acct.name} has date more than 90 days before previous line, but line.note has latecash key so we are ignoring it.`);
+              info(`Line ${l.lineno} of ${l.acct?.name} has date more than 90 days before previous line, but line.note has latecash key so we are ignoring it.`);
             } else {
               errors.push(...(new LineError({ 
                 line: l, 
@@ -80,7 +89,7 @@ export default function(
         }
       }
     } catch(e: any) {
-      e = AccountError.wrap(e, acct, `Account failed type validation`);
+      e = AccountError.wrap(e, acct, `Account ${acct.name} failed type validation`);
       errors.push(...e.msgs());
     }
 

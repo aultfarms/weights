@@ -1,8 +1,13 @@
-const moment = require('moment-range').extendMoment(require('moment'));
-const argv = require('minimist')(process.argv.slice(2));
-const _ = require('lodash');
-const { table } = require('table');
-const numeral = require('numeral');
+import moment from 'moment';
+import momentrange from 'moment-range';
+import minimist from 'minimist';
+import _ from 'lodash';
+import { table } from 'table';
+import numeral from 'numeral';
+
+momentrange.extendMoment(moment);
+const argv = minimist(process.argv.slice(2));
+
 
 (async () => {
 

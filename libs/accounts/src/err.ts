@@ -1,6 +1,8 @@
 import oerror from '@overleaf/o-error';
 import { line2Str } from './ledger/util.js';
-//import debug from 'debug';
+import debug from 'debug';
+
+const warn = debug('af/accounts#err:warn');
 
 type AccountInfoPrivate = {
   name: string,
@@ -26,26 +28,31 @@ export class MultiError extends oerror {
   }
 
   public override toString(): string {
-    return super.toString() + this.msgs().join('\n');
+    return super.toString() + this.msgs().join('\n') + oerror.getFullInfo(this) + oerror.getFullStack(this);
   }
 
   public static wrap(e: any, msg?: string | string[]): MultiError {
-    if (!(e instanceof MultiError)) {
-      if (!msg || typeof msg === 'string') {
-        msg = `${msg || ''}: Non-Standard Error: ${e.toString()}`;
+    try {
+      if (!(e instanceof MultiError)) {
+        if (!msg || typeof msg === 'string') {
+          msg = `${msg || ''}: Non-Standard Error: ${e.toString()}`;
+        }
+        if (typeof msg === 'string') msg = [ msg ];
+        oerror.tag(e, `Non-standard error`);
+        e = new MultiError({ msg, cause: e });
+        return e;
       }
-      if (typeof msg === 'string') msg = [ msg ];
-      oerror.tag(e, `Non-standard error`);
-      e = new MultiError({ msg, cause: e });
+      if (!msg) msg = [ '' ];
+      if (typeof msg === 'string') {
+        msg = [ msg ];
+      }
+      e.concat(msg || '');
+      oerror.tag(e);
       return e;
+    } catch(e: any) {
+      warn('WARNING: failed to construct MultiError with message', msg);
+      throw oerror.tag(e, 'Failed to construct MultiError for message '+msg?.toString());
     }
-    if (!msg) msg = [ '' ];
-    if (typeof msg === 'string') {
-      msg = [ msg ];
-    }
-    e.concat(msg || '');
-    oerror.tag(e);
-    return e;
   }
 
   constructor({ msg, cause }: { msg: string | string[], cause?: Error }) {
@@ -73,15 +80,22 @@ export class AccountError extends MultiError {
     { msg, acct, cause }: 
     { msg: string | string[], acct?: AccountInfoPrivate, cause?: Error }
   ) {
-    if (typeof msg === 'string') {
-      msg = [ `ACCOUNT ${acct?.name || 'unknown'}: ${msg}` ];
-    }
-    super({ msg, cause });
-    if (acct) {
-      this.info.acct = {
-        name: acct.name,
-        filename: acct.filename,
-      };
+    try {
+      if (typeof msg === 'string') {
+        msg = [ `ACCOUNT ${acct?.name || 'unknown'}: ${msg}` ];
+      } else {
+        msg = msg.map(m => `ACCOUNT ${acct?.name || 'unknown'}: ${m}`);
+      }
+      super({ msg, cause });
+      if (acct) {
+        this.info.acct = {
+          name: acct.name,
+          filename: acct.filename,
+        };
+      }
+    } catch(e: any) {
+      warn('WARNING: failed to construct AccountError for cause', cause);
+      throw oerror.tag(e, 'Failed to construct MultiError for cause '+cause?.toString());
     }
   };
 
@@ -116,14 +130,19 @@ export class LineError extends MultiError {
     { msg, line, acct, cause }:
     { msg: string | string[], line: LineInfo | null, acct?: AccountInfoPrivate, cause?: Error }
   ) {
-    if (!line) line = { acct: { name: acct?.name || 'unknown' }, lineno: -1 };
-    const name = line.acct?.name ? line.acct.name : (acct?.name || 'unknown');
-    if (typeof msg === 'string') {
-      msg = [ msg ];
+    try {
+      if (!line) line = { acct: { name: acct?.name || 'unknown' }, lineno: -1 };
+      const name = line.acct?.name ? line.acct.name : (acct?.name || 'unknown');
+      if (typeof msg === 'string') {
+        msg = [ msg ];
+      }
+      msg = msg.map(m => `ACCOUNT ${name}: LINE: ${line?.lineno}: ${m}`);
+      super({ msg, cause });
+      this.info.line = line2Str(line);
+    } catch(e: any) {
+      warn('ERROR: unable to construct LineError for cause ', cause);
+      throw oerror.tag(e, 'ERROR: unable to construct LineError for cause '+cause?.toString());
     }
-    msg = msg.map(m => `ACCOUNT ${name}: LINE: ${line?.lineno}: ${m}`);
-    super({ msg, cause });
-    this.info.line = line2Str(line);
   }
 
   public static override wrap(e: any, line?: LineInfo | string | string[] | null, msg?: string | string[]): LineError {

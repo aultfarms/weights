@@ -32,6 +32,10 @@ export function moneyEquals(a:number, b: number): boolean {
   return (Math.abs(a-b) < 0.01);
 }
 
+export function integerEquals(a: number, b: number): boolean {
+  return (Math.abs(a-b) < 1);
+}
+
 export function line2Str(l: any) {
   l = deepclone(l); // copy the line object
   l.acct = "<"+l.acct.name+">";

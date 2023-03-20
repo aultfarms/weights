@@ -37,6 +37,10 @@ function convertStartingBalancesToTxAmounts(lines: AccountTx[]) {
     lineno: -1,
     acct: lines[0]!.acct,
   };
+  // need these for livestock inventory accounts
+  if (lines[0] && 'taxAmount' in lines[0]) newstart.taxAmount = 0;
+  if (lines[0] && 'taxBalance' in lines[0]) newstart.taxBalance = 0;
+
   lines = [ newstart, ...lines ];
   return lines;
 }
@@ -53,13 +57,27 @@ function sortLinesByDate(lines: AccountTx[]) {
   return lines;
 }
 
-function recomputeBalances(lines: AccountTx[]) {
+export function recomputeBalances(lines: AccountTx[]) {
 
   for (let i=0; i < lines.length; i++) {
     let prev = i===0 ? 0 : lines[i-1]?.balance || 0;
     if (Math.abs(prev) < 0.01) prev = 0;
     if (Math.abs(lines[i]!.amount) < 0.01) lines[i]!.amount = 0;
     lines[i]!.balance = prev + lines[i]!.amount;
+
+    if (lines[i]!.acct.settings.accounttype === 'inventory') {
+      prev = i===0 ? 0 : lines[i-1]?.qtyBalance || 0;
+      if (Math.abs(prev) < 0.01) prev = 0;
+      if (Math.abs(lines[i]!.qty) < 0.01) lines[i]!.qty= 0;
+      lines[i]!.qtyBalance = prev + lines[i]!.qty;
+      
+      if (lines[i]!.acct.settings.inventorytype === 'livestock') {
+        prev = i===0 ? 0 : lines[i-1]?.weightBalance || 0;
+        if (Math.abs(prev) < 0.01) prev = 0;
+        if (Math.abs(lines[i]!.weight) < 0.01) lines[i]!.weight = 0;
+        lines[i]!.weightBalance = prev + lines[i]!.weight;
+      }
+    }
   };
   return lines;
 }
@@ -83,6 +101,7 @@ export default function(
 : { accts: Account[], status?: StatusFunction }
 ): FinalAccounts {
   if (!status) status = info;
+  const originals = accts;
   accts = deepclone(accts); // we will mutate the lines, so clone first
 
   // First, walk all accounts and get them sorted correctly by date with their balances recomputed accordingly
@@ -94,19 +113,41 @@ export default function(
   }
 
   // Now split up tax/mkt into separate sets:
-  // All asset/inventory type accounts have taxonly or mktonly set on them.  Cash accounts go in both tax and mkt.
-  const taxaccts = accts.filter(a => 
+  // All asset type accounts have taxonly or mktonly set on them by the synthetic account creation in assetsToTxAccts.
+  // Cash and inventory accounts go in both tax and mkt unless they specify specifically taxonly/mktonly
+  let taxaccts = accts.filter(a => 
     a.settings.taxonly || 
     (!a.settings.mktonly && 
-       (a.settings.accounttype === 'cash' || a.settings.accounttype === 'futures-cash')
+       (   a.settings.accounttype === 'cash' 
+        || a.settings.accounttype === 'futures-cash' 
+        || a.settings.accounttype === 'inventory'
+       )
     )
   );
   const mktaccts = accts.filter(a => 
     a.settings.mktonly || 
     (!a.settings.taxonly && 
-       (a.settings.accounttype === 'cash' || a.settings.accounttype === 'futures-cash')
+       (   a.settings.accounttype === 'cash' 
+        || a.settings.accounttype === 'futures-cash' 
+        || a.settings.accounttype === 'inventory'
+       )
     )
   );
+
+  // The livestock inventory accounts have taxAmount and taxBalance that need to be 
+  // swapped into the amount and balance spots in the tax version of the account.
+  taxaccts = taxaccts.map(acct => {
+    if (acct.settings.accounttype !== 'inventory') return acct;
+    if (acct.settings.inventorytype !== 'livestock') return acct;
+    acct = deepclone(acct); // make a copy so we can mess with the transactions
+    for (const tx of acct.lines) {
+      tx.mktAmount = tx.amount;
+      tx.mktBalance = tx.balance;
+      tx.amount = tx.taxAmount;
+      tx.balance = tx.taxBalance;
+    }
+    return acct; // a new clone of the old account
+  });
 
   status('running combineAndSortLines for taxaccts');
   const taxlines = combineAndSortLines(taxaccts, status);
@@ -125,6 +166,7 @@ export default function(
       lines: mktlines,
       accts: mktaccts,
     },
+    originals,
   };
 
 }

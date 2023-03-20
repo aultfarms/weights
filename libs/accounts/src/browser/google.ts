@@ -4,6 +4,7 @@ import debug from 'debug';
 import chalk from 'chalk';
 import oerror from '@overleaf/o-error';
 import { MultiError } from '../err.js';
+import pLimit from 'p-limit';
 
 const { red, yellow } = chalk;
 const info = debug('af/accounts#browser/google:info');
@@ -31,8 +32,9 @@ export async function readAccountsFromGoogle(
   //for (const x of xlsxfiles) {
   //  status(red('WARNING: reading excel files ('+x.name+') from google is not yet supported.  Open it and save as a google sheet to use it.'));
   //}
+  const limit = pLimit(5);
   const accts: RawSheetAccount[] = [];
-  for (const [fileindex, fileinfo] of accountfiles.entries()) {
+  const queue = accountfiles.map((fileinfo, fileindex) => limit(async () => {
     const filename = fileinfo.name;
     const id = fileinfo.id;
     let result: google.sheets.SpreadsheetJson | null = null;
@@ -46,19 +48,19 @@ export async function readAccountsFromGoogle(
       }, {} as google.sheets.SpreadsheetJson);
     } else {
       // Export the sheets file as an xlsx.
-      status(yellow(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename)));
+      status!(yellow(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename)));
       result = await google.sheets.spreadsheetToJson({ id });
     }
     if (!result) {
-      status(red('WARNING: spreadsheetToJson or getFileContents returned null for file ', filename));
-      continue;
+      status!(red('WARNING: spreadsheetToJson or getFileContents returned null for file ', filename));
+      return;
     }
 
     const sheetnames = Object.keys(result);
     for (const worksheetName of sheetnames) {
       if (!result[worksheetName] || !Array.isArray(result[worksheetName])) {
-        status(red('WARNING: spreadsheetToJson returned null for sheet name ', worksheetName, ' of file ', filename));
-        continue;
+        status!(red('WARNING: spreadsheetToJson returned null for sheet name ', worksheetName, ' of file ', filename));
+        return;
       }
       accts.push({
         name: worksheetName,
@@ -66,9 +68,9 @@ export async function readAccountsFromGoogle(
         lines: result[worksheetName] as any[],
       });
     }
-  }
+  }));
+  await Promise.all(queue);
   return accts;
-
 }
 
 

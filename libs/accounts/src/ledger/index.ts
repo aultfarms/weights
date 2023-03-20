@@ -37,8 +37,12 @@ import {
   ValidatedRawTx,
   StatusFunction,
 } from './types.js';
+//import type {argv0} from 'process';
 
 export { accountToWorkbook } from './exporter.js';
+
+// if you have an account that you change, you can use this to fix the balances:
+export { recomputeBalances } from './sortAndSeparateTaxMkt.js'; 
 
 export { 
   // Exported types:
@@ -72,8 +76,11 @@ function totalSummaryStr(accts: { lines: any[] }[]) {
 }
 
 
-function throwIfErrors(accts: { errors?: string[] }[]) {
+function throwIfErrors(accts: { errors?: string[] }[] | undefined): asserts accts is object[] {
   let allerrs = [] as string[];
+  if (!accts) {
+    throw new MultiError({ msg: 'accts is undefined' });
+  }
   for (const acct of accts) {
     if (acct.errors) allerrs.push(...acct.errors);
   }
@@ -127,7 +134,17 @@ type Steps = 'start' |
   'assertAllAccounts' | 
   'validateBalances' | 
   'sortAndSeparateTaxMkt';
-
+let stepnum = 0;
+const stepToOrderNumber: Record<Steps,number> = { // use this for step1 < step3 kind of things
+  start: stepnum++,
+  initialValidateAccounts: stepnum++,
+  assetsToTxAccts: stepnum++,
+  standardize: stepnum++,
+  splits: stepnum++,  
+  assertAllAccounts: stepnum++,  
+  validateBalances: stepnum++,  
+  sortAndSeparateTaxMkt: stepnum++,  
+}
 export type StepResult = {
   step: Steps,
   errors?: string[] | null,
@@ -138,111 +155,173 @@ export type StepResult = {
 };
 
 export async function* loadInSteps(
-  { rawaccts, status=null }:
-  { rawaccts: RawSheetAccount[], status?: ((msg: string)=>any) | null }
+  { rawaccts, validrawaccts, accts, status=null, startingStep='start' }:
+  { rawaccts?: RawSheetAccount[],  // if startingStep is prior to initialValidateAccounts
+    validrawaccts?: ReturnType<typeof initialValidateAccounts>, // after initialValidateAccounts but before validateBalances
+    accts?: Account[], // anything from validateBalances forward
+    status?: ((msg: string)=>any) | null, 
+    startingStep?: Steps 
+  }
 ): AsyncGenerator<StepResult> {
   if (!status) status = info; // default to info from debug
+  if (!startingStep) startingStep = 'start';
   try {
     rawaccts = deepclone(rawaccts);
+    let step: number = stepToOrderNumber[startingStep];
+    if (step === stepToOrderNumber['start']) step++; // step "0" doesn't exist really, so start on step 1
   
     // Get account settings, validate account types, column names, etc.
-    status(magenta('******** initialValidateAccounts ********'));
-    let validrawaccts = initialValidateAccounts({rawaccts, status});
-    validrawaccts = promoteLineErrorsToAcct(validrawaccts);
-    yield { 
-      step: 'initialValidateAccounts',
-      errors: errorsOrNull(validrawaccts),
-      vaccts: validrawaccts,
-    };
-  
-    status(magenta(`********        assets        ********: ${totalSummaryStr(validrawaccts)}`));
-    validrawaccts = assetsToTxAccts({accts: validrawaccts}) // Convert all asset accounts to regular TX accounts
-    validrawaccts = promoteLineErrorsToAcct(validrawaccts);
-    yield { 
-      step: 'assetsToTxAccts',
-      errors: errorsOrNull(validrawaccts),
-      vaccts: validrawaccts,
-    };
-  
-    status(magenta(`********     standardize      ********: ${totalSummaryStr(validrawaccts)}`));
-    validrawaccts = standardize({ accts: validrawaccts, status }); // All the lines have consistent fields now
-    validrawaccts = promoteLineErrorsToAcct(validrawaccts);
-    yield { 
-      step: 'standardize',
-      errors: errorsOrNull(validrawaccts),
-      vaccts: validrawaccts,
-    };
-  
-    status(magenta(`********        splits        ********: ${totalSummaryStr(validrawaccts)}`));
-    validrawaccts = splits({ accts: validrawaccts, status });      // replaces split master lines with individual split counterparts below it
-    validrawaccts = promoteLineErrorsToAcct(validrawaccts);
-    yield { 
-      step: 'splits',
-      errors: errorsOrNull(validrawaccts),
-      vaccts: validrawaccts,
-    };
-    throwIfErrors(validrawaccts);
-  
-    status(magenta(`********  assertAllAccounts  ********: ${totalSummaryStr(validrawaccts)}`));
-    let accts: Account[] | null = null;
-    let errors: string[] | null = null;
-    try {
-      accts = assertAllAccounts({ accts: validrawaccts });
-    } catch(e: any) {
-      e = MultiError.wrap(e, `Failed to assert all accounts`);
-      errors = e.msgs();
-    }
-    yield {
-      step: 'assertAllAccounts',
-      errors,
-      accts,
-      vaccts: validrawaccts,
-    };
-    if (!accts || errors && errors.length > 0) {
-      throw new MultiError({ msg: errors || `Accts is null after assertAllAccounts!` });
+    if (step <= stepToOrderNumber['initialValidateAccounts']) {
+      try {
+        status(magenta('******** initialValidateAccounts ********'));
+        if (!rawaccts) throw new MultiError({ msg: 'no rawaccts passed for initialValidateAccounts to work on' });
+        validrawaccts = initialValidateAccounts({rawaccts, status});
+        validrawaccts = promoteLineErrorsToAcct(validrawaccts);
+        yield { 
+          step: 'initialValidateAccounts',
+          errors: errorsOrNull(validrawaccts),
+          vaccts: validrawaccts,
+        };
+      } catch (e: any) {
+        throw MultiError.wrap(e, 'Accounts failed initialValidateAccounts');
+      }
+      step++;
     }
 
-    // We lose the ability to include errors in the account itself once it is an Account,
-    // so they get passed back separately now.
-    status(magenta(`********   validateBalances   ********: ${totalSummaryStr(accts)}`));
-    let res = validateBalances({accts});
-    yield {
-      step: 'validateBalances',
-      errors: res.errors,
-      accts: res.accts,
+    if (step <= stepToOrderNumber['assetsToTxAccts']) {
+      if (!validrawaccts) { throw new MultiError({ msg: 'No validrawaccts returned from initialValidateAccounts' }) }
+      try {
+        status(magenta(`********        assets        ********: ${totalSummaryStr(validrawaccts)}`));
+        validrawaccts = assetsToTxAccts({accts: validrawaccts}) // Convert all asset accounts to regular TX accounts
+        validrawaccts = promoteLineErrorsToAcct(validrawaccts);
+        yield { 
+          step: 'assetsToTxAccts',
+          errors: errorsOrNull(validrawaccts),
+          vaccts: validrawaccts,
+        };
+      } catch(e: any) {
+        throw MultiError.wrap(e, 'Accounts failed assetsToTxAccts');
+      }
+      step++;
     }
-    // If balances are screwed up, then we can't get anything meaningful out of
-    // sortAndSeparateTaxMkt.  Therefore, throw here if we have any errors.
-    if (res.errors && res.errors.length > 0) {
-      throw new MultiError({ msg: res.errors })
+
+    if (step <= stepToOrderNumber['standardize']) {
+      if (!validrawaccts) { throw new MultiError({ msg: 'No validrawaccts returned from assetsToTxAccts' }); }
+      try {
+        status(magenta(`********     standardize      ********: ${totalSummaryStr(validrawaccts)}`));
+        validrawaccts = standardize({ accts: validrawaccts, status }); // All the lines have consistent fields now
+        validrawaccts = promoteLineErrorsToAcct(validrawaccts);
+        yield { 
+          step: 'standardize',
+          errors: errorsOrNull(validrawaccts),
+          vaccts: validrawaccts,
+        };
+      } catch (e: any) {
+        throw MultiError.wrap(e, 'Accounts failed standardize');
+      }
+      step++;
     }
-    accts = res.accts;
+      
+    if (step <= stepToOrderNumber['splits']) {
+      if (!validrawaccts) { throw new MultiError({ msg: 'No validrawaccts returned from standardize' }); }
+      try {
+        status(magenta(`********        splits        ********: ${totalSummaryStr(validrawaccts)}`));
+        validrawaccts = splits({ accts: validrawaccts, status });      // replaces split master lines with individual split counterparts below it
+        validrawaccts = promoteLineErrorsToAcct(validrawaccts);
+        yield { 
+          step: 'splits',
+          errors: errorsOrNull(validrawaccts),
+          vaccts: validrawaccts,
+        };
+      } catch (e: any) {
+        throw MultiError.wrap(e, 'Accounts failed splits');
+      }
+      step++;
+    }
+
+    if (step <= stepToOrderNumber['assertAllAccounts']) {
+      throwIfErrors(validrawaccts);
+  
+      status(magenta(`********  assertAllAccounts  ********: ${totalSummaryStr(validrawaccts)}`));
+      let errors: string[] | null = null;
+      try {
+        accts = assertAllAccounts({ accts: validrawaccts });
+      } catch(e: any) {
+        e = MultiError.wrap(e, `Failed to assert all accounts`);
+        errors = e.msgs();
+      }
+      yield {
+        step: 'assertAllAccounts',
+        errors,
+        accts,
+        vaccts: validrawaccts,
+      };
+      if (!accts || errors && errors.length > 0) {
+        throw new MultiError({ msg: errors || `Accts is null after assertAllAccounts!` });
+      }
+      step++;
+    }
+
+    if (step <= stepToOrderNumber['validateBalances']) {
+      if (!accts) {
+        throw new MultiError({ msg: `Accts is null after assertAllAccounts!` });
+      }
+
+      // We lose the ability to include errors in the account itself once it is an Account,
+      // so they get passed back separately now.
+      status(magenta(`********   validateBalances   ********: ${totalSummaryStr(accts)}`));
+      let res = validateBalances({accts});
+      yield {
+        step: 'validateBalances',
+        errors: res.errors,
+        accts: res.accts,
+      }
+      // If balances are screwed up, then we can't get anything meaningful out of
+      // sortAndSeparateTaxMkt.  Therefore, throw here if we have any errors.
+      if (res.errors && res.errors.length > 0) {
+        throw new MultiError({ msg: res.errors })
+      }
+      accts = res.accts;
+      step++;
+    }
+
     // IMPORTANT: at this point, the lines have NOT been sorted by date.  They are in the order
     // that the account spreadsheet had them.  When we look for account balances as of a date, we
     // grab the last entry on that day.  Therefore, we have to sort all the lines by date in all the
     // accounts and recompute the balances in order for them to be correct.  We do that in sortAndSeparateTaxMkt
-  
-    status(magenta(`********     sortAndSeparateTaxMkt   ********: ${totalSummaryStr(accts)}`));
-    let finalaccts;
-    try {
-      finalaccts = sortAndSeparateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
-    } catch(e: any) {
-      e = MultiError.wrap(e, `Failed to separate out tax/mkt accounts`);
-      errors = e.msgs();
-      yield {
-        step: 'sortAndSeparateTaxMkt',
-        errors,
-        accts
-      };
-      throw e;
+ 
+    let finalaccts: FinalAccounts | null = null;
+    if (step <= stepToOrderNumber['sortAndSeparateTaxMkt']) {
+      if (!accts) {
+        throw new MultiError({ msg: 'Accts is null after validateBalances' });
+      }
+      status(magenta(`********     sortAndSeparateTaxMkt   ********: ${totalSummaryStr(accts)}`));
+      try {
+        finalaccts = sortAndSeparateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
+      } catch(e: any) {
+        e = MultiError.wrap(e, `Failed to separate out tax/mkt accounts`);
+        yield {
+          step: 'sortAndSeparateTaxMkt',
+          errors: e.msgs(),
+          accts
+        };
+        throw e;
+      }
+      // Save the original account for inventory to mess around with as needed
+      finalaccts.originals = accts;
+      step++;
     }
 
-    status(magenta(`********       finished       ********: ${finalSummaryStr(finalaccts)}`));
+    if (!finalaccts) {
+      throw new MultiError({ msg: 'finalaccts is null after sortAndSeparateTaxMkt' });
+    }
+    status(magenta(`********       Done reading accounts       ********: ${finalSummaryStr(finalaccts)}`));
     yield {
       step: 'sortAndSeparateTaxMkt',
       final: finalaccts,
       done: true,
     }
+
     return; // make sure function ends here
 
   } catch(e: any) {
@@ -253,11 +332,16 @@ export async function* loadInSteps(
 };
 
 export async function loadAll(
-  { rawaccts, status=null }:
-  { rawaccts: RawSheetAccount[], status: StatusFunction | null },
+  { rawaccts, validrawaccts, accts, status=null, startingStep='start' }:
+  { rawaccts?: RawSheetAccount[], 
+    validrawaccts?: ReturnType<typeof initialValidateAccounts>,
+    accts?: Account[],
+    status: StatusFunction | null, 
+    startingStep?: Steps 
+  },
 ): Promise<FinalAccounts | null> {
 
-  const steps = loadInSteps({ rawaccts, status });
+  const steps = loadInSteps({ rawaccts, status, validrawaccts, accts, startingStep });
   let step;
   for await (step of steps) { /* Just go through all steps... */ }
   if (!step || !step.done || typeof step.final === 'undefined') {

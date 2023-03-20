@@ -1,5 +1,6 @@
 // This is a quick script to sum up the total bushels in the grain hauling board.
 const Promise = require('bluebird');
+const _ = require('lodash')
 Promise.longStackTraces();
 const Trello = require('node-trello');
 const moment = require('moment');

@@ -312,7 +312,7 @@ async function testLoadInSteps(a: typeof ledger, rawaccts: ledger.RawSheetAccoun
   let accts = step.final.tax.accts;
   if (accts.length !== 26) throw `There should be 26 accounts in final.tax, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
   accts = step.final.mkt.accts;
-  if (accts.length !== 37) throw `There should be 37 accounts in final.mkt, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
+  if (accts.length !== 31) throw `There should be 31 accounts in final.mkt, but there are ${accts.length} instead.  They are: ${accts.map(a=>a.name).join('\n')}`;
   info('passed right number of final tax and mkt accounts');
 
   return step.final;

@@ -230,10 +230,11 @@ export default function(
     switch(acct.settings.accounttype) {
       case 'cash':
       case 'futures-cash':
+      case 'inventory':
         if (newaccts.find(a => a.name === acct.name)) {
           pushError(acct, new AccountError({ 
             acct, 
-            msg: `Account type is 'cash' or 'futures-cash' and therefore shouldn't be merged, but the account name (${acct.name}) already exists`
+            msg: `Account type is 'cash', 'futures-cash', or 'inventory' and therefore shouldn't be merged, but the account name (${acct.name}) already exists`
           }));
           newaccts.push(acct);
           continue;
@@ -241,7 +242,6 @@ export default function(
         newaccts.push(acct);
       break;
       case 'asset':
-      case 'inventory':
       case 'futures-asset':
         assetLinesToAccts(newaccts, acct); // appends to newaccts
       break;
@@ -261,7 +261,6 @@ export default function(
     switch(acct.settings.accounttype) {
       case 'invalid': continue; // invalid accounts don't get processed
       case 'asset':
-      case 'inventory':
       case 'futures-asset':
 
         //----------------------------------------------------------------------
@@ -270,7 +269,7 @@ export default function(
         if (!acct.origin) {
           pushError(acct, new AccountError({
             acct,
-            msg: 'ERROR: have no origin information on an asset, inventory, or futures-asset account. acct is '+acct.name
+            msg: 'ERROR: have no origin information on an asset, or futures-asset account. acct is '+acct.name
           }));
           continue;
         }
@@ -310,7 +309,7 @@ export default function(
         
         //---------------------------------------------------------------
         // Pass 3: Make the TX lines.
-        // Turn each line in asset accounts into separate tx's for asOfDate, initialDate(inventory), purchaseDate(asset), priorDate (asset and inventory) and saleDate (asset)
+        // Turn each line in asset accounts into separate tx's for asOfDate, purchaseDate(asset), priorDate (asset) and saleDate (asset)
         // Each line has date, description, amount, category, note, acct, originLine, assetTxType
         const accountinfo: AccountInfo = {
           ...omit('lines')(acct),
@@ -336,7 +335,6 @@ export default function(
             };
             // A Purchase goes in as a mid-year TX for both taxes and mkt.
             // Both use purchaseDate, but taxes use taxCost and mkt uses purchaseValue
-            // inventory accounts call it initialDate and mktInitialValue, but they mean same thing as purchaseDate and purchaseValue
             let initialLine: AssetTx | null = null;
             let priorAsOfLine: AssetTx | null = null;
             let saleLine: AssetTx | null = null;
@@ -346,7 +344,7 @@ export default function(
               // If we have a date but we do not have a value, then don't insert a purchase. (old things we don't remember).
               // If we DO have a value, then go ahead and use that
               if (weHave(value)) {
-                const date = l.purchaseDate || l.initialDate; // default purchaseDate (asset), fallback initialDate (inventory)
+                const date = l.purchaseDate || l.initialDate; // default purchaseDate (asset), fallback initialDate
                 
                 // If the date is NOT between the priorDate on the account and the asOf date on the account,
                 // then this is just a copy of the original asset purchase in a subsequent year account.
@@ -355,7 +353,7 @@ export default function(
                   date: moment(date, 'YYYY-MM-DD'),
                   description: l.purchaseDate ? "Asset Purchase" : "Asset initial addition to inventory",
                   assetTxType: l.purchaseDate ? 'PURCHASE' : 'INITIAL',
-                  amount: safesetNumber(acct.settings.taxonly ? l.taxCost : (l.purchaseValue || l.mktInitialValue)), // inventory accounts use l.mktInitialValue instead of purchaseValue
+                  amount: safesetNumber(acct.settings.taxonly ? l.taxCost : (l.purchaseValue || l.mktInitialValue)),
                   expectedPriorValue: 0, // on a purchase, we are expecting to start from 0
                   priorDate: moment(date, 'YYYY-MM-DD').subtract(1, 'days'), // day before purchase, we should be zero
                 };
@@ -380,7 +378,7 @@ export default function(
             }
             
             // An asOfDate TX should compute the amount based on the specified balance
-            if (l.asOfDate) { // all asset/inventory types, including futures-asset
+            if (l.asOfDate) { // all asset types, including futures-asset
               const priorValue = acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue;
               asOfLine = {
                 ...deepclone(linetemplate),
@@ -403,7 +401,7 @@ export default function(
   
             // A saleDate TX works just like a purchase TX: amount specified by sale value.  Only applies to mkt.
             // i.e. it is a mid-year transaction to offset an actual trade-in value or check amount
-            if (acct.settings.mktonly && l.saleDate && weHave(l.saleValue)) {  // inventory accounts don't use this (only asOfDate updates), only asset accounts use this.
+            if (acct.settings.mktonly && l.saleDate && weHave(l.saleValue)) { 
               const saleDate = moment(l.saleDate, 'YYYY-MM-DD');
               // Note: you actually cannot say that the expectedCurrentValue is 0 after sale, because we probably
               // didn't have the exact estimated value in there before the sale.  There will be a net balance

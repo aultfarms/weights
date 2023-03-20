@@ -11,6 +11,7 @@ const gapiStatic = window.gapi as (typeof gapi);
 
 const trace = debug('af/google#drive/core:trace');
 const info = debug('af/google#drive/core:info');
+const warn = debug('af/google#drive/core:warn');
 
 // Library exports a static gapi variable that uses gapi.auth2 from @types/gapi
 
@@ -34,10 +35,15 @@ async function load() {
       // Automatically log them in if they are not logged in:
       if (!_auth2.getAuthInstance().isSignedIn.get()) {
         info('load: User is not logged in to google, calling signIn');
-        await _auth2.getAuthInstance().signIn();
+        try {
+          await _auth2.getAuthInstance().signIn();
+        } catch(e: any) {
+          warn('ERROR: failed to signIn.  Error = ',e,', authresponse = ', _auth2.getAuthInstance().currentUser.get().getAuthResponse(), ', authInstance = ', _auth2.getAuthInstance());
+          throw e;
+        }
       }
 
-      trace('gapi loaded and token = ', _auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token);
+      trace('gapi loaded'); //token = ', _auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token);
       resolve();
     });
   });

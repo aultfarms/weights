@@ -8,7 +8,8 @@ import debug from 'debug';
 import { isSameDayOrAfter } from '../util.js';
 const trace = debug('af/accounts#ledger/postValidation:trace'); export { JSONSchema8 };
 //const numberpat = '-?[0-9]+(\.[0-9]+)?';
-const outidpat = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z0-9]';
+const datepat = '[0-9]{4}-[0-9]{2}-[0-9]{2}';
+const outidpat = `${datepat}_[A-Z0-9]`;
 const incomingidpat = '[A-Z0-9]:[A-Z]{3}[0-9]{2}-[0-9]';
 export const categorySchemas: { [cat: string]: JSONSchema8 } = {
   // Any category name is the "startsWith" first, then any exclude's from that
@@ -36,6 +37,7 @@ export const categorySchemas: { [cat: string]: JSONSchema8 } = {
           head: { type: 'number' },
           loads: { type: 'number' },
           weight: { type: 'number' },
+          inventorydate: { type: 'string', pattern: datepat },
           outid: { type: 'string', pattern: outidpat },
         },
         required: ['head', 'loads', 'weight', 'outid'],
@@ -46,6 +48,7 @@ export const categorySchemas: { [cat: string]: JSONSchema8 } = {
           head: { type: 'number' },
           loads: { type: 'number' },
           weight: { type: 'number' },
+          inventorydate: { type: 'string', pattern: datepat },
           outids: { 
             type: 'array', 
             items: { type: 'string', pattern: outidpat },
@@ -63,6 +66,7 @@ export const categorySchemas: { [cat: string]: JSONSchema8 } = {
           head: { type: 'number' },
           loads: { type: 'number' },
           weight: { type: 'number' }, // BKTKY:AUG20-1
+          inventorydate: { type: 'string', pattern: datepat },
           incomingid: { type: 'string', pattern: incomingidpat },
         },
         required: [ 'head', 'loads', 'weight', 'incomingid' ],
@@ -73,6 +77,7 @@ export const categorySchemas: { [cat: string]: JSONSchema8 } = {
           head: { type: 'number' },
           loads: { type: 'number' },
           weight: { type: 'number' }, // BKTKY:AUG20-1
+          inventorydate: { type: 'string', pattern: datepat },
           incomingids: { 
             type: 'array',
             items: { type: 'string', pattern: incomingidpat },

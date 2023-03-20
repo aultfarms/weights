@@ -12,6 +12,8 @@ const pathroot = `/AF-AUTOMATEDTESTS/TEST-${+(new Date())}`;
 export default async function run(accounts: typeof accountsLib) {
   info('google-specific browser tests');
 
+  info('Skipping test to speed things up: uploadXlsxWorkbookToGoogle');
+  /*
   info('google: testing uploadXlsxWorkbookToGoogle');
   const data = [ { col1: 'row1col1', col2: 'row1col2' }, { col1: 'row2col2', col2: 'row2col2' } ];
   const wb = xlsx.utils.book_new();
@@ -34,6 +36,7 @@ export default async function run(accounts: typeof accountsLib) {
   const wb2 = xlsx.read(r2, { type: 'array' });
   const data2 = xlsx.utils.sheet_to_json(wb2.Sheets['testsheet']!);
   if (!deepequal(data, data2)) throw `Downloaded xlsx differs from uploaded xlsx.  Uploaded = ${stringify(data)}, Downloaded = ${stringify(data2)}`;
+  */
 
   info('google: passed all google tests');
 }

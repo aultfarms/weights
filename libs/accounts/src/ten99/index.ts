@@ -53,7 +53,6 @@ export function ten99(
   { ledger, year, settings }:
   { ledger: FinalAccounts, year: number, settings: Ten99Settings }
 ): Ten99Result {
-  trace('Starting ten99....');
   const lines = ledger.tax.lines; // 1099's only ever come from tax ledger
 
   // figure out all included years from transactions
@@ -70,12 +69,10 @@ export function ten99(
     t.date.isValid() && 
     timerange.contains(t.date)
   ));
-  trace('Have these lines for', year,':',tlines);
 
   for (const person of settings.people) {
     let allnames = [ person.name, ...(person.othernames || []) ];
 
-    trace('Working on person with names:', allnames);
     // Filter for this payee:
     const personlines = tlines.filter(l => !!allnames.find(a => fuzzyCleanup(a) === fuzzyCleanup(l.who)));
     const entry: Ten99Entry = {
@@ -84,26 +81,22 @@ export function ten99(
       categories: [],
       total: 0,
     };
-    trace('Lines for person', allnames, ': ', personlines);
 
     // Compute summary from given category regexp's only:
     // This leaves in the transactions list everything we paid them, but
     // only totals up the categories that constitute a 1099
     for (const c of settings.categories) {
       const catlines = personlines.filter(l => l.category.match(categoryRegExp(c.name)));
-      trace('For category',c,', catlines =', catlines);
       const summary: Ten99SummaryCategory = {
         name: c.name,
         lines: catlines,
         amount: catlines.reduce((sum,l) => sum + l.amount, 0),
       };
-      trace('For category', c,', summary =', summary);
       if (summary.amount !== 0) entry.categories.push(summary);
     }
 
     // Sum up all the category summaries to get the 1099 total
     entry.total = entry.categories.reduce((sum,s) => sum+s.amount, 0);
-    trace('Entry total for names',allnames,': ', entry.total);
 
     // If we have >= $600 payments, include entry
     if (Math.abs(entry.total) >= 600) annual.push(entry);
@@ -135,7 +128,6 @@ export function ten99(
         .reduce((sum,l) => (sum + l.amount), 0); // sum up all the amounts
 
       if (Math.abs(persontotal) < 600) {
-        trace(`Found person ${m} in accounts but missing in 1099s, but they made less than $600 so they can be excluded`);
         continue;
       }
       missing_over_600bucks.push(m);

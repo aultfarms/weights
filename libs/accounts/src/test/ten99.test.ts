@@ -1,12 +1,12 @@
-import { ledger, ten99 } from '../index.js';
+import type * as accounts from '../index.js';
 import debug from 'debug';
 
 const info = debug('af/accounts#test/ten99:info');
-const { moneyEquals } = ten99;
 
-export default async function run(ledger: ledger.FinalAccounts) {
+export default async function run(ten99: typeof accounts.ten99, ledger: accounts.ledger.FinalAccounts) {
+  const { moneyEquals } = ten99;
 
-  const testSettings: ten99.Ten99Settings = {
+  const testSettings: accounts.ten99.Ten99Settings = {
     people: [
       { name: "Repairman", taxid: "111111111", address: "123 Nowhere Lane,\nWest Lake, FL 12345", othernames: [ "Repairman2" ] },
     ],
@@ -53,8 +53,8 @@ export default async function run(ledger: ledger.FinalAccounts) {
 
   info('testing making a workbook from the valid 1099');
   const wb = ten99.ten99ToWorkbook(annual.ten99);
-  if (!wb.SheetNames.find(s => s==='1099-summary') || !wb.SheetNames.find(s => s==='1099-transactions')) {
-    throw `Workbook should have had 1099-summary and 1099-transactions sheets.`;
+  if (!wb.SheetNames.find(s => s==='1099-summary') || !wb.SheetNames.find(s => s==='AllPeopleTransactions')) {
+    throw `Workbook should have had 1099-summary and 1099-transactions sheets.  It has these sheets instead: ${wb.SheetNames.join(', ')}`;
   }
 
   info('passed making a workbook from the valid 1099');

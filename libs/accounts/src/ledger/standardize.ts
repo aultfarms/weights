@@ -16,6 +16,13 @@ const { isMoment } = moment;
 const info = debug('af/accounts#standardize:info');
 //const trace = debug('af/accounts#standardize:trace');
 
+function isBeforeDay(a: Moment, b: Moment) {
+  const astr = a.format('YYYY-MM-DD');
+  const bstr = b.format('YYYY-MM-DD');
+  if (astr === bstr) return false; // they are the same day, so "Not before"
+  return a.isBefore(b);
+}
+
 export default function(
   { accts, status }
 : { accts: ValidatedRawSheetAccount[], status?: StatusFunction }
@@ -32,8 +39,18 @@ export default function(
     switch(acct.settings.accounttype) {
       case 'asset':
       case 'futures-asset':
-      case 'inventory':
         return acct;
+    }
+
+    // For inventory accounts, process the settings to make sure outCategories and inCategories are 
+    // arrays and not just a string
+    if (acct.settings.accounttype === 'inventory') {
+      if (typeof acct.settings.outCategories === 'string') {
+        acct.settings.outCategories = [ acct.settings.outCategories ];
+      }
+      if (typeof acct.settings.inCategories === 'string') {
+        acct.settings.inCategories = [ acct.settings.inCategories ];
+      }
     }
 
     // If we get here, then it wasn't one of the "easy" accounts, now process
@@ -113,7 +130,7 @@ export default function(
         }
 
         // Return the final standardized line object
-        const ret: ValidatedRawTx = {
+        let ret: ValidatedRawTx = {
           ...line,
           isStart, // if true, this line has the starting balance for this account
           date,
@@ -129,6 +146,25 @@ export default function(
           acct: acctinfo,
           lineno: line.lineno, // already on the line
         };
+
+        // Add in the inventory account columns
+        if (acct.settings.accounttype === 'inventory') {
+          const who = 'internal';
+          const qty = numeral(line.qty).value() || 0;
+          const qtyBalance = numeral(line.qtyBalance).value() || 0;
+          const aveValuePerQty = numeral(line.aveValuePerQty).value() || 0;
+          ret = { ...ret, who, qty, qtyBalance, aveValuePerQty };
+          // Livestock accounts have some additional columns
+          if (acct.settings.inventorytype === 'livestock') {
+            const weight = numeral(line.weight).value() || 0;
+            const weightBalance = numeral(line.weightBalance).value() || 0;
+            const aveValuePerWeight = numeral(line.aveValuePerWeight).value() || 0;
+            const taxAmount = numeral(line.taxAmount).value() || 0;
+            const taxBalance = numeral(line.taxBalance).value() || 0;
+            ret = { ... ret, weight, weightBalance, aveValuePerWeight, taxAmount, taxBalance };
+          }
+        }
+
         return ret;
       } catch(e: any) {
         e = LineError.wrap(e, line, `Line standardization failed.`);
@@ -213,6 +249,13 @@ function parseDateFromWrittenOrPost(line: any,is_debit: boolean): Moment | null 
 
   if (line.postDate) postDate = parseDate(line.postDate);
   if (!postDate || !isMoment(postDate)) postDate = null;
+
+  // If the postDate is BEFORE the written date, this is an error:
+  if (postDate && writtenDate) {
+    if (isBeforeDay(postDate, writtenDate)) {
+      throw new LineError({ line, msg: `postDate ${postDate.format('YYYY-MM-DD')} is before writtenDate ${writtenDate.format('YYYY-MM-DD')}` });
+    }
+  }
 
   // commented rule #1 below for quarterly's: see comments above as to why 
   // handles rule #1 above

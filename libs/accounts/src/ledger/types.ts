@@ -2,6 +2,9 @@ import moment, { Moment } from 'moment';
 import chalk from 'chalk';
 import { MultiError, LineError, AccountError } from '../err.js';
 import { stringify } from '../stringify.js';
+import debug from 'debug';
+
+const trace = debug('af/accounts#types:trace');
 
 const { magenta } = chalk;
 const { isMoment } = moment;
@@ -35,8 +38,23 @@ export type ValidatedRawTx = {
   stmtacct?: string, // original "account" string from sheet (for futures w/ multiple statement origins)
   stmtlineno?: number, // on futures accounts, this is the lineno from the original statement
   errors?: string[],
+
+  // Inventory Accounts:
+  qty?: number,
+  qtyBalance?: number,
+  aveValuePerQty?: number, // non-livestock inventories
+  taxAmount?: number, // generally only livestock inventories
+  taxBalance?: number, // generally only livestock inventories
+  // Livestock inventory accounts:
+  weight?: number,
+  weightBalance?: number,
+  aveValuePerWeight?: number,
+  aveWeightPerQty?: number,
+
+  // Everything else:
   [key: string]: any, // handles things like asset account priorValue, expectedCurrentValue, etc.
 };
+
 export function assertValidatedRawTx(t: any): asserts t is ValidatedRawTx {
   if (!t) throw new MultiError({ msg: `Line cannot be null` });
   const errs: string[] = [];
@@ -67,6 +85,15 @@ export function assertValidatedRawTx(t: any): asserts t is ValidatedRawTx {
   if (t.errors && (!Array.isArray(t.errors) || t.errors.find((e: any) => typeof e !== 'string'))) {
     errs.push('errors exists, but it is not an array of strings');
   }
+  if (t.qty && typeof t.qty !== 'number') errs.push(`qty (${t.qty}) is not a number`);
+  if (t.qtyBalance && typeof t.qtyBalance !== 'number') errs.push(`qtyBalance (${t.qtyBalance}) is not a number`);
+  if (t.aveValuePerQty && typeof t.aveValuePerQty !== 'number') errs.push(`aveValuePerQty (${t.aveValuePerQty}) is not a number`);
+  if (t.taxAmount && typeof t.taxAmount !== 'number') errs.push(`taxAmount (${t.taxAmount}) is not a number`);
+  if (t.taxBalance && typeof t.taxBalance !== 'number') errs.push(`taxBalance (${t.taxBalance}) is not a number`);
+  if (t.weight && typeof t.weight !== 'number') errs.push(`weight (${t.weight}) is not a number`);
+  if (t.weightBalance && typeof t.weightBalance !== 'number') errs.push(`weightBalance (${t.weightBalance}) is not a number`);
+  if (t.aveValuePerWeight && typeof t.aveValuePerWeight !== 'number') errs.push(`aveValuePerWeight (${t.aveValuePerWeight}) is not a number`);
+  if (t.aveWeightPerQty && typeof t.aveWeightPerQty !== 'number') errs.push(`aveWeightPerQty (${t.aveWeightPerQty}) is not a number`);
   if (errs.length > 0) throw new LineError({ line: t, msg: errs });
 };
 export type ValidatedRawSheetAccount = {
@@ -78,7 +105,9 @@ export type ValidatedRawSheetAccount = {
   errors?: string[],
 };
 
-export type AccountSettings = {
+export type AccountSettings = BaseAccountSettings | AssetAccountSettings | InventoryAccountSettings;
+
+export type BaseAccountSettings = {
   // accounttype is required, defaults to cash
   accounttype: 'inventory' | 'asset' | 'futures-asset' | 'futures-cash' | 'cash' | 'invalid',
   acctname?: string,
@@ -87,15 +116,67 @@ export type AccountSettings = {
   mktonly?: boolean,
   taxonly?: boolean,
 
+  [key: string]: any,
+};
+
+export type AssetAccountSettings = BaseAccountSettings & {
+  accounttype: 'asset',
   // Asset account settings:
   asOfDate?: string,
   priorDate?: string,
   idcolumn?: string,
+};
 
-  // Allow other things in the spreadsheet, but we'll warn on them
-  [key: string]: any,
+export type InventoryAccountSettings = BaseInventoryAccountSettings | LivestockInventoryAccountSettings;
+
+export type BaseInventoryAccountSettings =  BaseAccountSettings & {
+  accounttype: 'inventory',
+  inventorytype?: 'livestock',
+  startYear: number, // ignore inventory things prior to this year.
+  inCategories?: string[], // list of categories from cash accounts that represent things coming into inventory.  Grain/feed/bales does not have inCategories (it's just harvested)
+  outCategories: string[], // list of categories from cash accounts that represent things coming out of inventory
+  qtyKey: string, // which key to pull out of the notes on those categories which represents the quantity
 }
-export function assertAccountSettings(o: any): asserts o is AccountSettings {
+
+export type PriceWeightPoint = {
+  weight: number,
+  price: number, // per pound
+};
+export type LivestockInventoryAccountSettings = BaseInventoryAccountSettings & {
+  inventorytype: 'livestock',
+  rog: number, // expected rate of gain
+  trelloOrg?: string, // name of trello organization where Livestock board exists if not the default
+};
+
+
+export function assertAccountSettings(o: any): asserts o is AssetAccountSettings {
+  const errs: string[] = [];
+  if (!o) {
+    errs.push('Settings is null');
+  } else {
+    switch(o.accounttype) {
+      case 'inventory':
+        assertInventoryAccountSettings(o);
+      break;
+      case 'asset':
+        assertAssetAccountSettings(o);
+      break;
+      case 'futures-asset':
+      case 'futures-cash':
+      case 'cash': 
+        assertBaseAccountSettings(o);
+      break;
+      case 'invalid': 
+        errs.push('Settings has an accounttype of "invalid"');
+      break;
+      default: 
+        errs.push('Settings has an accounttype ('+magenta(o.accounttype)+'), but it is not one of the known values of cash, inventory, asset, futures-asset, futures-cash');
+    }
+  }
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+
+export function assertBaseAccountSettings(o: any): asserts o is BaseAccountSettings {
   const errs: string[] = [];
   if (!o) {
     errs.push('Settings is null');
@@ -117,21 +198,149 @@ export function assertAccountSettings(o: any): asserts o is AccountSettings {
     if (o.taxonly && typeof o.taxonly !== 'boolean') {
       errs.push('Settings has a taxonly ('+magenta(o.taxonly)+'), but it is not boolean');
     }
-    switch(o.accounttype) {
-      case 'inventory':
-      case 'asset':
-      case 'futures-asset':
-      case 'futures-cash':
-      case 'cash': 
-      break;
-      case 'invalid': 
-        errs.push('Settings has an accounttype of "invalid"');
-      break;
-      default: 
-        errs.push('Settings has an accounttype ('+magenta(o.accounttype)+'), but it is not one of the known values of cash, inventory, asset, futures-asset, futures-cash');
+  }
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+
+export function assertAssetAccountSettings(o: any): asserts o is AssetAccountSettings {
+  const errs: string[] = [];
+  assertBaseAccountSettings(o); // ensures o is object and not null
+  if (o.accounttype !== 'asset') {
+    errs.push(`Settings accounttype (${o.accounttype}) is not 'asset'`);
+  } else {
+    if (o.asOfDate && typeof o.asOfDate !== 'string') {
+      errs.push('Settings has asOfDate ('+magenta(o.asOfDate)+'), but it is not a string');
+    }
+    if (o.asOfDate && !o.asOfDate.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}/)) {
+      errs.push('Settings has asOfDate, ('+magenta(o.asOfDate)+'), but it is not of the form YYYY-MM-DD');
+    }
+    if (o.priorDate && typeof o.priorDate !== 'string') {
+      errs.push('Settings has priorDate ('+magenta(o.priorDate)+'), but it is not a string');
+    }
+    if (o.priorDate && !o.priorDate.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}/)) {
+      errs.push('Settings has priorDate, ('+magenta(o.priorDate)+'), but it is not of the form YYYY-MM-DD');
+    }
+    if (o.idcolumn && typeof o.idcolumn !== 'string') {
+      errs.push('Settings has idcolumn, ('+magenta(o.idcolumn)+'), but it is not a string');
     }
   }
   if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+
+export function assertInventoryAccountSettings(o: any): asserts o is InventoryAccountSettings {
+  const errs: string[] = [];
+  assertBaseAccountSettings(o); // ensures o is not null and is an object
+  if (o.accounttype !== 'inventory') {
+    errs.push(`Settings accounttype (${o.accounttype}) is not inventory`);
+  } else {
+    if (!o.startYear || typeof o.startYear !== 'number') errs.push('Settings startYear '+magenta(o.startYear)+'), but is not a number');
+    if (o.inCategories && typeof o.inCategories !== 'string') {
+      if (Array.isArray(o.inCategories)) {
+        if (o.inCategories.filter(c => typeof c !== 'string').length > 0) {
+          errs.push('Settings has inCategories, ('+stringify(o.inCategories)+'), and it is an array, but some entries are not strings.');
+        }
+      } else {
+        errs.push('Settings has inCategories, ('+stringify(o.inCategories)+'), but it is neither a string nor an array of strings');
+      }
+    }
+    if (typeof o.outCategories !== 'string') {
+      if (Array.isArray(o.outCategories)) {
+        if (o.outCategories.filter(c => typeof c !== 'string').length > 0) {
+          errs.push('Settings has outCategories, ('+stringify(o.outCategories)+'), and it is an array, but some entries are not strings.');
+        }
+      } else if (!o.outCategories) {
+        errs.push('Settings is missing required property outCategories');
+      } else {
+        errs.push('Settings has outCategories, ('+stringify(o.outCategories)+'), but it is neither a string nor an array of strings');
+      }
+    }
+    if (!o.qtyKey || typeof o.qtyKey !== 'string') errs.push('Settings qtyKey '+magenta(o.qtyKey)+') is missing or is not a string');
+  }
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+
+export function isLivestockInvetoryAccountSettings(o: any): o is LivestockInventoryAccountSettings {
+  try {
+    assertLivestockInventoryAccountSettings(o);
+    return true;
+  } catch(e: any) {
+    return false;
+  }
+}
+
+export function assertLivestockInventoryAccountSettings(o: any): asserts o is LivestockInventoryAccountSettings {
+  let errs: string[] = [];
+  assertInventoryAccountSettings(o);
+  if (o.inventorytype !== 'livestock') {
+    errs.push(`Settings inventorytype (${o.inventorytype}) is not 'livestock'`);
+  } else {
+    if (typeof o.rog !== 'number') {
+      if ('trelloOrg' in o && typeof o.trelloOrg !== 'string') {
+        errs.push('Settings has trelloOrg, but it is not a string');
+      }
+      if (!o.rog) {
+        errs.push('Settings is missing required property rog (rate of gain)');
+      } else {
+        errs.push('Settings has rog ('+magenta(o.rog)+'), but it is not a number');
+      }
+    }
+
+  }
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+
+export type InventoryNote = {
+  [qtyKey: string]: number
+};
+export function assertInventoryNote(qtyKey: string, o: any): asserts o is InventoryNote {
+  if (!o) throw new MultiError({ msg: 'note is empty' });
+  if (typeof o !== 'object') throw new MultiError({ msg: 'note is not an object' });
+  if (typeof o[qtyKey] !== 'number') throw new MultiError({ msg: `note does not contain quantity key ${qtyKey}` });
+}
+
+// This overlaps the json schema's found in ../ledger/postValidation for
+// cattle notes.  This type does not have the outid(s), loads, or other
+// things that the inventory doesn't really care much about
+export function assertPriceWeightPoint(o: any): asserts o is PriceWeightPoint {
+  if (!o || typeof o !== 'object') {
+    throw new MultiError({ msg: 'Candidate PriceWeightPoint is not a an object' });
+  }
+  const errs: string[] = [];
+  if (typeof o.weight !== 'number') errs.push(`weight property (${o.weight}) is missing or not a number for PriceWeightPoint`);
+  if (typeof o.price !== 'number') errs.push(`price property (${o.price}) is missing or not a number for PriceWeightPoint`);
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+export function assertPriceWeightPoints(o: any): asserts o is PriceWeightPoint[] {
+  if (!Array.isArray(o)) throw new MultiError({ msg: 'Must be an array' });
+  for (const p of (o as any[])) {
+    assertPriceWeightPoint(p);
+  }
+}
+
+export type LivestockInventoryNote = InventoryNote & {
+  head: number,
+  weight: number,
+};
+export function assertLivestockInventoryNote(o: any): asserts o is LivestockInventoryNote {
+  assertInventoryNote('head', o);
+  let errs: string[] = [];
+  if (typeof o.weight !== 'number') errs.push(`note does not countain weight as a number`);
+  if (typeof o.aveValuePerWeight !== 'number') {
+    if (Array.isArray(o.aveValuePerWeight)) {
+      if ((o.aveValuePerWeight as any[]).length < 2) {
+        errs.push('Settings has aveValuePerWeight array, but it has less than two points in it');
+      }
+      for (const [index, p] of (o.aveValuePerWeight as any[]).entries()) {
+       try { assertPriceWeightPoint(p) }
+         catch(e: any) {
+          errs = [
+            ...errs,
+            ...MultiError.wrap(e, 'Settings has aveValuePerWeight array, but index '+magenta(index)+' with value ('+stringify(p)+') is not a valid PriceWeightPoint').msgs()
+          ];
+        }
+      }
+    }
+  }
 }
 
 
@@ -140,6 +349,7 @@ export type AccountInfo = {
   name: string,
   filename: string,
   settings: AccountSettings,
+  templateLineno?: number,
   origin?: Omit<OriginAccount, 'lines'>,
   //[key: string]: any,      // can have any others
 };
@@ -158,6 +368,9 @@ export function assertAccountInfo(a: any): asserts a is AccountInfo {
   }
   if ('lines' in a) errs.push('AccountInfo cannot have lines');
   if (a.origin && 'lines' in a.origin) errs.push('AccountInfo cannot have origin.lines');
+  if (('templateLineno' in a) && typeof a.templateLineno !== 'number') {
+    errs.push('AccountInfo has templateLineno, but it is not a number');
+  }
   if (errs.length > 0) throw new MultiError({ msg: errs });
 }
 
@@ -206,6 +419,46 @@ export function assertAccountTx(l: any): asserts l is AccountTx {
   if (l.stmtlineno && typeof l.stmtlineno !== 'number') errs.push(`stmtlineno (${l.stmtlineno}) is not a number`);
   if (errs.length > 0) throw new LineError({ msg: errs, line: l });
 }
+
+export type InventoryAccountTx = AccountTx & {
+  qty: number,
+  qtyBalance: number,
+  aveValuePerQty: number,
+  taxAmount?: number,
+  taxBalance?: number,
+}
+export type LivestockInventoryAccountTx = InventoryAccountTx & {
+  weight: number,
+  weightBalance: number,
+  aveValuePerWeight: number,
+  aveWeightPerQty: number,
+  taxAmount: number, // required for livestock (FIFO)
+  taxBalance: number,
+};
+
+export function assertInventoryAccountTx(o: any): asserts o is InventoryAccountTx {
+  const errs: string[] = [];
+  assertAccountTx(o);
+  if (typeof o.qty !== 'number') errs.push(`qty (${o.qty}) is not a number`);
+  if (typeof o.qtyBalance !== 'number') errs.push(`qtyBalance (${o.qtyBalance}) is not a number`);
+  if (typeof o.aveValuePerQty !== 'number') errs.push(`aveValuePerQty (${o.aveValuePerQty}) is not a number`);
+  if ('taxAmount' in o && typeof o.taxAmount !== 'number') errs.push(`taxAmount exists (${o.taxAmount}) and is not a number`);
+  if ('taxBalance' in o && typeof o.taxBalance !== 'number') errs.push(`taxBalance exists (${o.taxBalance}) and is not a number`);
+  if (errs.length > 0) throw new LineError({ msg: errs, line: o });
+};
+
+export function assertLivestockInventoryAccountTx(o: any): asserts o is InventoryAccountTx {
+  const errs: string[] = [];
+  assertInventoryAccountTx(o);
+  if (typeof o.weight !== 'number') errs.push(`weight (${o.weight}) is not a number`);
+  if (typeof o.weightBalance !== 'number') errs.push(`weightBalance (${o.weightBalance}) is not a number`);
+  if (typeof o.aveValuePerWeight !== 'number') errs.push(`aveValuePerWeight (${o.aveValuePerWeight}) is not a number`);
+  if (typeof o.aveWeightPerQty !== 'number') errs.push(`aveWeightPerQty (${o.aveWeightPerQty}) is not a number`);
+  if (typeof o.taxAmount !== 'number') errs.push(`taxAmount (${o.taxAmount}) and is not a number`);
+  if (typeof o.taxBalance !== 'number') errs.push(`taxBalance (${o.taxBalance}) and is not a number`);
+  if (errs.length > 0) throw new LineError({ msg: errs, line: o });
+};
+
 
 export type OriginLine = {
   date: Moment,
@@ -285,9 +538,67 @@ export function assertAccount(a: any): asserts a is Account {
       errs.push(...e.msgs());
     }
   }
-  if (errs.length > 0) {
-    throw new MultiError({ msg: errs });
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+
+export type InventoryAccount = Account & {
+  settings: InventoryAccountSettings,
+  lines: InventoryAccountTx[],
+};
+export type LivestockInventoryAccount = InventoryAccount & {
+  settings: LivestockInventoryAccountSettings,
+  lines: LivestockInventoryAccountTx[],
+};
+export function assertInventoryAccount(a: any): asserts a is InventoryAccount {
+  const errs: string[] = [];
+  assertAccount(a);
+  assertInventoryAccountSettings(a.settings);
+  for (const l of a.lines) {
+    try { assertInventoryAccountTx(l) }
+    catch(e: any) {
+      e = LineError.wrap(e, l, `Line failed InventoryAccountTx validation`);
+      errs.push(...e.msgs());
+    }
   }
+  if (errs.length > 0) throw new MultiError({ msg: errs });
+}
+export type AveValuePerWeightNote = {
+  aveValuePerWeight: number | PriceWeightPoint[]
+};
+export function assertAveValuePerWeightNote(o: any): asserts o is AveValuePerWeightNote {
+  if (!o || typeof o !== 'object') throw new MultiError({ msg: 'Note is not an object or is null' });
+  if (!('aveValuePerWeight' in o)) throw new MultiError({ msg: 'Note does not have aveValuePerWeight' });
+  if (Array.isArray(o.aveValuePerWeight)) {
+    assertPriceWeightPoints(o.aveValuePerWeight)
+    return;
+  }
+  if (typeof o.aveValuePerWeight !== 'number') throw new MultiError({ msg: 'aveValuePerWeight in note is neither a number or a series of price/weight points' });
+
+};
+export function assertLivestockInventoryAccount(a: any): asserts a is LivestockInventoryAccount {
+  let errs: string[] = [];
+  assertAccount(a); // I intentionally did not do assertInventoryAccount here b/c that will just redundantly assertInventoryAccountTx on all the lines
+  assertLivestockInventoryAccountSettings(a.settings);
+  for (const l of a.lines) {
+    try { assertLivestockInventoryAccountTx(l) }
+    catch(e: any) {
+      e = LineError.wrap(e, l, `Line failed LivestockInventoryAccountTx validation`);
+      errs = [ ...errs, ...e.msgs() ];
+    }
+  }
+  // Also assert that at least the first line has a aveValuePerWeight entry in the note
+  if (a.lines.length < 1) {
+    errs.push('The account has no lines.  For a livestock inventory account, first line must exist and have aveValuePerWeight in note.');
+  } else {
+    try {
+      assertAveValuePerWeightNote(a.lines[0]);
+    } catch (e: any) {
+      e = LineError.wrap(e, a.lines[0], `First line failed LivestockInventoryAccount validation: note was not valid`);
+      errs = [ ...errs, ...e.msgs() ];
+    }
+  }
+
+  if (errs.length > 0) throw new MultiError({ msg: errs });
 }
 
 // When you combine accounts into a single ledger, CompositeAccount is what you get
@@ -316,6 +627,7 @@ export function assertCompositeAccount(c: any): asserts c is CompositeAccount {
 export type FinalAccounts = {
   tax: CompositeAccount,
   mkt: CompositeAccount,
+  originals: Account[],
 };
 export function assertFinalAccounts(a: any): asserts a is FinalAccounts {
   if (!a) throw new MultiError({ msg: `FinalAccounts cannot be null` });
@@ -325,6 +637,15 @@ export function assertFinalAccounts(a: any): asserts a is FinalAccounts {
       assertCompositeAccount(a[type]);
     } catch(e) {
       throw MultiError.wrap(e, `${type} account was not valid`);
+    }
+  }
+  if (a.originals) {
+    for (const acct of a.originals) {
+      try { 
+        assertAccount(acct);
+      } catch(e: any) {
+        throw MultiError.wrap(e, `Original account ${acct.name} was not a valid Account type`);
+      }
     }
   }
 }

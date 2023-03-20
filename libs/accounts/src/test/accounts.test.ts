@@ -3,6 +3,8 @@ import ledgerTest from './ledger.test.js';
 import profitLossTest from './profitloss.test.js';
 import balanceTest from './balance.test.js';
 import ten99Test from './ten99.test.js';
+import inventoryTest from './inventory.test.js';
+import livestockInventoryTest from './livestock.test.js';
 import rfdc from 'rfdc';
 import debug from 'debug';
 
@@ -26,7 +28,13 @@ export default async function run(a: typeof accounts, rawaccts: accounts.ledger.
   await balanceTest(a.balance, ledger);
 
   info('testing 1099\'s');
-  await ten99Test(ledger);
+  await ten99Test(a.ten99, ledger);
+
+  info('testing inventory');
+  await inventoryTest(a, ledger);
+
+  info('testing livestock inventory');
+  await livestockInventoryTest(a, ledger);
 
   info('All Account Tests Passed');
 }

@@ -17,6 +17,9 @@ import {
   ValidatedRawSheetAccount,
   AccountSettings,
   assertAccountSettings,
+  assertInventoryAccountSettings,
+  assertLivestockInventoryAccountSettings,
+  AccountInfo
 } from './types.js';
 
 const deepclone = rfdc({ proto: true });
@@ -140,7 +143,7 @@ function isCommentSettingsIgnoreOrEmptyLine(l: any) {
   // Now grab the rest of the values (i.e. the originals):
   const values = Object.values(l);
   // If comment, ignore, settings, discard during filter
-  if (values.find(v => v === 'COMMENT' || v === 'IGNORE' || v === 'SETTINGS')) {
+  if (values.find(v => v === 'COMMENT' || v === 'IGNORE' || v === 'SETTINGS' || v === 'TEMPLATE')) {
     return true;
   }
   // If no "truthy" values, discard line (i.e. an empty line)
@@ -149,7 +152,9 @@ function isCommentSettingsIgnoreOrEmptyLine(l: any) {
   }
   return false;
 }
-
+function isTemplateLine(l: any) {
+  return !!Object.values(l).find(v => typeof v === 'string' && v === 'TEMPLATE');
+}
 
 // Given a sheet_to_json-style workbook output (either from xlsx in node or google sheets), 
 // fix it up to be ready for account parsing:
@@ -207,7 +212,12 @@ export default function(
       l.acct = acctinfo;
       applyLineNumber(l,i);
       fixCurrencyNumbers(l);
-      if (isCommentSettingsIgnoreOrEmptyLine(l)) return acc;
+      if (isCommentSettingsIgnoreOrEmptyLine(l)) {
+        if (isTemplateLine(l)) {
+          ret.templateLineno = l.lineno;
+        }
+        return acc;
+      }
       try {
         assertValidatedRawTx(l);
       } catch(e: any) {
@@ -258,13 +268,21 @@ export default function(
           assertSettings(ret, [ 'asOfDate' ]);
         break;
         case 'inventory':
-          assertColumns(ret, colnames, [ 'category', 'initialDate', 'initialQuantity', 'units',
-                               'asOfDate', 'quantityChange', 'quantityBalance', 
-                               'valuePerUnit', 'mktCurrentValue' ]);
-          // Inventory account is not tracked in taxes, must have "mktOnly"
-          assertSettings(ret, [ 'mktonly' ]);
-          if (!ret.settings.mktonly) {
-            throw `settings has mktonly, but inventory account requires it to be truthy and it is not`;
+          try { assertInventoryAccountSettings(ret.settings) }
+          catch(e: any) { throw AccountError.wrap(e, ret, 'accounttype was inventory, but settings failed validation for inventory account') }
+          // All inventory accounts have these:
+          assertColumns(ret, colnames, [ 'date', 'description', 'amount', 'balance', 'qty', 'qtyBalance', 'aveValuePerQty', 'category', 'note' ]);
+          if (ret.settings.inventorytype === 'livestock') {
+            try { assertLivestockInventoryAccountSettings(ret.settings) }
+            catch(e: any) { throw AccountError.wrap(e, ret, 'accounttype was inventory, and inventorytype was livestock, but settings failed validation for livestock inventory account') }
+            // Livestock inventory accounts also have these:
+            assertColumns(ret, colnames, ['weight', 'weightBalance', 'aveValuePerWeight', 'aveWeightPerQty', 'taxAmount', 'taxBalance' ]);
+          } else {
+            // Inventory account that is NOT livestock is not tracked in taxes, must have "mktOnly"
+            assertSettings(ret, [ 'mktonly' ]);
+            if (!ret.settings.mktonly) {
+              throw `settings has mktonly, but inventory account requires it to be truthy and it is not`;
+            }
           }
         break;
         case  'futures-cash': 
