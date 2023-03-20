@@ -51,15 +51,16 @@ export async function getAllRows(
 // cols is just an array of your data, in order by the columns you want to
 // put it at.  i.e. cols[0] will go in column A, cols[1] in B, etc. in your chosen row.
 export async function putRow(
-  {id,row,cols,worksheetName }
-: {id: string, row: string, cols: string[], worksheetName: string }
+  {id,row,cols,worksheetName,rawVsUser }
+: {id: string, row: string, cols: string[], worksheetName: string, rawVsUser?: 'USER_ENTERED' | 'RAW' }
 ) {
+  if (!rawVsUser) rawVsUser = 'RAW'; // this is what putRow originally did
   //const range = worksheetName+'!'+arrayToLetterRange(row,cols);
   let params = {
     spreadsheetId: id,
     range: worksheetName+'!'+arrayToLetterRange(row,cols),
     includeValuesInResponse: true,
-    valueInputOption: 'RAW',
+    valueInputOption: rawVsUser,
   };
   const data = {
     range: worksheetName+'!'+arrayToLetterRange(row,cols),
@@ -74,18 +75,23 @@ export type RowObject = {
   lineno: number,
   [key: string]: string | Moment | number,
 };
-export function rowObjectToArray({ row, header }: { row: RowObject, header: string[] }): string[] {
-  const ret: string[] = [];
-  for (const [index, key] of header.entries()) {
-    if (!row[key]) {
+export function rowObjectToArray({ row, header }: { row: RowObject, header: string[] }): (string | number)[] {
+  const ret: (string | number)[] = [];
+  for (const key of header) {
+    const val = row[key];
+    if (typeof val === 'number') {
+      ret.push(val);
+      continue;
+    }
+    if (!val) { // undefined or '' or null.  numeric 0 handled above
       ret.push('');
       continue;
     }
-    if (isMoment(row[key])) {
-      ret.push((row[key]! as Moment).format('YYYY-MM-DD'));
+    if (isMoment(val)) {
+      ret.push((val as Moment).format('YYYY-MM-DD'));
       continue;
     }
-    ret.push('' + row[key]);
+    ret.push(val);
   }
   return ret;
 }
@@ -121,16 +127,7 @@ export async function batchUpsertRows(
   if (rows.length < 1) {
     throw new Error('ERROR: must have at least one row to batchUpsert');
   }
-  // Figure out the sheet id:
-  const response = await (await client()).sheets.spreadsheets.get({ 
-    spreadsheetId: id,
-    ranges: [worksheetName+'!A1'],
-  });
-  const sheetId = response.result?.sheets![0]?.properties?.sheetId;
-  if (!sheetId) {
-    warn('FAIL: sheets.spreadsheets.get result = ', response);
-    throw new Error('ERROR: failed to find sheetId for worksheetName '+worksheetName+', result.status  was'+response.status+': '+response.statusText);
-  }
+  const sheetId = await worksheetIdFromName({ id, name: worksheetName });
     
   const request: gapi.client.sheets.BatchUpdateSpreadsheetRequest = {
     requests: [],
@@ -166,7 +163,12 @@ export async function batchUpsertRows(
         rows: [ 
           {  // A single row is an object with a "values" key, and each "value" is just a userEnteredValue
             values: rowvals.map(v => ({ 
-              userEnteredValue: { stringValue: v } 
+              userEnteredValue: ((typeof v === 'number' || v.match(/^[0-9]+$/))
+                ? { numberValue: +(v) } 
+                : v.match(/^=/)  // if it starts with an equal, it's a formula
+                ? { formulaValue: v }
+                : { stringValue: v }
+              ),
             })) 
           } 
         ], // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/sheets#RowData
@@ -177,9 +179,76 @@ export async function batchUpsertRows(
     request.requests!.push(updateCellsRequest);
 
   }
-info('Request = ', request);
   await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
   return;
+}
+
+// Given a template row with formulas in it (i.e. balances, averages, etc.), paste those columns down to the end of data in the sheet.
+// Generally useful after doing a batchUpsertRows.
+export async function pasteFormulasFromTemplateRow(
+  { templateLineno, startLineno, id, worksheetName }: 
+  { templateLineno: number, startLineno: number, id: string, worksheetName: string }
+): Promise<void> {
+  const sheetId = await worksheetIdFromName({ id, name: worksheetName });
+  const templateresult = await (await client()).sheets.spreadsheets.values.get({
+    spreadsheetId: id,
+    valueRenderOption: 'FORMULA',
+    range: worksheetName+'!'+templateLineno+':'+templateLineno, // Sheet!1:1 -> all of row 1 in Sheet
+    majorDimension: 'ROWS',
+  });
+  const templaterow = templateresult.result.values?.[0];
+  if (!templaterow) {
+    throw new Error('ERROR: could not retrieve template row from sheet');
+  }
+  
+  // Figure out last line of data:
+  const all_values = await sheetToJson({ id, worksheetName });
+  if (!all_values) throw new Error('ERROR: could not retrieve all values in sheet to determine last line to paste');
+  const endLineno = all_values.length + 1; // the +1 is for the header row
+
+  // 1: find which columns in template to paste
+  const request: gapi.client.sheets.BatchUpdateSpreadsheetRequest = { requests: [] };
+  for (const [tindex, tval] of (templaterow as string[]).entries()) {
+    if (typeof tval !== 'string') continue; // shouldn't ever happen
+    if (tval === 'TEMPLATE') continue;
+    if (!tval) continue; // empty string
+    if (!tval.match(/^=/)) continue; // non-empty string, but not a formula
+    const req: gapi.client.sheets.Request = {
+      copyPaste: {
+        pasteType: 'PASTE_FORMULA',
+        pasteOrientation: 'NORMAL',
+        source: {
+          sheetId,
+          startRowIndex: templateLineno - 1,
+          startColumnIndex: tindex,
+          endRowIndex: templateLineno, // end is exclusive
+          endColumnIndex: tindex+1,    // end is exclusive
+        },
+        destination: {
+          sheetId,
+          startRowIndex: startLineno - 1,
+          startColumnIndex: tindex,
+          endRowIndex: endLineno, // this is 1-indexed and hence just past the end index, but this is exclusive so need 1 past the end
+          endColumnIndex: tindex+1, // end is exclusive
+        },
+      },
+    };
+    request.requests!.push(req);
+  }
+  await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
+}
+
+export async function worksheetIdFromName({ id, name }: { id: string, name: string }) {
+  const response = await (await client()).sheets.spreadsheets.get({ 
+    spreadsheetId: id,
+    ranges: [name+'!A1'],
+  });
+  const sheetId = response.result?.sheets![0]?.properties?.sheetId;
+  if (!sheetId) {
+    warn('FAIL: sheets.spreadsheets.get result = ', response);
+    throw new Error('ERROR: failed to find sheetId for worksheetName '+name+', result.status  was'+response.status+': '+response.statusText);
+  }
+  return sheetId; 
 }
 
 

@@ -197,7 +197,7 @@ export async function sheets(g: Google) {
   }
   // Put header in first row
   await g.sheets.putRow({ id, row: '1', cols: header, worksheetName });
-  const rowobjects: google.sheets.RowObject[] = [];
+  let rowobjects: google.sheets.RowObject[] = [];
   for (let i=0; i < 10; i++) {
     const rowobj: google.sheets.RowObject = { lineno: i+2 }; // plus 1 accounts for header, and +2 accounts for 1-based row indexing
     for(let j=0; j < 5; j++) {
@@ -253,6 +253,56 @@ export async function sheets(g: Google) {
   await checkUpsertResultAgainstExpected({ expected: newrowobjects, id, worksheetName, g });
 
 
+  info(`sheets: pasteFormulasFromTemplateRow`);
+
+  const r6 = await g.sheets.createSpreadsheet({
+    parentid: folder.id,
+    name: 'testPasteFormulas',
+    worksheetName,
+  });
+  if (!r6?.id) throw `createSpreadsheet returned null instead of an id when creating spreadsheet with worksheetName`;
+  id = r6.id;
+  header = [
+    'date',
+    'description',
+    'amount',
+    'balance',
+    'qty',
+    'qtyBalance',
+    'ave'
+  ];
+  await g.sheets.putRow({ id, worksheetName, row: '1', cols: header, rawVsUser: 'USER_ENTERED' });
+  rowobjects = [
+    { lineno: 2, date: 'SETTINGS', description: '', amount: '', balance: '', qty: '', qtyBalance: '', ave: '' },
+    { lineno: 3, date: 'TEMPLATE', description: '', amount: '', balance: '=C3+D2', qty: '', qtyBalance: '=E3+F2', ave: '=D3/F3' },
+    { lineno: 4, date: '2022-01-01', description: 'row 1', amount: 0, balance: 0, qty: 0, qtyBalance: 0 },
+    { lineno: 5, date: '2022-01-02', description: 'row 2', amount: 10, balance: 0, qty: 1, qtyBalance: 0 },
+    { lineno: 6, date: '2022-01-03', description: 'row 3', amount: 5, balance: 0, qty: 2, qtyBalance: 0 },
+    { lineno: 7, date: '2022-01-04', description: 'row 4', amount: 7, balance: 0, qty: 9, qtyBalance: 0 },
+  ];
+  await g.sheets.batchUpsertRows({ id, worksheetName, rows: rowobjects, header, insertOrUpdate: 'UPDATE' });
+                                      
+  await g.sheets.pasteFormulasFromTemplateRow({ id, worksheetName, 
+    templateLineno: 3,
+    startLineno: 4,
+  });
+
+  const r7 = await g.sheets.sheetToJson({ id, worksheetName });
+  if (!r7) throw `ERROR: sheetToJson returned nothing`;
+  const lastrow = r7[5];
+  const settingsrow = r7[0];
+  validateRowObject({ result: lastrow, expected: {
+    ...rowobjects[rowobjects.length-1]!,
+    balance: 22,
+    qtyBalance: 12,
+    ave: (22 / 12),
+  }});
+  validateRowObject({ result: settingsrow, expected: {
+    date: 'SETTINGS'
+  }});
+
+
+
   info(`sheets: all tests passed`);
 }
 
@@ -290,3 +340,24 @@ async function checkUpsertResultAgainstExpected(
   }
 }
 
+function validateRowObject({ result, expected }: {
+  result?: Record<string,string | number>,
+  expected: Record<string,string | number>
+}) {
+  if (!result) throw `ERROR: result was falsey`;
+  for (const [key, val] of Object.entries(expected)) {
+    if (key === 'lineno') continue; // don't expect to have lineno
+    let fail = false;
+    if (typeof val === 'number') {
+      if (Math.abs(val - +(result[key] || 0)) > 0.01) {
+        fail = true;
+      }
+    } else {
+      fail = (val !== result[key]);
+    }
+    if (fail) {
+      info('ERROR: result =',result);
+      throw `ERROR: expected result[${key}] to have value (${val}) with type ${typeof val}, but it was (${result[key]}) with type ${typeof result[key]} instead`;
+    }
+  }
+}
