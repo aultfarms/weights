@@ -12,6 +12,7 @@ export type TrelloAuthorizeParams = {
 export type TrelloRequestParams = {
   fields?: string, // name, id, closed, cards
   name?: string, // for posting new lists/boards/etc.
+  idList?: string, // for posting new cards
 };
 
 export type TrelloLabel = {
@@ -136,7 +137,7 @@ export type TrelloRESTFunction =
   => Promise<TrelloRequestResponse>;
 
 export type TrelloRequestFunction = (
-  method: 'get' | 'put' | 'post', 
+  method: 'get' | 'put' | 'post' | 'delete', 
   path: string, 
   params: TrelloRequestParams
 ) => Promise<TrelloRequestResponse>;
@@ -149,4 +150,5 @@ export type PlatformSpecificTrelloLib = {
   get: TrelloRESTFunction,
   put: TrelloRESTFunction,
   post: TrelloRESTFunction,
+  delete: TrelloRESTFunction,
 };

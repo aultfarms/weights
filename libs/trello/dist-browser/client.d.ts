@@ -16,4 +16,5 @@ export declare function getUniversalClient(client: PlatformSpecificTrelloLib): {
     get: import("./types.js").TrelloRESTFunction;
     put: import("./types.js").TrelloRESTFunction;
     post: import("./types.js").TrelloRESTFunction;
+    delete: import("./types.js").TrelloRESTFunction;
 };

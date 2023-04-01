@@ -4,6 +4,13 @@ import rfdc from 'rfdc';
 import { noteMatches, addLineToAccount, changeLineInAccount } from './util.js';
 import type { InventoryAccountTx } from '../ledger/types.js';
 
+
+//--------------------------------------------------------------------
+// The actual test that tries adding lines to the inventory accounts
+// in the google sheets and fixing them are located in
+// browser/inventory.test.ts.  These just add things in-memory and test.
+//--------------------------------------------------------------------
+
 const deepclone = rfdc({ proto: true });
 
 const info = debug('af/accounts#test/inventory:info');
@@ -12,8 +19,15 @@ export default async function run(lib: typeof accounts, ledger: accounts.ledger.
 
   info('testing inventory');
 
+  // In order to compute livestock missing dailygain lines properly, have to know the date
+  // on the last line of the test account and assume that is today:
+  const livestock = ledger.originals.find(acct => acct.name === 'inventory-cattle');
+  if (!livestock) throw `Could not find inventory-cattle account`;
+  const lastline = livestock.lines[livestock.lines.length-1]!;
+  const today = lastline.date;
+
   info('should have no missing lines in test accounts');
-  let results = lib.inventory.findMissingTxByInOutCategories(ledger);
+  let results = await lib.inventory.findMissingTx({ finalaccts: ledger, today });
   if (results.length > 0) {
     info('FAIL: found some missing lines.  Results = ', results);
     throw `FAIL: results.length is not zero, some lines were found to be missing.`;
@@ -32,7 +46,7 @@ export default async function run(lib: typeof accounts, ledger: accounts.ledger.
   if (!newledger) {
     throw 'FAIL: could not recompute balances from loadAll for new ledger with new line'
   }
-  results = lib.inventory.findMissingTxByInOutCategories(newledger);
+  results = await lib.inventory.findMissingTx({ finalaccts: newledger, today });
   let res = results[0];
   if (!res) {
     info('FAIL: results is', results);
@@ -68,7 +82,7 @@ export default async function run(lib: typeof accounts, ledger: accounts.ledger.
   if (!newledger) {
     throw 'FAIL: could not recompute balances from loadAll for new ledger with new line'
   }
-  results = lib.inventory.findMissingTxByInOutCategories(newledger);
+  results = await lib.inventory.findMissingTx({ finalaccts: newledger, today });
   res = results[0];
   if (!res) {
     info('FAIL: results is', results);
@@ -104,7 +118,7 @@ export default async function run(lib: typeof accounts, ledger: accounts.ledger.
     linematcher: (l) => l.date.year() >= 2022 && l.category === 'sales-grain-corn',
   });
   if (!newledger) throw new Error('FAIL: unable to change line in account: returned falsey');
-  results = lib.inventory.findMissingTxByInOutCategories(newledger);
+  results = await lib.inventory.findMissingTx({ finalaccts: newledger, today });
   res = results[0];
   if (!res) {
     info('FAIL: results is', results);
@@ -144,7 +158,7 @@ export default async function run(lib: typeof accounts, ledger: accounts.ledger.
     linematcher: (l) => l.date.year() >= 2022 && l.category === 'sales-grain-corn',
   });
   if (!newledger) throw new Error('FAIL: unable to change line in account: returned falsey');
-  results = lib.inventory.findMissingTxByInOutCategories(newledger);
+  results = await lib.inventory.findMissingTx({ finalaccts: newledger, today });
   res = results[0];
   if (!res) {
     info('FAIL: results is', results);

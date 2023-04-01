@@ -7,9 +7,7 @@ import { stringify } from '../../stringify.js';
 
 const info = debug('af/accounts#test/browser/google:info');
 
-const pathroot = `/AF-AUTOMATEDTESTS/TEST-${+(new Date())}`;
-
-export default async function run(accounts: typeof accountsLib) {
+export default async function run(accounts: typeof accountsLib, pathroot: string) {
   info('google-specific browser tests');
 
   info('Skipping test to speed things up: uploadXlsxWorkbookToGoogle');

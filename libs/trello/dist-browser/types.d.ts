@@ -13,6 +13,7 @@ export declare type TrelloAuthorizeParams = {
 export declare type TrelloRequestParams = {
     fields?: string;
     name?: string;
+    idList?: string;
 };
 export declare type TrelloLabel = {
     color: string;
@@ -56,7 +57,7 @@ export declare type TrelloRequestResponse = TrelloCard[] | TrelloList[] | Trello
 export declare type TrelloSuccessCallback = (response: TrelloRequestResponse) => any;
 export declare type TrelloRejectCallback = (err: any) => void;
 export declare type TrelloRESTFunction = (path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
-export declare type TrelloRequestFunction = (method: 'get' | 'put' | 'post', path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
+export declare type TrelloRequestFunction = (method: 'get' | 'put' | 'post' | 'delete', path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
 export declare type PlatformSpecificTrelloLib = {
     waitUntilLoaded: () => Promise<void>;
     authorize: () => Promise<void>;
@@ -65,4 +66,5 @@ export declare type PlatformSpecificTrelloLib = {
     get: TrelloRESTFunction;
     put: TrelloRESTFunction;
     post: TrelloRESTFunction;
+    delete: TrelloRESTFunction;
 };

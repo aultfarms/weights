@@ -54,6 +54,7 @@ const request: TrelloRequestFunction = async (method, path, params) => {
 const get: TrelloRESTFunction = async (path,params) => request('get', path, params);
 const put: TrelloRESTFunction = async (path,params) => request('put', path, params);
 const post: TrelloRESTFunction = async (path,params) => request('post', path, params);
+const del: TrelloRESTFunction = async (path,params) => request('delete', path, params);
 
 const _client = getUniversalClient({
   waitUntilLoaded,
@@ -62,7 +63,8 @@ const _client = getUniversalClient({
   request,
   get,
   put,
-  post
+  post,
+  delete: del,
 });
 export function getClient() { return _client; }
 

@@ -6,6 +6,7 @@ import debug from 'debug';
 import accountsTests from '../accounts.test.js';
 import googleTests from './google.test.js';
 import spreadsheetTests from './spreadsheets.test.js';
+import inventoryTests from './inventory.test.js';
 
 const info = debug('af/accounts#test:info');
 
@@ -16,6 +17,9 @@ type WindowWithLibs = {
 };
 
 localStorage.debug = '*';
+
+const pathroot = `/AF-AUTOMATEDTESTS/TEST-${+(new Date())}`;
+const sourceAccountsDir = `/AF-TESTACCOUNTS`;
 
 // Wait for the window to finish loading
 document.addEventListener('DOMContentLoaded', async () => {
@@ -33,19 +37,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const testsheets = await google.readAccountsFromGoogle({ 
         status: info, 
-        accountsdir: '/AF-TESTACCOUNTS' 
+        accountsdir: sourceAccountsDir,
       });
 
+      await inventoryTests(libsundertest, pathroot, sourceAccountsDir);
+
       // Run any browser-specific tests:
-      await googleTests(libsundertest);
-      info(`Browser account tests: have ${cyan(testsheets.length)} accounts loaded from Google at /AF-TESTACCOUNTS, starting tests...`);
-      // Run the account tests:
-      await accountsTests(universal_accounts, testsheets);
+      await googleTests(libsundertest, pathroot);
       // Run browser-specific file download from xlsx library
+      // This is really only testing xlsx's ability to download, no need to keep this test in play most of the time
       await spreadsheetTests(/*libsundertest*/);
 
+      info(`Browser account tests: have ${cyan(testsheets.length)} accounts loaded from Google at /AF-TESTACCOUNTS, starting tests...`);
       // run the universal tests:
-
+      await accountsTests(universal_accounts, testsheets);
 
 
     } catch(e: any) {

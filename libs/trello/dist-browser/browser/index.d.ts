@@ -1,5 +1,5 @@
 export * from '../types.js';
-import type { TrelloRESTFunction } from '../types.js';
+import type { TrelloRESTFunction, TrelloRequestFunction } from '../types.js';
 export * from '../index.js';
 export declare function getClient(): {
     connect: ({ org }: {
@@ -13,8 +13,9 @@ export declare function getClient(): {
     waitUntilLoaded: () => Promise<void>;
     authorize: () => Promise<void>;
     deauthorize: () => Promise<void>;
-    request: import("../types.js").TrelloRequestFunction;
+    request: TrelloRequestFunction;
     get: TrelloRESTFunction;
     put: TrelloRESTFunction;
     post: TrelloRESTFunction;
+    delete: TrelloRESTFunction;
 };

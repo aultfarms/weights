@@ -6,6 +6,7 @@ import { stringify } from 'q-i';
 // Note these are node-specific @googleapis libraries, but they have the 
 // typescript typings we need:
 import type { drive_v3 as Drive  } from '@googleapis/drive';
+import pLimit from 'p-limit';
 
 const warn = debug('af/google#drive:warn');
 const info = debug('af/google#drive:info');
@@ -257,3 +258,22 @@ export async function uploadArrayBuffer(
 };
 
 
+export async function copyAllFilesFromFolderToExistingFolder({ sourceFolderid, destinationFolderid }: { sourceFolderid: string, destinationFolderid: string }) {
+  const limit = pLimit(5);
+  const dir = await ls({ id: sourceFolderid });
+  if (!dir) {
+    throw new Error('ERROR: could not ls the sourcefolderid '+sourceFolderid);
+  }
+  let count = 0;
+  const queue = dir.contents.map(f => limit(async () => {
+    try { 
+      await (await client()).drive.files.copy({ fileId: f.id }, { name: f.name, parents: [ destinationFolderid ] });
+    } catch(e: any) {
+      info('ERROR: tried to copy file',f,' but copy failed for reason:',e);
+      throw new Error('FAIL: could not copy file '+f.name+' from source to destination.  Error was: '+e.toString());
+    }
+    count++;
+  }));
+  await Promise.all(queue);
+  info('Copied',count,'files from source to destination folder');
+}

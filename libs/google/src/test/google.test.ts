@@ -92,6 +92,21 @@ export async function drive(g: Google) {
   const data2 = xlsx.utils.sheet_to_json(wb2.Sheets['testsheet']!);
   if (!deepequal(data, data2)) throw `Downloaded xlsx differs from uploaded xlsx.  Uploaded = ${stringify(data)}, Downloaded = ${stringify(data2)}`;
 
+  info('drive: copyAllFilesFromFolderToExistingFolder');
+  const sourceFolder = await g.drive.createFolder({ parentid: r2.id, name: 'COPYSOURCE' });
+  const destFolder = await g.drive.createFolder({ parentid: r2.id, name: 'COPYDEST' });
+  if (!sourceFolder?.id) throw `ls: createFolder returned falsey id (${sourceFolder?.id})`;
+  if (!destFolder?.id) throw `ls: createFolder returned falsey id (${destFolder?.id})`;
+  await g.drive.createFile({ parentid: sourceFolder.id, name: "FILE1", mimeType: 'application/vnd.google-apps.spreadsheet' });
+  await g.drive.createFile({ parentid: sourceFolder.id, name: "FILE2", mimeType: 'application/vnd.google-apps.spreadsheet' });
+  await g.drive.copyAllFilesFromFolderToExistingFolder({ sourceFolderid: sourceFolder.id, destinationFolderid: destFolder.id });
+  const r9 = await g.drive.ls({ id: destFolder.id });
+  if (!r9) throw `Could not ls destination folder id ${destFolder.id}`;
+  if (r9.contents.length !== 2) throw `Expected 2 files in destination folder, but there are ${r9.contents.length} instead`;
+  if (!r9.contents.find(f => f.name === 'FILE1')) throw `Could not find FILE1 in destination after copy`;
+  if (!r9.contents.find(f => f.name === 'FILE2')) throw `Could not find FILE2 in destination after copy`;
+
+
   info('drive: passed');
 }
 
@@ -159,9 +174,15 @@ export async function sheets(g: Google) {
   }
   const json = await g.sheets.spreadsheetToJson({ id });
   if (!json) throw `sheets.spreadsheetToJson returned falsey (${json})`;
-  if (!json[worksheetName]) throw `sheets.spreadsheetToJson did not have the worksheetName (${worksheetName}) key in it (${Object.keys(json)})`;
+  const sheet = json[worksheetName];
+  if (!sheet) throw `sheets.spreadsheetToJson did not have the worksheetName (${worksheetName}) key in it (${Object.keys(json)})`;
+  for (const [index, h] of header.entries()) {
+    if (sheet.header[index] !== h) {
+      throw `sheets.spreadsheetToJson: the returned header as index ${index} (${sheet.header[index]}) is not the same as the original header (${h}).`;
+    }
+  }
   for (const [rownum,row] of rows.entries()) {
-    const retrow = json?.[worksheetName]?.[rownum];
+    const retrow = sheet.data[rownum];
     for (const [colnum,key] of header.entries()) {
       if (retrow?.[key] !== row[colnum]) {
         throw `sheets.spreadsheetToJson: row ${rownum} of returned json did not have value at ${key} (${retrow?.[key]}): should have been value ${row[colnum]}`;
@@ -289,8 +310,8 @@ export async function sheets(g: Google) {
 
   const r7 = await g.sheets.sheetToJson({ id, worksheetName });
   if (!r7) throw `ERROR: sheetToJson returned nothing`;
-  const lastrow = r7[5];
-  const settingsrow = r7[0];
+  const lastrow = r7.data[5];
+  const settingsrow = r7.data[0];
   validateRowObject({ result: lastrow, expected: {
     ...rowobjects[rowobjects.length-1]!,
     balance: 22,
@@ -309,9 +330,9 @@ export async function sheets(g: Google) {
 export default async function run(g: Google) {
 
   await itLoads(g);
-//  await core(g);
-//  await auth(g);
-//  await drive(g);
+  await core(g);
+  await auth(g);
+  await drive(g);
   await sheets(g);
   info('All Google Tests Passed');
 }
@@ -327,7 +348,7 @@ async function checkUpsertResultAgainstExpected(
   if (!sheet) throw `Could not retrieve spreadsheet after batchInsertRows using spreadsheetToJson`;
   for (let i=0; i < expected.length; i++) {
     const expectedrow = expected[i]!;
-    const resultrow = sheet[i];
+    const resultrow = sheet.data[i];
     if (!resultrow) throw `Expected a result at row ${i} but there is nothing at that index in result`;
     for (let j=0; j < Object.keys(expectedrow).length - 1; j++) { // the "-1" is b/c lineno is on the expected object and it doesn't count
       const col = `col${j}`;

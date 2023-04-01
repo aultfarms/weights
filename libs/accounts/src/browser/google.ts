@@ -5,12 +5,18 @@ import chalk from 'chalk';
 import oerror from '@overleaf/o-error';
 import { MultiError } from '../err.js';
 import pLimit from 'p-limit';
+import rfdc from 'rfdc';
+
+const deepclone = rfdc({ proto: true });
 
 const { red, yellow } = chalk;
 const info = debug('af/accounts#browser/google:info');
 
-import type { RawSheetAccount, StatusFunction } from '../ledger/types.js';
+import type { FinalAccounts, Account, AccountTx, RawSheetAccount, StatusFunction, LivestockInventoryAccountTx, InventoryAccountTx } from '../ledger/types.js';
+import { reloadSomeAccounts } from '../ledger/index.js';
 import { importSettings, Ten99Settings } from '../ten99/index.js';
+import type {MissingTxResult} from '../inventory/index.js';
+import {stringify} from '../ledger/settings-parser.js';
 
 export async function readAccountsFromGoogle(
   { status=null, accountsdir}:
@@ -37,35 +43,25 @@ export async function readAccountsFromGoogle(
   const queue = accountfiles.map((fileinfo, fileindex) => limit(async () => {
     const filename = fileinfo.name;
     const id = fileinfo.id;
-    let result: google.sheets.SpreadsheetJson | null = null;
-    if (filename.match(/xlsx$/)) {
-      // Download as regular xlsx file and make a workbook
-      const arraybuffer = await google.drive.getFileContents({ id });
-      const wb = xlsx.read(arraybuffer, { type: 'array' });
-      result = wb.SheetNames.reduce((acc,sheetname) => {
-        acc[sheetname] = xlsx.utils.sheet_to_json(wb, { raw: false });
-        return acc;
-      }, {} as google.sheets.SpreadsheetJson);
-    } else {
-      // Export the sheets file as an xlsx.
-      status!(yellow(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename)));
-      result = await google.sheets.spreadsheetToJson({ id });
-    }
+    status!(yellow(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename)));
+
+    const result = await google.sheets.spreadsheetToJson({ id, filename });
     if (!result) {
-      status!(red('WARNING: spreadsheetToJson or getFileContents returned null for file ', filename));
+      status!(red('WARNING: failed to download and convert spreadsheet file'+filename));
       return;
     }
 
-    const sheetnames = Object.keys(result);
-    for (const worksheetName of sheetnames) {
-      if (!result[worksheetName] || !Array.isArray(result[worksheetName])) {
+    for (const [worksheetName, worksheet] of Object.entries(result)) {
+      if (!worksheet || !Array.isArray(worksheet.data)) {
         status!(red('WARNING: spreadsheetToJson returned null for sheet name ', worksheetName, ' of file ', filename));
         return;
       }
       accts.push({
         name: worksheetName,
         filename: fileinfo.name,
-        lines: result[worksheetName] as any[],
+        id: fileinfo.id,
+        header: worksheet.header,
+        lines: worksheet.data,
       });
     }
   }));
@@ -73,6 +69,45 @@ export async function readAccountsFromGoogle(
   return accts;
 }
 
+export async function reloadSomeAccountsFromGoogle(
+  { status=null, accts, finalaccts }:
+  { status?: StatusFunction | null,
+    accts: Account[],
+    finalaccts: FinalAccounts,
+  }
+): Promise<FinalAccounts | null> {
+  const limit = pLimit(5);
+
+  // In order to limit requests to Google, look through all the accts scheduled for reload
+  // and find all the unique id's.  Since many sheets live in one spreadsheet.
+  const toload: { [id: string]: { id: string, filename: string, sheetnames: string[] } } = {};
+  for (const a of accts) {
+    if (!toload[a.id]) toload[a.id] = { id: a.id, filename: a.filename, sheetnames: [] };
+    toload[a.id]!.sheetnames.push(a.name);
+  }
+
+  let newaccts: RawSheetAccount[] = [];
+  const queue = Object.values(toload).map(loadinfo => limit(async () => {
+    const { filename, id, sheetnames } = loadinfo;
+    const sheets = await google.sheets.spreadsheetToJson({ id, filename });
+    if (!sheets) throw new MultiError({ msg: 'Failed to load sheets from google for filename '+filename });
+
+    for (const [sheetname, sheet] of Object.entries(sheets)) {
+      if (!sheet) throw new MultiError({ msg: 'Sheet '+sheetname+' was null from spreadsheetToJson' });
+      if (sheetnames.find(s => s === sheetname)) {
+        newaccts.push({ 
+          id, 
+          filename,
+          name: sheetname,
+          header: sheet.header, 
+          lines: sheet.data,
+        });
+      }
+    }
+  }));
+  await Promise.all(queue);
+  return reloadSomeAccounts({ rawaccts: newaccts, finalaccts, status });
+}
 
 export async function read1099SettingsFromGoogle(
   { status=null, settingsdir}:
@@ -93,26 +128,13 @@ export async function read1099SettingsFromGoogle(
   }
   const filename = settingsfile.name;
   const id = settingsfile.id;
-  let result: google.sheets.SpreadsheetJson | null = null;
-  if (filename.match(/xlsx$/)) {
-    // Download as regular xlsx file and make a workbook
-    const arraybuffer = await google.drive.getFileContents({ id });
-    const wb = xlsx.read(arraybuffer, { type: 'array' });
-    result = wb.SheetNames.reduce((acc,sheetname) => {
-      acc[sheetname] = xlsx.utils.sheet_to_json(wb, { raw: false });
-      return acc;
-    }, {} as google.sheets.SpreadsheetJson);
-  } else {
-    // Export the sheets file as an xlsx.
-    status(yellow('Reading:') + chalk.green(filename));
-    result = await google.sheets.spreadsheetToJson({ id });
-  }
+  const result = await google.sheets.spreadsheetToJson({ id, filename });
   if (!result) {
     throw new MultiError({ msg: `WARNING: spreadsheetToJson or getFileContents returned null for file: ${filename}` });
   }
 
-  const rawpeople = result['people'];
-  const rawcategories = result['categories'];
+  const rawpeople = result['people']?.data;
+  const rawcategories = result['categories']?.data;
   if (!rawpeople) {
     throw new MultiError({ msg: `1099Settings did not have a 'people' sheet` });
   }
@@ -145,4 +167,61 @@ export async function uploadXlsxWorkbookToGoogle(
   });
   if (!file) throw new MultiError({ msg: `Failed to upload file to google` });
   return { id: file.id };
+}
+
+// Just a wrapper to get from acct/lines to params for google
+export async function batchUpsertTx({ acct, lines, insertOrUpdate }: { acct: Account, lines: AccountTx[], insertOrUpdate: 'INSERT' | 'UPDATE' }) {
+  // Fixup the notes back into decent-looking strings before putting back into Google
+  const newlines = lines.map(l => {
+    if (!l.note || typeof l.note !== 'object') return l;
+    return {
+      ...l,
+      note: stringify(l.note),
+    };
+  });
+
+  return google.sheets.batchUpsertRows({  // returns a promise
+    id: acct.id,
+    worksheetName: acct.name,
+    rows: newlines,
+    header: acct.header,
+    insertOrUpdate
+  });
+}
+
+export async function pasteBalancesOrTemplate({ acct }: { acct: Account }) {
+  if (!acct.lines[1]) throw new MultiError({ msg: 'The account '+acct.name+' does not have at least 2 lines in it, so template line and starting line to paste is not defined.' });
+  const startLineno = acct.lines[1].lineno; // start pasting at first line after start.
+  let templateLineno = acct.templateLineno;
+  let limitToCols: number[] | null = null;
+  if (!templateLineno) { // templateLineno is 1-indexed, so 0 is an invalid lineno
+    // The default "template" row is just the first row after start, i.e. lines[1]
+    templateLineno = acct.lines[1].lineno;
+  } else { // If there is no temlate line, we'll need to limitCols when we guess which cols to paste based on colname
+    limitToCols = [];
+    for (const [index, colname] of acct.header.entries()) {
+      if (colname.match(/[bB]alance/)) limitToCols.push(index); // this is a "balance" line, so it needs pasted
+      if (colname.match(/^[aA]ve/)) limitToCols.push(index); // for livestock, these "ave*" things are also formulas
+    }
+  }
+  const params: Parameters<typeof google.sheets.pasteFormulasFromTemplateRow>[0] = {
+    id: acct.id,
+    worksheetName: acct.name,
+    templateLineno,
+    startLineno,
+  };
+  if (limitToCols) params.limitToCols = limitToCols;
+
+  return google.sheets.pasteFormulasFromTemplateRow(params);
+}
+
+// Convenience functions: do the main action, then paste balances back down
+export async function insertMissingIvtyTx(missing: MissingTxResult) {
+  await batchUpsertTx({ acct: missing.acct, lines: missing.missingInIvty, insertOrUpdate: 'INSERT' });
+  await pasteBalancesOrTemplate({ acct: missing.acct });
+}
+
+export async function applyLivestockFifoUpdates({ acct, lines }: { acct: Account, lines: LivestockInventoryAccountTx[] }) {
+  await batchUpsertTx({ acct, lines, insertOrUpdate: 'UPDATE' });
+  await pasteBalancesOrTemplate({ acct });
 }

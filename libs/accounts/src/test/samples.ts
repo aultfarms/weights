@@ -2,7 +2,9 @@ import type { RawSheetAccount } from '../ledger/index.js';
 
 export const testacct: RawSheetAccount = {
   "filename": "TEST",
+  "id": "TEST",
   "name": "bank.checking",
+  "header": [ "writtenDate", "postDate", "checkNum", "description", "debit", "credit", "splitAmount", "balance", "who", "category", "note" ],
   "lines": [
     { // index 0
       "postDate": "2020-04-01",
@@ -70,6 +72,8 @@ export const testacct: RawSheetAccount = {
 export const testacctWithSettings: RawSheetAccount = {
   "filename": "Account-Bank.xlsx",
   "name": "bank.rloc",
+  "id": "TEST",
+  "header": [ "writtenDate", "postDate", "checkNum", "description", "debit", "credit", "splitAmount", "balance", "who", "category", "note" ],
   "lines": [
     {
       "writtenDate": "COMMENT",
@@ -107,6 +111,8 @@ export const testacctWithSettings: RawSheetAccount = {
 export const testacctAsset =   {
   "filename": "Account-Assets.xlsx",
   "name": "bldg_imprv.2020TEST",
+  "id": "TEST",
+  "header": [ "category","parcelid","description","purchaseDate","purchaseValue","taxAssetid","taxDescription","taxTotalDepr","taxPriorValue","taxCurrentValue","mktPriorValue","mktCurrentValue","mktCurrentDepr","saleDate","saleValue" ],
   "lines": [
     {
       "category": "SETTINGS",

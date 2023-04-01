@@ -1,4 +1,4 @@
-import type {ValidatedRawTx, ValidatedRawSheetAccount} from "./types.js";
+import type {ValidatedRawTx, ValidatedRawSheetAccount, Account} from "./types.js";
 import rfdc from 'rfdc'; // really fast deep clone
 import moment from 'moment';
 import omit from 'omit';
@@ -55,7 +55,7 @@ export function line2Str(l: any) {
   //return JSON.stringify(l,null,'  ');
   return stringify(l);
 }
-export function ledger2Str(acct: ValidatedRawSheetAccount) {
+export function ledger2Str(acct: ValidatedRawSheetAccount | Account) {
   return 'ACCOUNT: \n' + stringify(
     // get rid of acct lines and origin.lines
     omit(['lines'])({

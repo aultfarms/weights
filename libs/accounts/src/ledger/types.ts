@@ -14,6 +14,8 @@ export type StatusFunction = (msg: string) => any;
 export type RawSheetAccount = {
   filename: string,
   name: string,
+  id: string,
+  header: string[],
   lines: any[],
   [key: string]: any,
 };
@@ -22,8 +24,9 @@ export type ValidatedRawTx = {
   acct: { 
     name: string, 
     filename: string,
+    id: string, // if it came from google, this is the file id.  If it came from node/xlsx, this is just the same as filename
     [key: string]: any,
-  } | AccountInfo,
+  } | LineAccountInfo,
   date?: Moment | string | null,
   description?: string | 'SPLIT',
   amount?: number,
@@ -73,7 +76,7 @@ export function assertValidatedRawTx(t: any): asserts t is ValidatedRawTx {
   if (t.transferacct && typeof t.transferacct !== 'string') errs.push(`transferacct (${t.transferacct}) is not a string`);
   if ('isStart' in t && typeof t.isStart !== 'boolean') errs.push(`isStart (${t.isStart}) exists, but is not boolean`);
   if (t.acct) {
-    try { assertAccountInfo(t.acct) }
+    try { assertLineAccountInfo(t.acct) }
     catch(e: any) {
       // Check if we at least have name, filename:
       if (typeof t.acct.name !== 'string') errs.push(`acct does not have a name (${t.acct.name}) on this tx`);
@@ -99,8 +102,10 @@ export function assertValidatedRawTx(t: any): asserts t is ValidatedRawTx {
 export type ValidatedRawSheetAccount = {
   name: string,
   filename: string,
+  id: string,
   lines: ValidatedRawTx[],
   settings: AccountSettings,
+  header: string[],
   origin?: OriginAccount,
   errors?: string[],
 };
@@ -344,20 +349,22 @@ export function assertLivestockInventoryNote(o: any): asserts o is LivestockInve
 }
 
 
-// AccountInfo is the info about the account w/o the actual account lines
-export type AccountInfo = {
+// LineAccountInfo is the info about the account stored with each line: i.e. the account
+// object w/o the actual account lines and originAcct lines
+export type LineAccountInfo = {
   name: string,
   filename: string,
+  id: string, // if it came from Google, this is the file id.  If it came from node file, this is same as filename
   settings: AccountSettings,
-  templateLineno?: number,
   origin?: Omit<OriginAccount, 'lines'>,
   //[key: string]: any,      // can have any others
 };
-export function assertAccountInfo(a: any): asserts a is AccountInfo {
+export function assertLineAccountInfo(a: any): asserts a is LineAccountInfo {
   const errs: string[] = [];
-  if (!a) throw `AccountInfo cannot be null`;
-  if (!a.name || typeof a.name !== 'string') errs.push(`AccountInfo has no name`);
-  if (!a.filename || typeof a.filename !== 'string') errs.push(`AccountInfo has no filename`);
+  if (!a) throw `LineAccountInfo cannot be null`;
+  if (!a.name || typeof a.name !== 'string') errs.push(`LineAccountInfo has no name`);
+  if (!a.filename || typeof a.filename !== 'string') errs.push(`LineAccountInfo has no filename`);
+  if (!a.id || typeof a.id !== 'string') errs.push(`LineAccountInfo has no id`);
   if ('settings' in a) {
     try { 
       assertAccountSettings(a.settings) 
@@ -366,11 +373,13 @@ export function assertAccountInfo(a: any): asserts a is AccountInfo {
       errs.push(...e.msgs());
     }
   }
-  if ('lines' in a) errs.push('AccountInfo cannot have lines');
-  if (a.origin && 'lines' in a.origin) errs.push('AccountInfo cannot have origin.lines');
-  if (('templateLineno' in a) && typeof a.templateLineno !== 'number') {
-    errs.push('AccountInfo has templateLineno, but it is not a number');
+  if ('lines' in a) errs.push('LineAccountInfo cannot have lines');
+  if (a.origin) {
+    if ('lines' in a.origin) errs.push('LineAccountInfo cannot have origin.lines');
+    if (!a.origin.name) errs.push('LineAccountInfo origin must have name');
+    if (!a.origin.filename) errs.push('LineAccountInfo origin must have filename');
   }
+
   if (errs.length > 0) throw new MultiError({ msg: errs });
 }
 
@@ -386,7 +395,7 @@ export type AccountTx = {
   postDate?: Moment,
   is_error?: false,
   isStart?: boolean,
-  acct: AccountInfo, // all the info about the account for this line, minus the lines
+  acct: LineAccountInfo, // all the info about the account for this line, minus the lines
   stmtacct?: string, // original "account" string from sheet (for futures w/ multiple statement origins)
   lineno: number,
   stmtlineno?: number, // on futures accounts, this is the lineno from the original statement
@@ -396,9 +405,9 @@ export function assertAccountTx(l: any): asserts l is AccountTx {
   const errs: string[] = [];
   if (!l) throw new MultiError({ msg: [ `Line must be truthy` ]});
   try { 
-    assertAccountInfo(l.acct) 
+    assertLineAccountInfo(l.acct) 
   } catch(e: any) {
-    e = LineError.wrap(e, l, `line.acct is not a valid AccountInfo`);
+    e = LineError.wrap(e, l, `line.acct is not a valid LineAccountInfo`);
     errs.push(...e.msgs());
   }
   if (!l.date) errs.push(`Line has no date`);
@@ -466,6 +475,7 @@ export type OriginLine = {
   acct: {
     name: string,
     filename: string,
+    id: string,
   },
   [key: string]: any
 };
@@ -474,14 +484,15 @@ export function assertOriginLine(o: any): asserts o is OriginLine {
   const errs: string[] = [];
   if (!o.date || !isMoment(o.date)) errs.push(`OriginLine date is not a moment`);
   if (typeof o.lineno !== 'number') errs.push(`OriginLine has no lineno`);
-  if (!o.acct || typeof o.acct.name !== 'string' || typeof o.acct.filename !== 'string') {
-    errs.push(`OriginLine acct (${o.acct})is missing or does not have name and filename`);
+  if (!o.acct || typeof o.acct.name !== 'string' || typeof o.acct.filename !== 'string' || typeof o.acct.id !== 'string') {
+    errs.push(`OriginLine acct (${o.acct})is missing or does not have name and filename and id`);
   }
   if (errs.length > 0) throw new MultiError({ msg: errs });
 };
 export type OriginAccount = {
   name: string,
   filename: string,
+  id: string,
   lines: OriginLine[],
 };
 export function assertOriginAccount(o: any): asserts o is OriginAccount {
@@ -489,13 +500,14 @@ export function assertOriginAccount(o: any): asserts o is OriginAccount {
   const errs: string[] = [];
   if (typeof o.name !== 'string') errs.push(`OriginAccount has no name`);
   if (typeof o.filename !== 'string') errs.push(`OriginAccount has no filename`);
-  if (!o.lines) {
-    errs.push('OriginAccount has no lines');
+  if (typeof o.id !== 'string') errs.push('OriginAccount has no id');
+  if (!('lines' in o)) {
+    errs.push('OriginAccount must have lines');
   } else {
-    for (const line of o.lines) {
+    for (const [index, line] of o.lines.entries()) {
       try { assertOriginLine(line) }
       catch(e: any) {
-        e = MultiError.wrap(e, `OriginLine failed validation`);
+        e = MultiError.wrap(e, `OriginLine ${index} failed validation`);
         errs.push(...e.msgs());
       }
     }
@@ -504,21 +516,44 @@ export function assertOriginAccount(o: any): asserts o is OriginAccount {
 }
 
 export type Account = {
-  name: string,
   filename: string,
-  settings: AccountSettings;
+  name: string,
+  id: string, // for file from google this is the resource id, for file from disk this is same as filename
+  settings: AccountSettings,
+  templateLineno?: number,
+  header: string[],
+  origin?: OriginAccount,
   lines: AccountTx[];
-  origin?: OriginAccount;
 };
 export function assertAccount(a: any): asserts a is Account {
   if (!a) throw new MultiError({ msg: `Account cannot be null` });
   const errs: string[] = [];
+
   if (!a.name || typeof a.name !== 'string') errs.push(`Account has no name`);
   if (!a.filename || typeof a.filename !== 'string') errs.push(`Account has no filename`);
-  try { assertAccountSettings(a.settings) }
-  catch(e: any) { 
-    e = AccountError.wrap(e, a, `Account settings are invalid`);
+  if (!a.id || typeof a.id !== 'string') errs.push(`Account has no id`);
+  try { 
+    assertAccountSettings(a.settings) 
+  } catch(e: any) {
+    e = MultiError.wrap(e, `Settings (${stringify(a.settings)}) is not a valid AccountSettings`);
     errs.push(...e.msgs());
+  }
+  if (('templateLineno' in a) && typeof a.templateLineno !== 'number') {
+    errs.push('Account has templateLineno, but it is not a number');
+  }
+  if (!a.header || !Array.isArray(a.header)) {
+    errs.push('Account has no header or it is not an array');
+  } else {
+    for (const [index, h] of a.header.entries()) {
+      if (typeof h !== 'string') errs.push(`Account header at index ${index} (${JSON.stringify(h)}) is not a string`);
+    }
+  }
+  if ('origin' in a && a.origin) {
+    try { assertOriginAccount(a.origin) }
+    catch(e: any) {
+      e = AccountError.wrap(e, a, `Account has origin, but origin does not pass validation`);
+      errs.push(...e.msgs());
+    }
   }
   if (!a.lines) {
     errs.push(`Account has no lines`);
@@ -531,13 +566,7 @@ export function assertAccount(a: any): asserts a is Account {
       }
     }
   }
-  if ('origin' in a) {
-    try { assertOriginAccount(a.origin) }
-    catch(e: any) {
-      e = AccountError.wrap(e, a, `Account has origin, but origin does not pass validation`);
-      errs.push(...e.msgs());
-    }
-  }
+
   if (errs.length > 0) throw new MultiError({ msg: errs });
 }
 

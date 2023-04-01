@@ -343,7 +343,55 @@ export async function loadAll(
 
   const steps = loadInSteps({ rawaccts, status, validrawaccts, accts, startingStep });
   let step;
-  for await (step of steps) { /* Just go through all steps... */ }
+  for await (step of steps) { 
+    /* Just go through all steps... */ 
+  }
+  if (!step || !step.done || typeof step.final === 'undefined') {
+    if (step?.errors && step.errors.length > 0) throw new MultiError({ msg: step.errors });
+    throw new MultiError({ msg: 'Did not finish all the steps, but had no reported errors' });
+  }
+  return step.final; // should be the final acccounts
+}
+
+// Use this when you update a sheet in Google from inventory and you need to 
+// just reload a small number of sheets.  This will first standardize all the
+// stuff in the new sheet, then just do the final steps for everything to get
+// the final tax/mkt.
+// Accounts are replaced in finalaccts.originals by the name on the account
+export async function reloadSomeAccounts(
+  { rawaccts, finalaccts, status=null }:
+  { rawaccts: RawSheetAccount[],
+    finalaccts: FinalAccounts,
+    status: StatusFunction | null
+  }
+): Promise<FinalAccounts | null> {
+  let steps = loadInSteps({ rawaccts, status }); 
+  let newaccts: Account[] = [];
+  for await (const step of steps) {
+    if (!step) throw new MultiError({ msg: 'Failed to reprocess accounts, step result was falsey' });
+    const nextstep = stepToOrderNumber[step.step] + 1;
+    // If the next step is sortAndSeparateTaxMkt, then this part of loading is done and
+    // its time to break out and put all the accounts back together
+    if (nextstep === stepToOrderNumber['sortAndSeparateTaxMkt']) {
+      if (!step.accts) {
+        throw new MultiError({ msg: 'ERROR: accts was falsey after all steps prior to sortAndSeparateTaxMkt when reprocessing accounts' });
+      }
+      newaccts = step.accts;
+      break; // this will stop the async generator
+    }
+  }
+
+  const accts: Account[] = finalaccts.originals.map(a => {
+    const n = newaccts.find(na => na.name === a.name);
+    if (n) return n;
+    return a;
+  });
+
+  steps = loadInSteps({ accts, status, startingStep: 'sortAndSeparateTaxMkt' });  
+  let step;
+  for await (step of steps) { 
+    /* Just go through all steps, should just be one... */ 
+  }
   if (!step || !step.done || typeof step.final === 'undefined') {
     if (step?.errors && step.errors.length > 0) throw new MultiError({ msg: step.errors });
     throw new MultiError({ msg: 'Did not finish all the steps, but had no reported errors' });

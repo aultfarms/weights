@@ -2,16 +2,18 @@ import { client } from './core';
 import { createFile, ensurePath, idFromPath, getFileContents } from './drive';
 import xlsx from 'xlsx-js-style';
 import debug from 'debug';
-import pReduce from 'p-reduce';
-import { isMoment, Moment } from 'moment';
+//import pReduce from 'p-reduce';
+import moment, { isMoment, Moment } from 'moment';
 
 import type { sheets_v4 as Sheets } from '@googleapis/sheets';
 
 const warn = debug('af/google#sheets:warn');
-const info = debug('af/google#sheets:info');
+//const info = debug('af/google#sheets:info');
 //const trace = debug('af/google#sheets:trace');
 
 export const XlsxMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+// From: https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number (lower-down post about typescript)
+const isNumeric = (num: unknown) => (typeof(num) === 'number' || typeof(num) === "string" && num.trim() !== '') && !isNaN(num as number);
 
 async function sheets(): Promise<Sheets.Sheets> {
   // @ts-ignore
@@ -36,8 +38,8 @@ export function arrayToLetterRange(row:string|number,arr:any[]):string {
 }
 
 export async function getAllRows(
-  { id, worksheetName }
-: { id: string, worksheetName: string }
+  { id, worksheetName }: 
+  { id: string, worksheetName: string }
 ): Promise<Sheets.Schema$ValueRange> {
   const res = await ((await sheets()).spreadsheets.values.get({ 
     spreadsheetId: id, 
@@ -96,7 +98,13 @@ export function rowObjectToArray({ row, header }: { row: RowObject, header: stri
   return ret;
 }
 
-
+// "The whole number portion of the value (left of the decimal) counts the days since December 30th 1899"
+// https://developers.google.com/sheets/api/reference/rest/v4/DateTimeRenderOption
+function dateStringToDateSerialNumber(datestr: string): number {
+  const date = moment(datestr, 'YYYY-MM-DD');
+  const originDate = moment('1899-12-30', 'YYYY-MM-DD');
+  return date.diff(originDate, 'days');
+}
 
 //------------------------------------------------------------
 // batchInsert is tricky with the lineno's.  I settled on you give 
@@ -162,14 +170,19 @@ export async function batchUpsertRows(
       updateCells: {
         rows: [ 
           {  // A single row is an object with a "values" key, and each "value" is just a userEnteredValue
-            values: rowvals.map(v => ({ 
-              userEnteredValue: ((typeof v === 'number' || v.match(/^[0-9]+$/))
-                ? { numberValue: +(v) } 
-                : v.match(/^=/)  // if it starts with an equal, it's a formula
-                ? { formulaValue: v }
-                : { stringValue: v }
-              ),
-            })) 
+            values: rowvals.map(v => { 
+              if (typeof v === 'number') return { userEnteredValue: { numberValue: +(v) } };
+              if (typeof v === 'object') return { userEnteredValue: { stringValue: JSON.stringify(v) } }; // notes
+              if (typeof v === 'string') {
+                if (!v) return { userEnteredValue: { stringValue: '' } };
+                if (isNumeric(v)) return { userEnteredValue: { numberValue: +(v) } };
+                if (v.match(/^=/)) return { userEnteredValue: { formulaValue: v } };
+                // Dates have to be serial numbers to keep the formatting
+                if (v.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)) return { userEnteredValue: { numberValue: dateStringToDateSerialNumber(v) } };
+                return { userEnteredValue: { stringValue: v } };
+              }
+              return { userEnteredValue: { stringValue: ''+v } };
+            }) 
           } 
         ], // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/sheets#RowData
         fields: 'userEnteredValue', // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/cells#CellData
@@ -177,17 +190,19 @@ export async function batchUpsertRows(
       }
     };
     request.requests!.push(updateCellsRequest);
-
   }
   await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
   return;
 }
 
 // Given a template row with formulas in it (i.e. balances, averages, etc.), paste those columns down to the end of data in the sheet.
-// Generally useful after doing a batchUpsertRows.
+// Generally useful after doing a batchUpsertRows.  If you want to just give it a set of columns to paste from a particular
+// lineno (i.e. a regular old cash account with just a balance), then just pass an array of all the column indexes
+// that have formulas you want to paste down in limitToCols.  This is so that you don't have to put template rows in everything that you
+// want to test.
 export async function pasteFormulasFromTemplateRow(
-  { templateLineno, startLineno, id, worksheetName }: 
-  { templateLineno: number, startLineno: number, id: string, worksheetName: string }
+  { templateLineno, limitToCols, startLineno, id, worksheetName }: 
+  { templateLineno: number, limitToCols?: number[], startLineno: number, id: string, worksheetName: string }
 ): Promise<void> {
   const sheetId = await worksheetIdFromName({ id, name: worksheetName });
   const templateresult = await (await client()).sheets.spreadsheets.values.get({
@@ -202,8 +217,9 @@ export async function pasteFormulasFromTemplateRow(
   }
   
   // Figure out last line of data:
-  const all_values = await sheetToJson({ id, worksheetName });
-  if (!all_values) throw new Error('ERROR: could not retrieve all values in sheet to determine last line to paste');
+  const sheetdata = await sheetToJson({ id, worksheetName });
+  if (!sheetdata) throw new Error('ERROR: could not retrieve all values in sheet to determine last line to paste');
+  const all_values = sheetdata.data;
   const endLineno = all_values.length + 1; // the +1 is for the header row
 
   // 1: find which columns in template to paste
@@ -213,6 +229,8 @@ export async function pasteFormulasFromTemplateRow(
     if (tval === 'TEMPLATE') continue;
     if (!tval) continue; // empty string
     if (!tval.match(/^=/)) continue; // non-empty string, but not a formula
+    if (limitToCols && !limitToCols.find(lc => lc === tindex)) continue; // formula and pasteable, but not in the limitCols
+
     const req: gapi.client.sheets.Request = {
       copyPaste: {
         pasteType: 'PASTE_FORMULA',
@@ -237,6 +255,8 @@ export async function pasteFormulasFromTemplateRow(
   }
   await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
 }
+
+
 
 export async function worksheetIdFromName({ id, name }: { id: string, name: string }) {
   const response = await (await client()).sheets.spreadsheets.get({ 
@@ -283,35 +303,50 @@ export type SheetJson = {
 export async function sheetToJson(
   {id, worksheetName}:
   {id: string, worksheetName: string}
-): Promise<SheetJson[] | null> {
+): Promise<{ header: string[], data: SheetJson[]} | null> {
   const allrows = await getAllRows({id, worksheetName});
   if (!allrows || !allrows.values || allrows.values.length < 1) return null;
   const header = allrows.values[0];
   if (!header) return null;
-  return allrows.values.slice(1).map(row => {
+  const data = allrows.values.slice(1).map(row => {
     const ret: SheetJson = {};
     for (const [index,key] of header.entries()) {
       ret[key] = row[index]; // get the ith item from the row and place at ith key from header
     }
     return ret;
   });
+  return { header, data };
 }
 
 export type SpreadsheetJson = {
-  [sheetname: string]: SheetJson[] | null,
+  [sheetname: string]: { header: string[], data: SheetJson[] } | null,
 };
 export async function spreadsheetToJson(
-  { id }:
-  { id: string }
+  { id, filename }: // if you pass filename, it will check for xlsx extension and download directly from drive instead of using sheets
+  { id: string, filename?: string }
   // each sheet will be at a key that is its sheetname, and it will be an array of objects
 ): Promise<SpreadsheetJson | null> {
   // Getting each individual sheet via Google Sheets exceeds our quota.  Grab the whole thing as an xlsx,
   // then do the sheet_to_json conversion here:
-  const wb = await googleSheetToXlsxWorkbook({ id });
-  return wb.SheetNames.reduce((acc,worksheetName) => {
-    acc[worksheetName] = xlsx.utils.sheet_to_json(wb.Sheets[worksheetName]!, { raw: false });
-    return acc;
-  },{} as SpreadsheetJson);
+
+  let result: SpreadsheetJson = {};
+  let wb: xlsx.WorkBook | null = null;
+  if (filename?.match(/xlsx$/)) {
+    // Download as regular xlsx file and make a workbook
+    const arraybuffer = await getFileContents({ id });
+    wb = xlsx.read(arraybuffer, { type: 'array' });
+  } else {
+    wb = await googleSheetToXlsxWorkbook({ id });
+  }
+
+  for (const sheetname of wb.SheetNames) {
+    const sheet = wb.Sheets[sheetname]!;
+    result[sheetname] = {
+      header: headerFromXlsxSheet({ sheet }),
+      data: xlsx.utils.sheet_to_json(sheet, { raw: false })
+    };
+  }
+  return result;
 }
 
 export async function createSpreadsheet({
@@ -368,3 +403,17 @@ export async function createSpreadsheet({
 }
 
 
+// NOTE: this function is repeated in accounts/src/node because I don't have a great
+// place to put shared XLSX utilities at the moment.
+export function headerFromXlsxSheet({ sheet }: { sheet: xlsx.WorkSheet }): string[] {
+  const ref = sheet['!ref'];
+  if (!ref) return []; // sheet is empty
+  const range = xlsx.utils.decode_range(ref);
+  const r = range.s.r; // start of range, row number
+  const header: string[] = [];
+  for (let c=range.s.c; c <= range.e.c; c++) {
+    const cellref = xlsx.utils.encode_cell({c,r});
+    header.push(sheet[cellref]?.w || '');
+  }
+  return header;
+}

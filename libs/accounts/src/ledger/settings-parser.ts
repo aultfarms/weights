@@ -70,7 +70,7 @@ const parseOneItem = (str: string, acc?: Thing): Thing | number | boolean | stri
 // If any values start with a quote, the quotes are stripped
 // If any value could be interpreted as a number, it will be converted to a number.
 // If any key ends in "s" (i.e. is plural), and has commas, it will be parsed as an array of things
-export default function(str: string): Thing | string | number | boolean | any[] {
+export function parse(str: string): Thing | string | number | boolean | any[] {
   str = clean(str);
   if (isJSON(str)) {
     try {
@@ -96,4 +96,21 @@ export default function(str: string): Thing | string | number | boolean | any[] 
   }
 
   return parseOneItem(str);
+}
+
+export function stringify(note: Thing | string | number | boolean | any[]): string {
+  if (!note) return ''; // if you ever find yourself just needing a Zero, you'll have to tweak this.
+  if (typeof note === 'number') return ''+note;
+  if (typeof note === 'boolean') return ''+note;
+  if (Array.isArray(note)) return JSON.stringify(note);
+  if (typeof note !== 'object') return note.toString();
+  let entries: string[] = [];
+  for (const [key, val] of Object.entries(note)) {
+    if (typeof val === 'object') {
+      entries.push(`${key}: ${JSON.stringify(val)}`);
+      continue;
+    }
+    entries.push(`${key}: ${''+val}`);
+  }
+  return entries.join('; ');
 }

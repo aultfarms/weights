@@ -1,16 +1,15 @@
 import { MultiError, LineError, AccountError } from '../err.js';
-import { assertPriceWeightPoints, assertLivestockInventoryNote, PriceWeightPoint, LivestockInventoryAccount, LivestockInventoryAccountTx, LivestockInventoryNote } from '../ledger/types.js';
+import { assertPriceWeightPoints, PriceWeightPoint, LivestockInventoryAccount, LivestockInventoryAccountTx } from '../ledger/types.js';
 import moment, { Moment } from 'moment';
 import { moneyEquals, integerEquals } from '../ledger/util.js';
 import debug from 'debug';
-import { compareDays, isSameDay, isSameDayOrBefore} from '../util.js';
+import { compareDays, isAfterDay, isSameDay, isSameDayOrAfter, isSameDayOrBefore} from '../util.js';
 import * as trello from '@aultfarms/trello';
-import rfdc from 'rfdc';
-import numeral from 'numeral';
+//import rfdc from 'rfdc';
 
-const deepclone = rfdc({ proto: true });
+//const deepclone = rfdc({ proto: true });
 
-const trace = debug('af/accounts#inventory/fifo:trace');
+//const trace = debug('af/accounts#inventory/fifo:trace');
 const info = debug('af/accounts#inventory/fifo:info');
 
 type Group = {
@@ -24,40 +23,78 @@ type Group = {
 
 type CurrentInventory = Group[]; // sorted with "fattest" on top (i.e. in position 0)
 
-type LivestockInventoryKeyTxParameters = {
-  index: number, // the index in the acct.lines array
-  taxAmount: number,
-  taxBalance: number,
-  weight: number,
-  weightBalance: number,
-  amount: number,
-  balance: number,
-  qty: number,
-  qtyBalance: number,
-};
-
 
 type DeadRecord = {
   date: Moment,
   qty: number
 };
 
-type DeadStarterTx = {
+type DeadStarterTx = LivestockInventoryAccountTx & {
   date: Moment,
   description: 'DEAD',
   category: 'cattle-dead',
   qty: number,
-  amount: 0, // this is a zero-dollar sale
+  amount: 0,
 };
 
 
-type DailyGainStarterTx = {
+type DailyGainStarterTx = LivestockInventoryAccountTx & {
   date: Moment,
   description: 'DAILYGAIN',
   category: 'inventory-cattle-dailygain',
   qty: 0,
   taxAmount: 0,
 };
+
+export async function computeMissingLivestockTx(
+  { acct, today }: 
+  { acct: LivestockInventoryAccount, today?: Moment }
+): Promise<LivestockInventoryAccountTx[]> {
+  const deads = await computeDailyDeadsFromTrello({ acct });
+  const missingDead = computeMissingDeadTx({ acct, deads });
+  const missingDailyGain = computeMissingDailyGains({ acct, today });
+
+  if (missingDead.length < 1 && missingDailyGain.length < 1) {
+    return [];
+  }
+
+  // Figure out lineno's for dead and dailygains
+  // dailygain should always be at the end of the day, so dead
+  // goes first, then dailygain.  So, for dead, just find the
+  // first row with dead date or later, and set that lineno
+  // as the lineno for the dead one.  i.e. a line will be inserted
+  // such that dead will be at that lineno in the future, and the
+  // other line will be pushed down one.
+  let mergedMissing: LivestockInventoryAccountTx[] = [];
+  for (const md of missingDead) {
+    const acctline = acct.lines.find(l => isSameDayOrAfter(l.date, md.date));
+    let lineno = acctline?.lineno;
+    if (typeof lineno !== 'number') { // this goes after the last line in the account
+      lineno = acct.lines[acct.lines.length-1]!.lineno + 1;
+    }
+    mergedMissing.push({ ...md, lineno });
+  }
+
+  // For daily gain, find the first line whose date is strictly after the dailygain
+  // line's date (which gets us to the end of any day that already has lines),
+  // and put it at the lineno of that first line after the day.  
+  for (const mdg of missingDailyGain) {
+    const acctline = acct.lines.find(l => isAfterDay(l.date, mdg.date));
+    let lineno = acctline?.lineno;
+    if (typeof lineno !== 'number') { // goes after last line in the account
+      lineno = acct.lines[acct.lines.length-1]!.lineno + 1;
+    }
+    mergedMissing.push({ ...mdg, lineno });
+  }
+
+  // I'm leaving it up to the generic inventory to re-sort all the missing lines
+  // (purchase, sale, dead, dailygain) based on lineno, date, and dailygain (dailygain at end)
+
+  return mergedMissing;
+}
+
+
+
 
 //-----------------------------------------------------------------
 // DailyGains:
@@ -74,18 +111,30 @@ export function computeMissingDailyGains({ acct, today }: { acct: LivestockInven
     if (acct.lines.find(l => isSameDay(l.date, date) && l.category === 'inventory-cattle-dailygain')) {
       continue;// this one is already there
     }
-    missing.push(createStarterInventoryTxFromDailyGain({ date }));
+    missing.push(createStarterInventoryTxFromDailyGain({ acct, date }));
   }
   return missing;
 }
 
-function createStarterInventoryTxFromDailyGain({ date }: { date: Moment }): DailyGainStarterTx {
+function createStarterInventoryTxFromDailyGain({ acct, date }: { acct: LivestockInventoryAccount, date: Moment }): DailyGainStarterTx {
   return {
+    acct: acct.lines[0]!.acct,
+    lineno: -1,
     date: date.clone(),
     description: 'DAILYGAIN',
     category: 'inventory-cattle-dailygain',
+    amount: 0,
+    balance: 0,
     qty: 0,
+    qtyBalance: 0,
+    weight: 0,
+    weightBalance: 0,
     taxAmount: 0,
+    taxBalance: 0,
+    aveValuePerQty: 0,
+    aveValuePerWeight: 0,
+    aveWeightPerQty: 0,
+    note: '', // not sure why this was coming out zero's in test sheet
   };
 }
 
@@ -126,7 +175,7 @@ export async function computeDailyDeadsFromTrello({ acct }: { acct: LivestockInv
 export function computeMissingDeadTx({ acct, deads }: { acct: LivestockInventoryAccount, deads: DeadRecord[] }): DeadStarterTx[] {
   const missing: DeadStarterTx[] = [];
   for (const dead of deads) {
-    const deadtx = createStarterInventoryTxFromDead({ dead }); // this inverts the qty so the signs should match
+    const deadtx = createStarterInventoryTxFromDead({ acct, dead }); // this inverts the qty so the signs should match
     const found = acct.lines.find(l => {
       return isSameDay(l.date, deadtx.date) && l.qty === deadtx.qty
     });
@@ -136,14 +185,25 @@ export function computeMissingDeadTx({ acct, deads }: { acct: LivestockInventory
   return missing;
 }
 
-function createStarterInventoryTxFromDead({ dead }: { dead: DeadRecord }): DeadStarterTx {
+function createStarterInventoryTxFromDead({ acct, dead }: { acct: LivestockInventoryAccount, dead: DeadRecord }): DeadStarterTx {
   // weight should be fixed later when fifo runs to check every line's weight balance
   return {
+    lineno: -1,
+    acct: acct.lines[0]!.acct,
     date: dead.date,
     description: 'DEAD',
     amount: 0, // To be filled in by fifo later as an update once it knows the correct $/hd at the time the animal died
+    balance: 0,
     category: 'cattle-dead',
     qty: -dead.qty, // dead cow subtracts from inventory
+    qtyBalance: 0,
+    weight: 0,
+    weightBalance: 0,
+    taxAmount: 0,
+    taxBalance: 0,
+    aveValuePerWeight: 0,
+    aveValuePerQty: 0,
+    aveWeightPerQty: 0,
   };
 }
   
@@ -158,14 +218,13 @@ function createStarterInventoryTxFromDead({ dead }: { dead: DeadRecord }): DeadS
 // all the in/out transactions are correct/present AND all dailygain lines AND all dead lines are present.
 // This will then compute all the correct values for things and send back to you what needs updating.
 //-------------------------------------------------------------------------------------------------
-
-export function computeLivestockFifoChangesNeeded(acct: LivestockInventoryAccount): LivestockInventoryKeyTxParameters[]  {
+export function computeLivestockFifoChangesNeeded(acct: LivestockInventoryAccount): LivestockInventoryAccountTx[]  {
   const expected = computeAmountsTaxAmountsAndWeights(acct);
   if (expected.length !== acct.lines.length) {
     info('FAIL: expected = ', expected);
     throw new MultiError({ msg: `FAIL: computed different number of account lines (${expected.length}) than were present in the account (${acct.lines.length})` });
   }
-  const incorrect: LivestockInventoryKeyTxParameters[] = [];
+  const incorrect: LivestockInventoryAccountTx[] = [];
   for (const [index, l] of acct.lines.entries()) {
     const exp = expected[index]!;
     const errs = [];
@@ -175,18 +234,18 @@ export function computeLivestockFifoChangesNeeded(acct: LivestockInventoryAccoun
     if (!integerEquals(l.weight, exp.weight)) {
       errs.push(`integerEquals failed for weight.  line = ${l.weight}, fifo = ${exp.weight}`);
     }
-    if (!moneyEquals(l.taxBalance, exp.taxBalance)) {
-      errs.push(`moneyEquals failed for taxBalance.  line = ${l.taxBalance}, fifo = ${exp.taxBalance}`);
-    }
-    if (!integerEquals(l.weightBalance, exp.weightBalance)) {
-      errs.push(`integerEquals failed for weightBalance.  line = ${l.weightBalance}, fifo = ${exp.weightBalance}`);
-    }
+//    if (!moneyEquals(l.taxBalance, exp.taxBalance)) {
+//      errs.push(`moneyEquals failed for taxBalance.  line = ${l.taxBalance}, fifo = ${exp.taxBalance}`);
+//    }
+//    if (!integerEquals(l.weightBalance, exp.weightBalance)) {
+//      errs.push(`integerEquals failed for weightBalance.  line = ${l.weightBalance}, fifo = ${exp.weightBalance}`);
+//    }
     if (!moneyEquals(l.amount, exp.amount)) {
       errs.push(`moneyEquals failed for amount.  line = ${l.amount}, fifo = ${exp.amount}`);
     }
-    if (!moneyEquals(l.balance, exp.balance)) {
-      errs.push(`moneyEquals failed for balance.  line = ${l.balance}, fifo = ${exp.balance}`);
-    }
+//    if (!moneyEquals(l.balance, exp.balance)) {
+//      errs.push(`moneyEquals failed for balance.  line = ${l.balance}, fifo = ${exp.balance}`);
+//    }
     if (!integerEquals(l.qty, exp.qty)) {
       errs.push(`integerEquals failed for qty.  line = ${l.qty}, fifo = ${exp.qty}`);
     }
@@ -203,7 +262,10 @@ export function computeLivestockFifoChangesNeeded(acct: LivestockInventoryAccoun
   return incorrect;
 }
 
-function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): LivestockInventoryKeyTxParameters[] {
+function roundCents(n: number) { return Math.round(n*100) / 100.0; }
+function roundInt(n: number) { return Math.round(n); }
+
+function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): LivestockInventoryAccountTx[] {
   const rog = acct.settings.rog;
 
   let ivty: CurrentInventory = [];
@@ -224,10 +286,12 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
     return aveWeight * avePricePerLb * totalHead;
   };
 
-  let prevreturn: LivestockInventoryKeyTxParameters | null = null;
+  let prevreturn: LivestockInventoryAccountTx | null = null;
   return acct.lines.map((l: LivestockInventoryAccountTx, index: number) => {
+
     if (index === 0) { // start line
       const ret = {
+        ...l,
         index,
         taxAmount: 0, 
         weight: 0,
@@ -244,6 +308,8 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
       prevreturn = ret;
       return ret;
     }
+    // This should never happen:
+    if (!prevreturn) throw new MultiError({ msg: 'Had no previous returned value in FIFO' });
     const today = l.date;
     const yesterday = l.date.clone().subtract(1, 'day');
 
@@ -254,12 +320,11 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
     }
 
     // Track these so it's easy to compute the taxAmount, weight, etc. as just current - previous
-    const originalBalance = prevreturn!.balance;               // These have to come from previous thing we returned, because
-    const originalWeightBalance = prevreturn!.weightBalance;   // the account lines could be wrong, and we need to have everything match.
+    const originalBalance = prevreturn.balance;               // These have to come from previous thing we returned, because
+    const originalWeightBalance = prevreturn.weightBalance;   // the account lines could be wrong, and we need to have everything match.
     const originalTaxBalance = ivtyTaxValue();                 // Since only purchases and sales will change ivtyTodayWeight({today}),
     const originalQtyBalance = ivtyHead();                     // Then we can't use that are the "original" b/c daily gain lines would then always show zero amounts and weights.
     let weightremoved = 0; // use this to track how much the cows weighed that were removed for a dead line
-
     //-----------------------------------------------
     // Maintain running FIFO Inventory:
     //-----------------------------------------------
@@ -329,6 +394,7 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
         throw new LineError({line: l, acct, msg: 'DailyGain line caused a change in taxBalance.  This is not allowed.' });
       }
       const ret = {
+        ...l,
         index,
         weight,
         weightBalance,
@@ -338,8 +404,6 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
         balance,
         qty,
         qtyBalance,
-        lineno: l.lineno,
-        category: l.category,
       };
       //info('FIFO: dailygain line on lineno',l.lineno,', returning',ret,' for line = ',l);
       prevreturn = ret;
@@ -360,6 +424,7 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
       let deadpriceperlb = formulaPricePerLb({ weight: deadaveweight, formula: aveValuePerWeightFormulaPoints });
       let deadamount = -1 * deadpriceperlb * weightremoved;
       const ret = {
+        ...l,
         index,
         weight: -weightremoved, // computed above during FIFO subtraction
         weightBalance: originalWeightBalance - weightremoved, // cannot just use weightBalance b/c it incorporates all the dailygains for today too
@@ -369,8 +434,6 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
         balance: originalBalance + deadamount,
         qty,
         qtyBalance,
-        lineno: l.lineno,
-        category: l.category,
       };
       //info('FIFO: index',index,': dead line on lineno',l.lineno,', returning', ret, ' for line = ',l);
       prevreturn = ret;
@@ -390,17 +453,16 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
       // A purchase causes market value to deviate from fifo value.  Taxes keep fifo value, but the amount and weight
       // are whatever the cash account said they were.
       const ret = {
+        ...l,
         index,
-        amount: l.amount,                // These four things are
-        balance: l.balance,              // the things that should
-        weight: l.weight,                // match the line rather
-        weightBalance: l.weightBalance,  // than the inventory.
-        taxAmount,
-        taxBalance,
-        qty,
+        amount: l.amount,                                   // Cannot use the line.balance here
+        balance: l.amount + originalBalance,                // b/c the line balance is wrong.
+        weight: l.weight,                                   // So just add line-specified amount/weight
+        weightBalance: l.weight + originalWeightBalance,    // to prev balance we have computed thus far.
+        taxAmount,                                          // This keeps dailygain separate from purchase/sale
+        taxBalance,                                         // since the amount/weight is just the line-specified
+        qty,                                                // amount and weight.
         qtyBalance,
-        category: l.category,
-        lineno: l.lineno,
       };
       //info('FIFO: index',index,': purchase line on lineno',l.lineno,', returning', ret, 'for line = ',l);
       prevreturn = ret;
@@ -412,11 +474,12 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
       throw new LineError({ line: l, acct, msg: 'Line has negative head but zero or positive weight' });
     }
     const ret = {
+      ...l,
       index,
-      amount: l.amount,
-      balance: l.balance,
+      amount: l.amount,                                     // See above for purchase about why
+      balance: l.amount + originalBalance,                 // these balances are what they are.
       weight: l.weight,
-      weightBalance: l.weightBalance,
+      weightBalance: l.weight + originalWeightBalance,
       taxAmount,
       taxBalance,
       qty,

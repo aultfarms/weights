@@ -48,14 +48,15 @@ async function deauthorize() {
     });
 }
 ;
-async function request(method, path, params) {
+const request = async (method, path, params) => {
     await waitUntilLoaded();
     const win = window;
     return new Promise((resolve, reject) => win.Trello[method](path, params || {}, resolve, err => { info(`Trello.${method} ERROR: `, err); reject(err); }));
-}
+};
 const get = async (path, params) => request('get', path, params);
-const put = async (path, params) => request('get', path, params);
-const post = async (path, params) => request('get', path, params);
+const put = async (path, params) => request('put', path, params);
+const post = async (path, params) => request('post', path, params);
+const del = async (path, params) => request('delete', path, params);
 const _client = getUniversalClient({
     waitUntilLoaded,
     authorize,
@@ -63,7 +64,8 @@ const _client = getUniversalClient({
     request,
     get,
     put,
-    post
+    post,
+    delete: del,
 });
 export function getClient() { return _client; }
 //# sourceMappingURL=index.js.map

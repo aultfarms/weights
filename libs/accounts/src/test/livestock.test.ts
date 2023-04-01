@@ -15,9 +15,10 @@ export default async function run(lib: typeof accounts, ledger: accounts.ledger.
 
   info('It should have no missing cash tx lines in livestock inventory');
   const acct = ledger.originals.find(a => a.name === 'inventory-cattle') as LivestockInventoryAccount;
-info('livestock acct = ', deepclone(acct));
+  const today = acct.lines[acct.lines.length-1]!.date;
+
   const cashaccts = ledger.originals.filter(a => a.settings.accounttype === 'cash');
-  const missing1 = lib.inventory.findMissingTxInAccount({ ivtyacct: acct, cashaccts });
+  const missing1 = await lib.inventory.findMissingTxInAccount({ ivtyacct: acct, cashaccts, today });
   if (missing1.missingInCash.length > 0) {
     info('FAIL: missing = ', missing1);
     throw `FAIL: Livestock inventory account has ${missing1.missingInCash.length} entries that are missing in cash`;
@@ -28,7 +29,7 @@ info('livestock acct = ', deepclone(acct));
   }
   
   info('It should have no missing dailygain lines with "today" as date of last line of account');
-  const missing2 = lib.inventory.livestock.computeMissingDailyGains({ acct, today: acct.lines[acct.lines.length-1]!.date });
+  const missing2 = lib.inventory.livestock.computeMissingDailyGains({ acct, today });
   if (missing2.length !== 0) {
     info('FAIL: missing = ', missing2);
     throw `FAIL: Livestock inventory account has ${missing2.length} dailygain entries`;

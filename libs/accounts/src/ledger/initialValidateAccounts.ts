@@ -3,7 +3,7 @@
 
 import debug from 'debug';
 import chalk from 'chalk';
-import settingsParser from './settings-parser.js';
+import { parse as settingsParser } from './settings-parser.js';
 import numeral from 'numeral';
 import { AccountError, LineError } from '../err.js';
 import { stringify } from '../stringify.js';
@@ -19,7 +19,6 @@ import {
   assertAccountSettings,
   assertInventoryAccountSettings,
   assertLivestockInventoryAccountSettings,
-  AccountInfo
 } from './types.js';
 
 const deepclone = rfdc({ proto: true });
@@ -170,10 +169,12 @@ export default function(
     const acctinfo = {
       name: acct.name,
       filename: acct.filename,
+      header: acct.header,
+      id: acct.id,
     };
     const ret: any = {
-      name: acct.name,
-      filename: acct.filename,
+      ...acctinfo,
+      id: acct.id,
       lines: [],
       errors: [] as string[],
     };

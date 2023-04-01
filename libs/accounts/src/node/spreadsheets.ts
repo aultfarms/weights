@@ -54,9 +54,12 @@ export async function readAccountsFromDir(
       // Extract the initial account info from the sheet (name, lines, settings)
       // acct = { filename, name, lines, settings }
       if (!s.sheet) throw new Error('Somehow we have a sheet those sheet property is falsey');
+      const header = headerFromXlsxSheet({ sheet: s.sheet });
       accts.push({
         filename,
         name: s.name,
+        id: filename,
+        header,
         // If you don't put raw: false, it will parse the dates as ints instead of the date string
         lines: xlsx.utils.sheet_to_json(s.sheet, { raw: false } ),
       });
@@ -90,4 +93,17 @@ export function accountToFile(
   filename = filename || `${moment().format('YYYY-MM-DD-')}_Account_${(acct as Account).name || 'CompositeAccounts'}`;
   const path = `${dirpath}/${filename}`;
   xlsx.writeFile(accountToWorkbook(acct),path);
+}
+
+// NOTE: this function is repeated in google/src/sheets.ts because I don't have a great
+// place to put shared XLSX utilities at the moment.
+export function headerFromXlsxSheet({ sheet }: { sheet: xlsx.WorkSheet }): string[] {
+  const range = xlsx.utils.decode_range(sheet['!ref']!);
+  const r = range.s.r; // start of range, row number
+  const header: string[] = [];
+  for (let c=range.s.c; c < range.e.c; c++) {
+    const cellref = xlsx.utils.encode_cell({c,r});
+    header.push(sheet[cellref]?.w || '');
+  }
+  return header;
 }

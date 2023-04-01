@@ -6,7 +6,7 @@ import omit from 'omit';
 import { stringify } from '../stringify.js';
 import { moneyEquals, weHave, line2Str } from './util.js';
 import { MultiError, AccountError, LineError } from '../err.js';
-import type { ValidatedRawSheetAccount, OriginLine, AccountInfo } from './types.js';
+import type { ValidatedRawSheetAccount, OriginLine, LineAccountInfo } from './types.js';
 import { isSameDayOrAfter, isSameDayOrBefore } from '../util.js';
 //import { ledger2Str } from './util.js';
 
@@ -22,7 +22,7 @@ type AssetTx = {
   originLine: any,
   category: string,
   lineno: number,
-  acct: AccountInfo,
+  acct: LineAccountInfo,
   date: Moment,
   description: string,
   // "START" only happens if there isn't a purcase or initial tx
@@ -180,6 +180,7 @@ function assetLinesToAccts(accumulator: ValidatedRawSheetAccount[], acct: Valida
           origin: { 
             name: acct.name, 
             filename: acct.filename,
+            id: acct.id,
             lines: [],
           },
           settings: {
@@ -204,8 +205,12 @@ function assetLinesToAccts(accumulator: ValidatedRawSheetAccount[], acct: Valida
         existing.origin = {
           name: 'unknown',
           filename: 'unknown',
+          id: 'unknown',
           lines: [],
         };
+      }
+      if (!existing.origin.lines) {
+        existing.origin.lines = [];
       }
       // Push onto originLines for this account
       existing.origin.lines.push(originLine);
@@ -285,10 +290,10 @@ export default function(
         }
         if (acct.settings.accounttype === 'futures-asset') {
           // Grab all the known as-of dates (strings) and sort them ascending (oldest first)
-          const unique_asofdates = acct.origin.lines.map(l=>l.asOfDate).filter(unique).sort();
+          const unique_asofdates = acct.origin!.lines!.map(l=>l.asOfDate).filter(unique).sort();
           // Now put the origin lines in as of those dates:
           acct.origin.lines = unique_asofdates.map(d => {
-            const lines_w_date: OriginLine[] = acct.origin?.lines.filter(l => l.asOfDate === d) || [];
+            const lines_w_date: OriginLine[] = acct.origin!.lines!.filter(l => l.asOfDate === d) || [];
             const cumulative_line: OriginLine = omit([
               // Remove the stuff that doesn't make sense anymore:
               'qty', 'txtype', 'trademonth', 'commodity', 'strike', 
@@ -311,11 +316,11 @@ export default function(
         // Pass 3: Make the TX lines.
         // Turn each line in asset accounts into separate tx's for asOfDate, purchaseDate(asset), priorDate (asset) and saleDate (asset)
         // Each line has date, description, amount, category, note, acct, originLine, assetTxType
-        const accountinfo: AccountInfo = {
+        const accountinfo: LineAccountInfo = {
           ...omit('lines')(acct),
           origin: omit('lines')(acct.origin),
         };
-        const newlinesAndErrors = acct.origin.lines.reduce((acc,l) => {
+        const newlinesAndErrors = acct.origin!.lines!.reduce((acc,l) => {
           try {
             if (l.errors && l.errors.length > 0) {
               throw new LineError({line: l, msg: `Tried to make transactions from an error origin line` });

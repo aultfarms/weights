@@ -206,10 +206,15 @@ function testSplits(a: typeof ledger) {
 function testAssertAllAccounts(a: typeof ledger) {
   info('It should pass all assertions on all three sample accounts');
   const accts0 = [ deepclone(testacct), deepclone(testacctWithSettings), deepclone(testacctAsset) ];
+info('accts0 = ', accts0);
   let accts1 = a.initialValidateAccounts({ rawaccts: accts0, status: () => {} });
+info('accts1 = ', accts1);
   let accts2 = a.assetsToTxAccts({ accts: accts1 });
+info('accts2 = ', accts2);
   let accts3 = a.standardize({ accts: accts2, status: () => {}});
+info('accts3 = ', accts3);
   let accts4 = a.splits({ accts: accts3, status: () => {} });
+info('accts4 = ', accts4);
   a.assertAllAccounts({ accts: accts4, status: () => {} });
   info('passed assertion on all sample accounts');  
 

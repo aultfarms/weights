@@ -1,39 +1,20 @@
 import { MultiError } from '../err.js';
 import moment, { Moment } from 'moment';
 import { moneyEquals } from '../ledger/util.js';
-import type { FinalAccounts, Account, InventoryAccount, InventoryAccountSettings, InventoryAccountTx, LivestockInventoryAccountTx, AccountTx } from '../ledger/types.js';
+import type { FinalAccounts, Account, InventoryAccount, InventoryAccountSettings, InventoryAccountTx, LivestockInventoryAccountTx, AccountTx, LivestockInventoryAccount } from '../ledger/types.js';
 import { assertInventoryNote, assertLivestockInventoryNote } from '../ledger/types.js';
 import debug from 'debug';
 import rfdc from 'rfdc';
-import {isSameDay} from '../util.js';
+import {isBeforeDay, isSameDay, isSameDayOrAfter} from '../util.js';
+import type {RowObject} from '@aultfarms/google/dist/sheets';
+import {computeMissingLivestockTx} from './livestock.js';
+import { stringify } from '../ledger/settings-parser.js';
 
 export * as livestock from './livestock.js';
 
 const deepclone = rfdc({ proto: true }); // needed for moment
-const trace = debug('af/accounts#inventory:trace');
+//const trace = debug('af/accounts#inventory:trace');
 const info = debug('af/accounts#inventory:info');
-
-
-//--------------------------------------------------------------------------
-// DO NOT IGNORE THIS OVERALL PLAN:
-// 1. Do all TX's for categories exist where they should?  If not, ask user to add them (button).
-//   --> need to make sure a missing line that has the same type on the same day but a wrong amount is not reported as two
-//       missing lines, but rather as a single "wrong" line that should be fixed.  Can just let them fix it manually for now
-//       since this shouldn't really happen that much unless somebody changed a number somewhere.
-// 2. Do all dead TX's exist for livestock?  If not, ask user to add them (button).
-// 3. Do all dailygain TX's exist for livestock?  If not, ask user to add them (button).
-//
-// !!! All expected lines must exist before user can proceed !!!
-// 4. Show incorrect taxAmounts, ask user to fix (button).
-// 5. Show incorrect weights, ask user to fix (button). (dead, dailygain => weightBalance match FIFO)
-//
-//
-// FINAL VALIDATION (no more changes should be needed):
-// 4. All lines: taxBalance should match FIFO
-// 5: All lines (dead especially): weightBalance should match FIFO expectedWeight
-// 5: DailGain line: should have 0 for qty
-// 7: DailyGain line: ave. $/lb must match settings
-
 
 
 export type PresentInBothResult = {
@@ -45,17 +26,33 @@ export type MissingTxResult = {
   missingInIvty: AccountTx[],
   missingInCash: InventoryAccountTx[],
   presentInBothButOneIsWrong: PresentInBothResult[],
+  // For livestock accounts only:
+  missingLivestock?: LivestockInventoryAccountTx[],
+}
+export type LivestockMissingTxResult = MissingTxResult & {
+  acct: LivestockInventoryAccount,
+  missingDead: LivestockInventoryAccountTx[],
+  missingDailyGain: LivestockInventoryAccountTx[],
+  fifoChangesNeeded: LivestockInventoryAccountTx[],
 }
 
-export function findMissingTxByInOutCategories(accts: FinalAccounts) {
-  if (!accts.originals) throw new MultiError({ msg: 'Inventory needs accts.originals, but they are missing' });
-  const inventory_accounts: InventoryAccount[] = (accts.originals.filter(acct => acct.settings.accounttype === 'inventory') as InventoryAccount[]);
-  const cashaccts = accts.originals.filter(acct => acct.settings.accounttype === 'cash');
+export type AccountFix = {
+  filename: string,
+  name: string, // name of account and also the sheet name
+  rows: RowObject[],
+};
+  
+
+export async function findMissingTx({ finalaccts, today}: { finalaccts: FinalAccounts, today?: Moment } ) {
+  if (!finalaccts.originals) throw new MultiError({ msg: 'Inventory needs accts.originals, but they are missing' });
+  const inventory_accounts: InventoryAccount[] = (finalaccts.originals.filter(acct => acct.settings.accounttype === 'inventory') as InventoryAccount[]);
+  const cashaccts = finalaccts.originals.filter(acct => acct.settings.accounttype === 'cash');
 
   const ret: MissingTxResult[] = [];
   for (const ivtyacct of inventory_accounts) {
-    const results = findMissingTxInAccount({ ivtyacct, cashaccts });
+    const results = await findMissingTxInAccount({ ivtyacct, cashaccts, today });
     if (results.missingInIvty.length > 0 || results.missingInCash.length > 0 || results.presentInBothButOneIsWrong.length > 0) {
+      info('findMissingTx: Found missing tx on ivtyacct', ivtyacct.name, ':',results);
       ret.push({
         ...results,
         acct: ivtyacct,
@@ -65,7 +62,8 @@ export function findMissingTxByInOutCategories(accts: FinalAccounts) {
   return ret;
 }
 
-export function findMissingTxInAccount({ ivtyacct, cashaccts }: { ivtyacct: InventoryAccount, cashaccts: Account[] }): MissingTxResult {
+// This is async b/c we have to wait on Trello for dead records
+export async function findMissingTxInAccount({ ivtyacct, cashaccts, today }: { ivtyacct: InventoryAccount, cashaccts: Account[], today?: Moment }): Promise<MissingTxResult> {
   const settings = ivtyacct.settings;
   const startMoment = moment(`${settings.startYear}-01-01T00:00:00`, 'YYYY-MM-DDTHH:mm:ss');
   const filterToStartYear = (tx: AccountTx) => tx.date.isSameOrAfter(startMoment);
@@ -89,17 +87,85 @@ export function findMissingTxInAccount({ ivtyacct, cashaccts }: { ivtyacct: Inve
   }
 
   // Compare, should be 1-to-1 matching with every line
+  const { missingInIvty, missingInCash, presentInBothButOneIsWrong } =  compare1To1({ ivty, cash, settings })
+
+  // For missingInCash, we can't suggest any lineno's b/c we don't really know
+  // what cash account it should go into.
+
+  // Figure up lineno's for any missing inventory lines:
+  for (const m of missingInIvty) {
+    // Always put at the end of existing lines, which means find the first tx with 
+    // a date that that is beyond the date on the missing tx, and it goes on the line
+    // where that future tx currently lives (it's lineno).
+    const acctline = ivtyacct.lines.find(l => isSameDayOrAfter(l.date, m.date));
+    let lineno = acctline?.lineno;
+    if (typeof lineno !== 'number') { // put on the end
+      lineno = ivtyacct.lines[ivtyacct.lines.length - 1]!.lineno + 1;
+    }
+    m.lineno = lineno;
+  }
+
+
+  // Add in any missing dead or dailygain lines if livestock account. 
+  if (ivtyacct.settings.inventorytype === 'livestock') {
+    const missingLivestock = await computeMissingLivestockTx({ acct: (ivtyacct as LivestockInventoryAccount), today });
+    if (missingLivestock.length > 0) {
+      // Merge these into the main list, always putting livestock transactions after
+      // any other missing transactions (sales/purchases).  Livestock transactions
+      // already have lineno's on them.  Therefore, find first entry with a lineno
+      // greater than the one on the livestock entry, and put livestock entry there.
+      for (const ml of missingLivestock) {
+        let index = missingInIvty.findIndex(l => l.lineno > ml.lineno);
+        if (index < 0) { // put on the end
+          index = missingInIvty.length;
+        }
+        missingInIvty.splice(index, 0, ml);
+      }
+    }
+  }
+
+  // Now sort all the lines to be in the proper order.  First sort is by lineno, then date, then dailygain line is last for date
+  missingInIvty.sort((a,b) => {
+    if (a.lineno !== b.lineno) return a.lineno - b.lineno;
+    if (!isSameDay(a.date,b.date)) return a.date.unix() - b.date.unix();
+    if (a.category === 'inventory-cattle-dailygain' && b.category !== 'inventory-cattle-dailygain') return 1; // "a" should go after "b", so positive number
+    if (b.category === 'inventory-cattle-dailygain'&& a.category !== 'inventory-cattle-dailygain') return -1; // "b" should go after "a", so negative number
+    // Otherwise, order is arbitrary, so just consider the lines equal
+    return 0;
+  });
+
+
   return {
     acct: ivtyacct,
-    ...compare1To1({ ivty, cash, settings })
+    missingInCash,
+    missingInIvty,
+    presentInBothButOneIsWrong,
   };
+
 }
 
 function compare1To1({ ivty, cash, settings }: { ivty: InventoryAccountTx[], cash: AccountTx[], settings: InventoryAccountSettings }) {
   // Find any ivty in/out lines not in cash:
-  const missingInCash = ivty.filter(ivtytx => !cash.find(cashtx => transactionsAreEquivalent({ ivtytx, cashtx, settings })));
-  // Find any cash lines not in ivty:
-  let missingInIvty = cash.filter(cashtx => !ivty.find(ivtytx => transactionsAreEquivalent({ ivtytx, cashtx, settings })));
+  let missingInCash: InventoryAccountTx[] = [];
+  for (const ivtytx of ivty) {
+    const match = cash.find(cashtx => transactionsAreEquivalent({
+      ivtytx, 
+      expected: createInventoryTxFromCash({ cashtx, settings }),
+      settings,
+    }));
+    if (!match) missingInCash.push(ivtytx)
+  }
+  let missingInIvty: InventoryAccountTx[] = [];
+  for (const cashtx of cash) {
+    const expected = createInventoryTxFromCash({ cashtx, settings });
+    const match = ivty.find(ivtytx => transactionsAreEquivalent({
+      ivtytx,
+      expected,
+      settings,
+    }));
+    if (!match && expected) missingInIvty.push(expected);
+  }
+
   // Now find any that are the same category and day, but a wrong amount.
   let presentInBothButOneIsWrong: PresentInBothResult[] = [];
   const txIndexesToRemoveFromMissingInIvty: number[] = [];
@@ -117,7 +183,8 @@ function compare1To1({ ivty, cash, settings }: { ivty: InventoryAccountTx[], cas
   }
   // Now just remove all the ivtytx transactions as needed
   // You can't just use !"find" below b/c it returns the value, and the value is 0 if index 0 is to be removed
-  missingInIvty = missingInIvty.filter((val, index) => txIndexesToRemoveFromMissingInIvty.findIndex(i => i === index) < 0);
+  // Note the "_" on the front of _val tells TS this is intended to be ignored
+  missingInIvty = missingInIvty.filter((_val, index) => txIndexesToRemoveFromMissingInIvty.findIndex(i => i === index) < 0);
 
   return { missingInIvty, missingInCash, presentInBothButOneIsWrong };
 }
@@ -139,13 +206,12 @@ function createInventoryTxFromCash({ cashtx, settings } : { cashtx: AccountTx, s
   let qty: number = 0;
   let weight: number = 0;
   try {
+    assertInventoryNote(settings.qtyKey, cashtx.note);
+    qty = cashtx.note[settings.qtyKey]!;
     if (settings.inventorytype === 'livestock') {
       assertLivestockInventoryNote(cashtx.note);
-      qty = cashtx.note.head;
+      if (!settings.qtyKey) qty = cashtx.note.head; // in case they forgot the qtyKey on livestock acct
       weight = cashtx.note.weight;
-    } else {
-      assertInventoryNote(settings.qtyKey, cashtx.note);
-      qty = cashtx.note[settings.qtyKey]!;
     }
   } catch(e: any) {
     return null; // this was not an inventory-related cash transaction
@@ -158,17 +224,27 @@ function createInventoryTxFromCash({ cashtx, settings } : { cashtx: AccountTx, s
     qty = -qty;
     weight = -weight;
   }
-
   const ivtytx: InventoryAccountTx = {
     ...deepclone(cashtx),
     amount: -cashtx.amount, // amount on inventory always offsets amount from cash TX regardless of direction
-    qty, // if this is 
+    qty,
     qtyBalance: 0, // these would have to be filled in later
     aveValuePerQty: 0,
   };
   if (settings.inventorytype !== 'livestock') {
     return ivtytx;
   }
+  // Fixup the note to remove cash-ey things:
+  if (ivtytx.note && typeof ivtytx.note === 'object') {
+    ivtytx.note = deepclone(ivtytx.note);
+    if ('qty' in ivtytx.note) delete ivtytx.note.qty;
+    if ('bushels' in ivtytx.note) delete ivtytx.note.bushels;
+    if ('head' in ivtytx.note) delete ivtytx.note.head;
+    if ('weight' in ivtytx.note) delete ivtytx.note.weight;
+    if ('loads' in ivtytx.note) delete ivtytx.note.loads;
+    if ('latecash' in ivtytx.note) delete ivtytx.note.latecash;
+  }
+
   const livestockivtytx: LivestockInventoryAccountTx = {
     ...ivtytx,
     weight,
@@ -181,25 +257,24 @@ function createInventoryTxFromCash({ cashtx, settings } : { cashtx: AccountTx, s
   return livestockivtytx;
 }
 
-function transactionsAreEquivalent({ ivtytx, cashtx, settings }: { ivtytx: InventoryAccountTx, cashtx: AccountTx, settings: InventoryAccountSettings }) {
-  const expectedIvty = createInventoryTxFromCash({ cashtx, settings });
-  if (!expectedIvty) {
+function transactionsAreEquivalent({ ivtytx, expected, settings }: { ivtytx: InventoryAccountTx, expected: InventoryAccountTx | null, settings: InventoryAccountSettings }) {
+  if (!expected) {
     return false; // cash tx didn't have the stuff in the note for inventory
   }
-  if (ivtytx.category !== expectedIvty.category) {
+  if (ivtytx.category !== expected.category) {
     return false;
   }
-  if (ivtytx.date.format('YYYY-MM-DD') !== expectedIvty.date.format('YYYY-MM-DD')) {
+  if (ivtytx.date.format('YYYY-MM-DD') !== expected.date.format('YYYY-MM-DD')) {
     return false;
   }
-  if (!moneyEquals(ivtytx.amount, expectedIvty.amount)) {
+  if (!moneyEquals(ivtytx.amount, expected.amount)) {
     return false;
   }
-  if (expectedIvty.qty !== ivtytx.qty) {
+  if (expected.qty !== ivtytx.qty) {
     return false;
   }
   if (settings.inventorytype === 'livestock') {
-    if (expectedIvty.weight !== ivtytx.weight) return false;
+    if (expected.weight !== ivtytx.weight) return false;
   }
   // if category, date, amount, qty, and optionally weight all match cash line, then these are the same.
   return true;

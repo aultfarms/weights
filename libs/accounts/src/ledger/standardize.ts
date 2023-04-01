@@ -2,13 +2,13 @@ import moment, { Moment } from 'moment';
 import debug from 'debug';
 import numeral from 'numeral';
 import omit from 'omit';
-import settingsParser from './settings-parser.js';
+import { parse as settingsParser } from './settings-parser.js';
 import * as util from './util.js';
 import { LineError } from '../err.js';
 import type { 
   ValidatedRawSheetAccount, 
   ValidatedRawTx,
-  AccountInfo,
+  LineAccountInfo,
   StatusFunction,
 } from './types.js';
 const { isMoment } = moment;
@@ -55,12 +55,13 @@ export default function(
 
     // If we get here, then it wasn't one of the "easy" accounts, now process
     // to standardize transactions
-    const acctinfo: AccountInfo = {
+    const acctinfo: LineAccountInfo = {
       name: acct.name,
       filename: acct.filename,
+      id: acct.id,
       settings: acct.settings,
-      origin: acct.origin ? omit('lines')(acct.origin) : undefined,
     };
+    if (acct.origin) acctinfo.origin = omit('lines')(acct.origin);
 
 
     acct.lines = util.mapSkipErrors(acct.lines, line => {

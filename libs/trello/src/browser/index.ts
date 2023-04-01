@@ -1,6 +1,6 @@
 export * from '../types.js';
 import debug from 'debug';
-import type { TrelloAuthorizeParams, TrelloRESTFunction, TrelloRequestParams, TrelloRequestResponse, TrelloSuccessCallback, TrelloRejectCallback } from '../types.js';
+import type { TrelloAuthorizeParams, TrelloRESTFunction, TrelloRequestParams, TrelloRequestFunction, TrelloSuccessCallback, TrelloRejectCallback } from '../types.js';
 import { getUniversalClient } from '../client.js';
 import $ from 'jquery' // for trello
 const info = debug('af/trello#browser:info');
@@ -21,6 +21,7 @@ type WindowTrello = typeof window & {
     get: BrowserTrelloRESTFunction,
     put: BrowserTrelloRESTFunction,
     post: BrowserTrelloRESTFunction,
+    delete: BrowserTrelloRESTFunction,
   }
 }
 
@@ -70,7 +71,7 @@ async function deauthorize(): Promise<void> {
 
 
 
-async function request(method: 'get' | 'put' | 'post', path: string, params: TrelloRequestParams): Promise<TrelloRequestResponse> {
+const request: TrelloRequestFunction = async (method, path, params) => {
   await waitUntilLoaded();
   const win = (window as WindowTrello);
   return new Promise((resolve,reject) => 
@@ -81,11 +82,12 @@ async function request(method: 'get' | 'put' | 'post', path: string, params: Tre
       err => { info(`Trello.${method} ERROR: `, err); reject(err); } 
     )
   );
-}
+};
 
 const get: TrelloRESTFunction = async (path,params) => request('get', path, params);
-const put: TrelloRESTFunction = async (path,params) => request('get', path, params);
-const post: TrelloRESTFunction = async (path,params) => request('get', path, params);
+const put: TrelloRESTFunction = async (path,params) => request('put', path, params);
+const post: TrelloRESTFunction = async (path,params) => request('post', path, params);
+const del: TrelloRESTFunction = async (path,params) => request('delete', path, params);
 
 const _client = getUniversalClient({
   waitUntilLoaded,
@@ -94,6 +96,7 @@ const _client = getUniversalClient({
   request,
   get,
   put,
-  post
+  post,
+  delete: del,
 });
 export function getClient() { return _client; }
