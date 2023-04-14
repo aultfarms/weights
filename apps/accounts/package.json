@@ -40,7 +40,7 @@
     "gh-pages": "^5.0.0"
   },
   "scripts": {
-    "build:libs": "yarn workspace @aultfarms/accounts build && yarn workspace @aultfarms/google build",
+    "build:libs": "yarn workspace @aultfarms/trello build && yarn workspace @aultfarms/google build && yarn workspace @aultfarms/accounts build",
     "predeploy": "yarn run build:libs && yarn run build",
     "deploy": "gh-pages -d build",
     "oldstart": "react-scripts start",
