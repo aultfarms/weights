@@ -1,4 +1,4 @@
-import xlsx, { WorkBook } from 'xlsx-js-style'; //'sheetjs-style';
+import xlsx, { type WorkBook } from 'xlsx-js-style'; //'sheetjs-style';
 import type { Annual1099 } from './index.js';
 
 // A handy function to wrap:

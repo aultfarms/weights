@@ -1,10 +1,11 @@
 import { MultiError, LineError, AccountError } from '../err.js';
-import { assertPriceWeightPoints, PriceWeightPoint, LivestockInventoryAccount, LivestockInventoryAccountTx } from '../ledger/types.js';
-import moment, { Moment } from 'moment';
+import { assertPriceWeightPoints, type PriceWeightPoint, type LivestockInventoryAccount, type LivestockInventoryAccountTx } from '../ledger/types.js';
+import moment, { type Moment } from 'moment';
 import { moneyEquals, integerEquals } from '../ledger/util.js';
 import debug from 'debug';
-import { compareDays, isAfterDay, isSameDay, isSameDayOrAfter, isSameDayOrBefore} from '../util.js';
+import { compareDays, isAfterDay, isBeforeDay, isSameDay, isSameDayOrAfter, isSameDayOrBefore} from '../util.js';
 import * as trello from '@aultfarms/trello';
+import numeral from 'numeral';
 //import rfdc from 'rfdc';
 
 //const deepclone = rfdc({ proto: true });
@@ -106,7 +107,16 @@ export function computeMissingDailyGains({ acct, today }: { acct: LivestockInven
     throw new AccountError({ acct, msg: 'Account is empty, cannot determine start date for daily gains' });
   }
   if (!today) today = moment();
-  const startDay = acct.lines[0]!.date;
+  let startDay = acct.lines[0]!.date;
+  /* This "filter to things after the startYear" scheme
+   * didn't work when I put in all the old non-dailygain-based stuff.  Adjusting it to put
+   * in all the dailygains and we'll see how it works.
+  if (acct.settings.startYear) {
+    const startYear = moment(`${acct.settings.startYear}-01-01`, 'YYYY-MM-DD');
+    if (isBeforeDay(startDay, startYear)) {
+      startDay = startYear;
+    }
+  }*/
   for (let date = startDay.clone(); isSameDayOrBefore(date, today); date.add(1, 'day')) {
     if (acct.lines.find(l => isSameDay(l.date, date) && l.category === 'inventory-cattle-dailygain')) {
       continue;// this one is already there
@@ -134,7 +144,7 @@ function createStarterInventoryTxFromDailyGain({ acct, date }: { acct: Livestock
     aveValuePerQty: 0,
     aveValuePerWeight: 0,
     aveWeightPerQty: 0,
-    note: '', // not sure why this was coming out zero's in test sheet
+    note: ' ', // not sure why this was coming out zero's in test sheet
   };
 }
 
@@ -174,8 +184,17 @@ export async function computeDailyDeadsFromTrello({ acct }: { acct: LivestockInv
 // for missing entries.  This allows for "correcting" entries in the account.
 export function computeMissingDeadTx({ acct, deads }: { acct: LivestockInventoryAccount, deads: DeadRecord[] }): DeadStarterTx[] {
   const missing: DeadStarterTx[] = [];
+  let start = acct.lines[0]!.date;
+  if (acct.settings.startYear) {
+    const startYear = moment(`${acct.settings.startYear}-01-01`);
+    if (isBeforeDay(start, startYear)) {
+      start = startYear; // if start year is after the first line's date, use that instead
+    }
+  }
   for (const dead of deads) {
-    const deadtx = createStarterInventoryTxFromDead({ acct, dead }); // this inverts the qty so the signs should match
+    if (isBeforeDay(dead.date, start)) continue; // skip anything before the start date
+    let deadtx = createStarterInventoryTxFromDead({ acct, dead }); // this inverts the qty so the signs should match
+    // Filter to the startYear
     const found = acct.lines.find(l => {
       return isSameDay(l.date, deadtx.date) && l.qty === deadtx.qty
     });
@@ -225,7 +244,16 @@ export function computeLivestockFifoChangesNeeded(acct: LivestockInventoryAccoun
     throw new MultiError({ msg: `FAIL: computed different number of account lines (${expected.length}) than were present in the account (${acct.lines.length})` });
   }
   const incorrect: LivestockInventoryAccountTx[] = [];
+  let start = acct.lines[0]!.date;
+  /*
+  if (acct.settings.startYear) {
+    const startYear = moment(`${acct.settings.startYear}-01-01`, 'YYYY-MM-DD');
+    if (isBeforeDay(start, startYear)) {
+      start = startYear;
+    }
+  }*/
   for (const [index, l] of acct.lines.entries()) {
+    if (isBeforeDay(l.date, start)) continue; // ignore lines prior to start year
     const exp = expected[index]!;
     const errs = [];
     if (!moneyEquals(l.taxAmount, exp.taxAmount)) {
@@ -256,14 +284,23 @@ export function computeLivestockFifoChangesNeeded(acct: LivestockInventoryAccoun
     if (errs.length > 0) {
       info('INCORRECT: Comparing acct line',l,' to fifo computed line', exp);
       info('errors = ', errs);
-      incorrect.push(exp);
+      incorrect.push(roundAmounts(exp));
     }
   }
   return incorrect;
 }
 
-function roundCents(n: number) { return Math.round(n*100) / 100.0; }
-function roundInt(n: number) { return Math.round(n); }
+function roundAmounts(exp: LivestockInventoryAccountTx) {
+  return {
+    ...exp,
+    amount: +(numeral(exp.amount).format('0.00')),
+    taxAmount: +(numeral(exp.taxAmount).format('0.00')),
+    weight: +(numeral(exp.weight).format('0.00')),
+  };
+}
+
+//function roundCents(n: number) { return Math.round(n*100) / 100.0; }
+//function roundInt(n: number) { return Math.round(n); }
 
 function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): LivestockInventoryAccountTx[] {
   const rog = acct.settings.rog;
@@ -290,17 +327,25 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
   return acct.lines.map((l: LivestockInventoryAccountTx, index: number) => {
 
     if (index === 0) { // start line
+      // Pre-load any starting balances as an initial synthetic group in inventory from which to remove later
+      if (l.qtyBalance) {
+        info('Pushing initial FIFO balances as starting group');
+        ivty.push({
+          date: l.date,
+          qty: l.qtyBalance,
+          weight: l.weightBalance,
+          amount: l.taxBalance,
+          incomingAmountPerHead: l.taxBalance / l.qtyBalance, // keep value of first group at Fifo average
+          incomingWeightPerHead: l.weightBalance / l.qtyBalance,
+        });
+      }
       const ret = {
         ...l,
         index,
         taxAmount: 0, 
         weight: 0,
-        taxBalance: 0,    // These balances are formulas in spreadsheet, so checking them is probably superfluous
-        weightBalance: 0, // but I'll feel better if they get checked anyway.
         amount: 0,
-        balance: 0,
         qty: 0,
-        qtyBalance: 0,
         lineno: l.lineno,
         category: l.category,
       };
@@ -354,6 +399,9 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
       let curqty = Math.abs(l.qty); // Don't forget l.qty is negative!
       while(curqty > 0) {
         const top = ivty[0]!;
+        if (!top) {
+          throw new MultiError({ msg: `ERROR: tried to remove ${l.qty} from inventory, but there are no groups in inventory to remove from` });
+        }
         if (top.qty <= curqty) { // this group does not have enough to handle it, remove this group and move on to the next one
           ivty = ivty.slice(1); // no need to sort, rest are still in proper order
           curqty -= top.qty; // still have reference to top as the thing that got taken out of inventory
@@ -380,7 +428,7 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
     const taxAmount = taxBalance - originalTaxBalance;
     const weight = weightBalance - originalWeightBalance;
     const qty = qtyBalance - originalQtyBalance;
-
+    //info(today.format('YYYY-MM-DD'), ': weightBalance after FIFO:',weightBalance,',  weight:', weight)
     //-------------------------------------------------------------------------
     // Running inventory has now been updated as if this tx line has happened.
     //-------------------------------------------------------------------------
@@ -471,7 +519,7 @@ function computeAmountsTaxAmountsAndWeights(acct: LivestockInventoryAccount): Li
 
     // Sale:
     if (l.weight >= 0) {
-      throw new LineError({ line: l, acct, msg: 'Line has negative head but zero or positive weight' });
+      throw new LineError({ line: l, acct, msg: 'Sale line has negative head but zero or positive weight' });
     }
     const ret = {
       ...l,

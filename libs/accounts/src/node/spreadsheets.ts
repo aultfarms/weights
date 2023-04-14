@@ -5,9 +5,9 @@ import fs from 'fs';
 import xlsx from 'xlsx-js-style'; //'sheetjs-style';
 import chalk from 'chalk';
 import debug from 'debug';
-import { profitLossToWorkbook, ProfitLoss } from '../profit-loss/index.js';
-import { annualBalanceSheetToWorkbook, AnnualBalanceSheet } from '../balance/index.js';
-import { accountToWorkbook, Account, CompositeAccount } from '../ledger/index.js';
+import { profitLossToWorkbook, type ProfitLoss } from '../profit-loss/index.js';
+import { annualBalanceSheetToWorkbook, type AnnualBalanceSheet } from '../balance/index.js';
+import { accountToWorkbook, type Account, type CompositeAccount } from '../ledger/index.js';
 import { MultiError } from '../err.js';
 import moment from 'moment';
 

@@ -65,3 +65,7 @@ export function ledger2Str(acct: ValidatedRawSheetAccount | Account) {
   // remove the outer {} and indentation for main account info
   ).replace(/^{/g,'').replace(/}$/g,'').replace(/^  /g,'') + '\n' + acct.lines.map(line2Str).join('\n');
 }
+
+export async function breakExecution() {
+  return new Promise(resolve => setTimeout(resolve, 0));
+}

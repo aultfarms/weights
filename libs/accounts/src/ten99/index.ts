@@ -5,14 +5,14 @@ import type { FinalAccounts, AccountTx } from '../ledger/types.js';
 import { MultiError } from '../err.js';
 import { stringify } from '../stringify.js';
 import rfdc from 'rfdc';
-import debug from 'debug';
-import { Ten99Settings, Ten99SettingsCategory, Ten99SettingsPerson, importSettings } from './settings.js';
+//import debug from 'debug';
+import { type Ten99Settings, type Ten99SettingsCategory, type Ten99SettingsPerson, importSettings } from './settings.js';
 
-const trace = debug('af/accounts#ten99:trace');
+//const trace = debug('af/accounts#ten99:trace');
 
 export { ten99ToWorkbook } from './exporter.js';
 
-export { Ten99Settings, Ten99SettingsPerson, Ten99SettingsCategory, importSettings };
+export { type Ten99Settings, type Ten99SettingsPerson, type Ten99SettingsCategory, importSettings };
 
 export { moneyEquals }; // mainly for tests
 

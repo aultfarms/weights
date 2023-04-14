@@ -1,4 +1,4 @@
-import xlsx, { WorkBook } from 'xlsx-js-style'; //'sheetjs-style';
+import xlsx, { type WorkBook } from 'xlsx-js-style'; //'sheetjs-style';
 import type { BalanceSheet, BalanceTree, AnnualBalanceSheet } from './index.js';
 import { MultiError } from '../err.js';
 import debug from 'debug';

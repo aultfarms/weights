@@ -8,7 +8,7 @@ import type {
   StatusFunction,
 } from './types.js';
 
-const { green, yellow } = chalk;
+const { green } = chalk;
 const info = debug('af/accounts#splits:info');
 //const trace = debug('af/accounts#splits:trace');
 
@@ -169,7 +169,7 @@ export default function(
 
     if (splitstartcount && status) {
       status(green('------> splits:')+
-            yellow(`          replaced ${splitstartcount}\tsplit base lines with ${splitpartcount}\tsplit lines in acct ${acct.name}`)
+             `          replaced ${splitstartcount}\tsplit base lines with ${splitpartcount}\tsplit lines in acct ${acct.name}`
       );
     }
 

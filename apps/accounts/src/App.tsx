@@ -8,21 +8,17 @@ import { Ledger } from './Ledger';
 import { BalanceSheets } from './BalanceSheets';
 import { ProfitLoss } from './ProfitLoss';
 import { Ten99 } from './Ten99';
+import { Inventory } from './Inventory';
+import { Config } from './Config';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
+import Modal from '@mui/material/Modal';
 import pkg from '../package.json';
 
 const warn = debug('accounts#App:info');
 
-// STOPPED HERE XXX
-// MVP is done.  Now add helpful checks:
-// - check for transfer as zero
-// - check for loan-principal as zero
-// - check for dates that are > 4 months different than their neighbors (i.e. mistyped year on date)
-// - add lookup feature for category to show all lines that hit that category (year?)
-
 export const App = observer(function App() {
   const ctx = React.useContext(context);
-  const { state } = ctx;
+  const { state, actions } = ctx;
 
   React.useEffect(() => {
     // NOTE: DO NOT CONSOLE.LOG IN THIS FUNCTION.
@@ -39,8 +35,20 @@ export const App = observer(function App() {
       case 'balance': return <BalanceSheets />;
       case 'profit': return <ProfitLoss />;
       case 'ten99': return <Ten99 />;
+      case 'inventory': return <Inventory />;
     }
   }
+
+  const displayModal = () => {
+    if (state.modal === 'none') return <React.Fragment/>;
+    if (state.modal === 'config') {
+      return (
+        <Modal open={state.modal === 'config'} onClose={() => actions.modal('none')}>
+          <Config />
+        </Modal>
+      );
+    }
+  };
 
   return (
     <HelmetProvider>
@@ -50,6 +58,7 @@ export const App = observer(function App() {
       <div>
         <NavBar />
         {displayPage()}
+        {displayModal()}
       </div>
     </HelmetProvider>
   );

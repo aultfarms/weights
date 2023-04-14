@@ -1,4 +1,4 @@
-import moment, { Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 import debug from 'debug';
 import numeral from 'numeral';
 import omit from 'omit';

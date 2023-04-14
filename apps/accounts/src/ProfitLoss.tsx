@@ -104,7 +104,18 @@ export const ProfitLoss = observer(function ProfitLoss() {
   };
 
   const pls = actions.profitlosses();
-  if (!pls) return <div>No profit/loss statements available yet</div>;
+  if (!pls) return (
+    <div style={{ margin: '10px' }}>
+      <div>No profit/loss statements available yet</div>
+      <Button 
+        disabled={!state.stepResult.rev || !(actions.ledger()?.final)} 
+        variant="contained" 
+        onClick={() => actions.computeProfitLoss()}
+      >
+        Create Profit/Loss Statements
+      </Button>
+    </div>
+  );
 
   let years = Object.keys(pls).sort().reverse();
   let showyears = years;

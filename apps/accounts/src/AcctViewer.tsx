@@ -2,7 +2,7 @@ import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 import debug from 'debug';
 import { ledger, balance, google } from '@aultfarms/accounts';
-import moment, { isMoment, Moment } from 'moment';
+import moment, { Moment } from 'moment';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -233,7 +233,7 @@ export const AcctViewer = observer(function AcctViewer(
                 <TableCell align="right">{line.lineno}</TableCell>
                 { a.name === 'All' ? <TableCell>{line.acct.name}</TableCell> : <React.Fragment/> }
                 <TableCell component="th" style={{ minWidth: '75px' }} scope="row">
-                  {(line.date && isMoment(line.date)) 
+                  {(line.date && moment.isMoment(line.date)) 
                     ? line.date.format('YYYY-MM-DD')
                     : line.date
                   }

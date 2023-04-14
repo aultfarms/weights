@@ -10,16 +10,16 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/bluebird": "^3",
-    "@types/debug": "^4",
+    "@types/bluebird": "^3.5.38",
+    "@types/debug": "^4.1.7",
     "@types/lodash": "^4",
-    "@yarnpkg/sdks": "^2.6.0-rc.4"
+    "@yarnpkg/sdks": "^3.0.0-rc.42"
   },
   "dependencies": {
     "bluebird": "^3.7.2",
-    "debug": "^4.3.3",
+    "debug": "^4.3.4",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
+    "moment": "^2.29.4",
     "node-trello": "^1.3.0"
   }
 }

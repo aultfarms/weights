@@ -4,9 +4,9 @@ import debug from 'debug';
 import chalk from 'chalk';
 
 import {
-  ValidatedRawSheetAccount,
-  Account,
-  StatusFunction,
+  type ValidatedRawSheetAccount,
+  type Account,
+  type StatusFunction,
   assertAccount,
   assertInventoryAccount,
   assertLivestockInventoryAccount,

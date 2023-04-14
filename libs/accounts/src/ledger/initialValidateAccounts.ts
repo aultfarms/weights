@@ -7,15 +7,14 @@ import { parse as settingsParser } from './settings-parser.js';
 import numeral from 'numeral';
 import { AccountError, LineError } from '../err.js';
 import { stringify } from '../stringify.js';
-import moment, { Moment } from 'moment';
 import rfdc from 'rfdc';
 import { 
-  RawSheetAccount,
-  StatusFunction,
-  ValidatedRawTx,
+  type RawSheetAccount,
+  type StatusFunction,
+  type ValidatedRawTx,
   assertValidatedRawTx,
-  ValidatedRawSheetAccount,
-  AccountSettings,
+  type ValidatedRawSheetAccount,
+  type AccountSettings,
   assertAccountSettings,
   assertInventoryAccountSettings,
   assertLivestockInventoryAccountSettings,
@@ -113,12 +112,20 @@ function getAccountSettings(
   }
   // Default to cash account type
   if (!settings.accounttype) settings.accounttype = 'cash';
+
+  // If this account is supposed to be ignored, the settings may very well be invalid.
+  if ('ignoreAccount' in settings && settings.ignoreAccount) {
+    return settings;
+  }
   try { assertAccountSettings(settings) }
   catch(e: any) {
+    let msg = stringify(e);
+    if (Array.isArray(e.info?.msgs)) msg = e.info.msgs.join('\n');
+
     status(
       red('FAILURE: acct ')+magenta(acct.name)+red(' has invalid Settings: ')+
       stringify(settings)+
-      '.  Errors were: '+stringify(e)
+      '.  Errors were: '+msg
     );
     return null;
   }
@@ -189,6 +196,10 @@ export default function(
     if (!ret.settings) {
       ret.settings = { accounttype: 'invalid' };
       ret.errors.push('Account settings from '+acct.name+' were invalid.');
+      return ret;
+    }
+    if ('ignoreAccount' in ret.settings && ret.settings.ignoreAccount) {
+      info('Ignoring account '+magenta(acct.name)+' because ignoreAccount setting is true');
       return ret;
     }
 
@@ -305,7 +316,7 @@ export default function(
       ret.errors.push(...e.msgs());
     }
     return ret;
-  });
+  }).filter(acct => !acct.settings?.ignoreAccount); // can mark any accounts to be ignored
 }
 
 function assertSettings(acct: { name: string, settings: AccountSettings }, required: string[]) {

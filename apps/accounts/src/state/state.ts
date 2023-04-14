@@ -1,5 +1,5 @@
 import { observable, autorun } from 'mobx';
-import type { ledger, ten99} from '@aultfarms/accounts';
+import type { ledger, ten99, inventory } from '@aultfarms/accounts';
 import { stepResult, selectedAccountAcct, selectedAccountVAcct } from './actions';
 import debug from 'debug';
 import moment from 'moment';
@@ -42,7 +42,8 @@ export type ActivityMessage = {
 export type BigData = { rev: number };
 
 export type State = {
-  page: 'activity' | 'ledger' | 'balance' | 'profit' | 'ten99',
+  page: 'activity' | 'ledger' | 'balance' | 'profit' | 'ten99' | 'inventory',
+  modal: 'none' | 'config',
   config: Config,
   activityLog: ActivityMessage[],
   errors: string[],
@@ -79,12 +80,19 @@ export type State = {
     settings: ten99.Ten99Settings | null,
     msg: string,
   },
+  inventory: {
+    today: string, // YYYY-MM-DD
+    missing: inventory.MissingTxResult[] | null,
+    changes: ledger.LivestockInventoryAccountTx[] | null,
+    state: 'start' | 'running' | 'done' | 'error',
+    errors: string[] | null,
+  },
 };
 
 
 
 // Figure out the config: load from localStorage, but have default
-const defaultConfig: Config = {
+export const defaultConfig: Config = {
   accountsLocation: {
     place: 'google',
     path: '/Ault Farms Shared/LiveData/Accounts'
@@ -118,6 +126,7 @@ localStorage.setItem('accounts-config', JSON.stringify(config));
 
 export const state = observable<State>({
   page: 'activity',
+  modal: 'none',
   config: config,
   activityLog: [],
   errors: [],
@@ -154,6 +163,13 @@ export const state = observable<State>({
     settings: null,
     msg: '',
   },
+  inventory: {
+    state: 'start',
+    today: moment().format('YYYY-MM-DD'),
+    missing: null,
+    changes: null,
+    errors: null,
+  },
 });
 
 // Every time the state.config changes, save it to localStorage:
@@ -184,6 +200,8 @@ autorun(() => {
   const compositeToAcct = (cacct: ledger.CompositeAccount, name: 'All') => ({
     name,
     filename: 'none',
+    id: 'none',
+    header: [],
     settings: { accounttype: ('cash' as ledger.AccountSettings['accounttype']) },
     lines: cacct.lines,
   });

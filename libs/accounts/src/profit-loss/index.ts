@@ -1,17 +1,20 @@
 import moment from 'moment';
 import momentrange from 'moment-range';
-import { categorize, CategoryTree, treeToCategoryNames, getCategory, amount, AmountConfig, credit, debit } from './categorize.js';
+import { categorize, type CategoryTree, treeToCategoryNames, getCategory, amount, type AmountConfig, credit, debit } from './categorize.js';
 import { isStart, moneyEquals } from '../ledger/util.js';
 import type { FinalAccounts, AccountTx } from '../ledger/types.js';
-import { MultiError } from '../err.js';
-import { stringify } from '../stringify.js';
+//import { MultiError } from '../err.js';
+//import { stringify } from '../stringify.js';
 import rfdc from 'rfdc';
+import debug from 'debug';
+import type { StatusFunction } from '../ledger/types.js';
 
 export { profitLossToWorkbook } from './exporter.js';
 
-export { CategoryTree, treeToCategoryNames, getCategory, amount, AmountConfig, credit, debit }; // bump up to top level because it is useful
+export { type CategoryTree, treeToCategoryNames, getCategory, amount, type AmountConfig, credit, debit }; // bump up to top level because it is useful
 export { moneyEquals }; // mainly for tests
 
+const info = debug('af/accounts#profit-loss:info');
 const deepclone = rfdc({ proto: true });
 // Have to jump through some hoops to get TS and node both happy w/ moment-range:
 const { extendMoment } = momentrange;
@@ -41,9 +44,10 @@ export type ProfitLoss = {
 };
 
 export function profitLoss(
-  { ledger, type, year }:
-  { ledger: FinalAccounts, type: 'mkt' | 'tax', year?: number}
+  { ledger, type, year, status }:
+  { ledger: FinalAccounts, type: 'mkt' | 'tax', year?: number, status?: StatusFunction }
 ): ProfitLoss {
+  if (!status) status = info;
   const lines = (type === 'tax') ? ledger.tax.lines : ledger.mkt.lines;
 
   // figure out all included years from transactions
@@ -52,7 +56,8 @@ export function profitLoss(
   // Keep only the requested year, or default this year:
   if (!year) year = moment().year();
   if (!years.find(y => y===year)) {
-    throw new MultiError({ msg: `ERROR: requested year ${year} for type ${type} does not exist in list of years from transactions (${stringify(years)})` });
+//    throw new MultiError({ msg: `ERROR: requested year ${year} for type ${type} does not exist in list of years from transactions (${stringify(years)})` });
+    status('WARNING: Requested year '+year+' for profit-loss does not have any transactions');
   }
 
   // Produce one sheet per quarter:

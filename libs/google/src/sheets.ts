@@ -3,12 +3,12 @@ import { createFile, ensurePath, idFromPath, getFileContents } from './drive';
 import xlsx from 'xlsx-js-style';
 import debug from 'debug';
 //import pReduce from 'p-reduce';
-import moment, { isMoment, Moment } from 'moment';
+import moment, { isMoment, type Moment } from 'moment';
 
 import type { sheets_v4 as Sheets } from '@googleapis/sheets';
 
 const warn = debug('af/google#sheets:warn');
-//const info = debug('af/google#sheets:info');
+const info = debug('af/google#sheets:info');
 //const trace = debug('af/google#sheets:trace');
 
 export const XlsxMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -191,7 +191,8 @@ export async function batchUpsertRows(
     };
     request.requests!.push(updateCellsRequest);
   }
-  await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
+  const ret = await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
+  info('Returned value from google spreadsheets batchUpdate: ', ret);
   return;
 }
 

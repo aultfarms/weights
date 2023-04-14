@@ -13,18 +13,18 @@
   "devDependencies": {
     "@types/lodash": "^4",
     "@types/minimist": "^1",
-    "@types/numeral": "^2",
-    "@yarnpkg/sdks": "^2.6.0-rc.4"
+    "@types/numeral": "^2.0.2",
+    "@yarnpkg/sdks": "^3.0.0-rc.42"
   },
   "dependencies": {
     "@aultfarms/accounts": "workspace:^",
-    "chalk": "^4",
+    "chalk": "^5.2.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.7",
     "moment": "^2.29.4",
     "moment-range": "^4.0.2",
     "numeral": "^2.0.6",
     "table": "^6.8.1",
-    "xlsx": "^0.18.4"
+    "xlsx": "^0.18.5"
   }
 }

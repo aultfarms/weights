@@ -1,8 +1,8 @@
-import xlsx, { WorkBook, WorkSheet } from 'xlsx-js-style'; //'sheetjs-style';
-import moment, { Moment } from 'moment';
+import xlsx, { type WorkBook, type WorkSheet } from 'xlsx-js-style'; //'sheetjs-style';
+import moment, { type Moment } from 'moment';
 import momentrange from 'moment-range';
 import type { ProfitLoss } from './index.js';
-import { CategoryTree, amount, credit, debit } from './categorize.js';
+import { type CategoryTree, amount, credit, debit } from './categorize.js';
 
 const { extendMoment } = momentrange;
 // Have to jump through some hoops to get TS and node both happy w/ moment-range:

@@ -1,5 +1,5 @@
-import moment, { Moment } from 'moment';
-//import debug from 'debug';
+import moment, { type Moment } from 'moment';
+import debug from 'debug';
 import numeral from 'numeral';
 import rfdc from 'rfdc'; // really fast deep clone
 import omit from 'omit';
@@ -7,12 +7,12 @@ import { stringify } from '../stringify.js';
 import { moneyEquals, weHave, line2Str } from './util.js';
 import { MultiError, AccountError, LineError } from '../err.js';
 import type { ValidatedRawSheetAccount, OriginLine, LineAccountInfo } from './types.js';
-import { isSameDayOrAfter, isSameDayOrBefore } from '../util.js';
+import { isBeforeDay, isSameDayOrAfter, isSameDayOrBefore } from '../util.js';
 //import { ledger2Str } from './util.js';
 
 const { isMoment } = moment;
 
-//const trace = debug('af/accounts#assetsToAccts:trace');
+const info = debug('af/accounts#assetsToAccts:trace');
 const deepclone = rfdc({ proto: true });
 
 const AMOUNT_PLACEHOLDER_FOR_ASOF = -9_999_999_999;
@@ -199,7 +199,9 @@ function assetLinesToAccts(accumulator: ValidatedRawSheetAccount[], acct: Valida
         asOfDate,
         date: moment(asOfDate, 'YYYY-MM-DD'), // use this moment to sort by
       };
-      if (priorDate) originLine.priorDate = priorDate;
+      if (priorDate) {
+        originLine.priorDate = priorDate;
+      }
 
       if (!existing.origin) {
         existing.origin = {
@@ -355,6 +357,7 @@ export default function(
                 // then this is just a copy of the original asset purchase in a subsequent year account.
                 initialLine = {
                   ...deepclone(linetemplate),
+                  category: linetemplate.category+'-'+(l.purchaseDate ? 'purchase' : 'initial'), // Added 4/2023
                   date: moment(date, 'YYYY-MM-DD'),
                   description: l.purchaseDate ? "Asset Purchase" : "Asset initial addition to inventory",
                   assetTxType: l.purchaseDate ? 'PURCHASE' : 'INITIAL',
@@ -370,6 +373,7 @@ export default function(
                   if (initialLine.date.isBefore(l.priorDate)) {
                     priorAsOfLine = {
                       ...deepclone(linetemplate),
+                      category: linetemplate.category+'-asof', // Added 4/2023
                       date: moment(`${l.priorDate.format('YYYY-MM-DD')} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // prioDate is an "as-of" the end of that prior day
                       description: "Initializing prior balance value after old purchase",
                       assetTxType: 'AS-OF',
@@ -385,8 +389,11 @@ export default function(
             // An asOfDate TX should compute the amount based on the specified balance
             if (l.asOfDate) { // all asset types, including futures-asset
               const priorValue = acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue;
+              let priorDate = l.priorDate || acct.settings.priorDate;
+              if (isMoment(priorDate)) priorDate = priorDate.clone();
               asOfLine = {
                 ...deepclone(linetemplate),
+                category: linetemplate.category+'-asof', // Added 4/2023
                 date: moment(`${l.asOfDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // as-of at the end of the day
                 description: "asOfDate Balance Adjustment." + (l.description ? '  Orig desc: '+l.description : ''),
                 assetTxType: 'AS-OF',
@@ -395,12 +402,13 @@ export default function(
                 priorValue: safesetNumber(acct.settings.taxonly ? l.taxPriorValue : l.mktPriorValue),
                 // These are only used if we have a priorValue:
                 expectedPriorValue: safesetNumber(priorValue),
-                priorDate: l.priorDate?.clone(),
+                priorDate: priorDate,
               };
               // In borrowing base, we just have lines that keep adding asOfDate's without specifying a priorDate:
               if (!weHave(priorValue)) {
                 delete asOfLine.expectedPriorValue;
                 delete asOfLine.priorDate;
+              } else {
               }
             }
   
@@ -408,12 +416,15 @@ export default function(
             // i.e. it is a mid-year transaction to offset an actual trade-in value or check amount
             if (acct.settings.mktonly && l.saleDate && weHave(l.saleValue)) { 
               const saleDate = moment(l.saleDate, 'YYYY-MM-DD');
+
+
               // Note: you actually cannot say that the expectedCurrentValue is 0 after sale, because we probably
               // didn't have the exact estimated value in there before the sale.  There will be a net balance
               // that is expensed/incomed at the end of the year/period by the as-of transaction that will force
               // the balance to zero.
               saleLine = {
                 ...deepclone(linetemplate),
+                category: linetemplate.category+'-sale', // Added 4/2023
                 date: saleDate,
                 description: "Asset sold." + (l.description ? "  Orig desc: "+l.description : ''),
                 assetTxType: 'SALE',
@@ -480,6 +491,7 @@ export default function(
           }
           return acc;
         },({ errors: [], lines: [] } as { errors: string[], lines: AssetTx[] }));
+
         // Sort the lines by the date ascending:
         (newlinesAndErrors.lines as AssetTx[]).sort((a,b) => (+(a.date) - +(b.date)));
         acct.lines = newlinesAndErrors.lines;

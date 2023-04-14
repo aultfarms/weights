@@ -14,7 +14,7 @@
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
-    "importsNotUsedAsValues": "error",
+    "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,

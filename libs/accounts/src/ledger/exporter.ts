@@ -1,6 +1,6 @@
-import xlsx, { WorkBook, WorkSheet } from 'xlsx-js-style'; //'sheetjs-style';
+import xlsx, { type WorkBook, type WorkSheet } from 'xlsx-js-style'; //'sheetjs-style';
 import type { AccountTx, ValidatedRawTx, AccountSettings } from './types.js';
-import moment, { Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 
 const { isMoment } = moment;
 

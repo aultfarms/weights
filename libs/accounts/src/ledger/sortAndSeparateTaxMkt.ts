@@ -1,14 +1,14 @@
 import type { Account, AccountTx, FinalAccounts, StatusFunction } from './types.js';
 import moment from 'moment';
-import { LineError } from '../err.js';
+import { AccountError, LineError } from '../err.js';
 import debug from 'debug';
 import rfdc from 'rfdc';
+import { breakExecution } from './util.js';
 
 
 const deepclone = rfdc({ proto: true });
 const info = debug('af/accounts#sortAndSeparateTaxMkt:info');
 //const trace = debug('af/accounts#sortAndSeparateTaxMkt:trace');
-
 
 // We have asset/inventory accounts and cash accounts.  
 // Let's return (tax, mkt) tx lines (for P&L) and balances (for balance sheets)
@@ -96,10 +96,10 @@ function combineAndSortLines(accts: Account[], status: StatusFunction) {
 }
 
 
-export default function(
+export default async function(
   { accts, status }
 : { accts: Account[], status?: StatusFunction }
-): FinalAccounts {
+): Promise<FinalAccounts> {
   if (!status) status = info;
   const originals = accts;
   accts = deepclone(accts); // we will mutate the lines, so clone first
@@ -107,11 +107,14 @@ export default function(
   // First, walk all accounts and get them sorted correctly by date with their balances recomputed accordingly
   status('Sorting all lines by date and recomputing balances accordingly');
   for (const a of accts) {
+    if (a.lines.length < 1) continue; // no lines to worry about
     a.lines = convertStartingBalancesToTxAmounts(a.lines);
     a.lines = sortLinesByDate(a.lines);
     a.lines = recomputeBalances(a.lines);
   }
 
+  status('Lines sorted, now splitting tax/mkt');
+  await breakExecution();
   // Now split up tax/mkt into separate sets:
   // All asset type accounts have taxonly or mktonly set on them by the synthetic account creation in assetsToTxAccts.
   // Cash and inventory accounts go in both tax and mkt unless they specify specifically taxonly/mktonly
@@ -134,6 +137,8 @@ export default function(
     )
   );
 
+  status('Tax/Mkt split, now swapping in taxAmount to amount for tax account version');
+  await breakExecution();
   // The livestock inventory accounts have taxAmount and taxBalance that need to be 
   // swapped into the amount and balance spots in the tax version of the account.
   taxaccts = taxaccts.map(acct => {
@@ -150,8 +155,10 @@ export default function(
   });
 
   status('running combineAndSortLines for taxaccts');
+  breakExecution();
   const taxlines = combineAndSortLines(taxaccts, status);
   status('running combineAndSortLines for mktaccts');
+  breakExecution();
   const mktlines = combineAndSortLines(mktaccts, status);
 
   status('Returning tax and mkt accounts');

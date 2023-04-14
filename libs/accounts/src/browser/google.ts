@@ -5,16 +5,16 @@ import chalk from 'chalk';
 import oerror from '@overleaf/o-error';
 import { MultiError } from '../err.js';
 import pLimit from 'p-limit';
-import rfdc from 'rfdc';
+//import rfdc from 'rfdc';
 
-const deepclone = rfdc({ proto: true });
+//const deepclone = rfdc({ proto: true });
 
-const { red, yellow } = chalk;
+const { red } = chalk;
 const info = debug('af/accounts#browser/google:info');
 
-import type { FinalAccounts, Account, AccountTx, RawSheetAccount, StatusFunction, LivestockInventoryAccountTx, InventoryAccountTx } from '../ledger/types.js';
+import type { FinalAccounts, Account, AccountTx, RawSheetAccount, StatusFunction, LivestockInventoryAccountTx } from '../ledger/types.js';
 import { reloadSomeAccounts } from '../ledger/index.js';
-import { importSettings, Ten99Settings } from '../ten99/index.js';
+import { importSettings, type Ten99Settings } from '../ten99/index.js';
 import type {MissingTxResult} from '../inventory/index.js';
 import {stringify} from '../ledger/settings-parser.js';
 
@@ -43,7 +43,7 @@ export async function readAccountsFromGoogle(
   const queue = accountfiles.map((fileinfo, fileindex) => limit(async () => {
     const filename = fileinfo.name;
     const id = fileinfo.id;
-    status!(yellow(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename)));
+    status!(`Reading file ${fileindex+1} of ${accountfiles.length}: ` + chalk.green(filename));
 
     const result = await google.sheets.spreadsheetToJson({ id, filename });
     if (!result) {
@@ -190,13 +190,13 @@ export async function batchUpsertTx({ acct, lines, insertOrUpdate }: { acct: Acc
 }
 
 export async function pasteBalancesOrTemplate({ acct }: { acct: Account }) {
-  if (!acct.lines[1]) throw new MultiError({ msg: 'The account '+acct.name+' does not have at least 2 lines in it, so template line and starting line to paste is not defined.' });
-  const startLineno = acct.lines[1].lineno; // start pasting at first line after start.
+  if (!acct.lines[0]) throw new MultiError({ msg: 'The account '+acct.name+' does not have at least 1 line in it, so template line and starting line to paste is not defined.' });
+  const startLineno = acct.lines[1]?.lineno || (acct.lines[0].lineno+1); // start pasting at first line after start.
   let templateLineno = acct.templateLineno;
   let limitToCols: number[] | null = null;
   if (!templateLineno) { // templateLineno is 1-indexed, so 0 is an invalid lineno
     // The default "template" row is just the first row after start, i.e. lines[1]
-    templateLineno = acct.lines[1].lineno;
+    templateLineno = startLineno
   } else { // If there is no temlate line, we'll need to limitCols when we guess which cols to paste based on colname
     limitToCols = [];
     for (const [index, colname] of acct.header.entries()) {

@@ -2,8 +2,8 @@ import type * as accountsLib from '../../browser/index.js';
 import { drive } from '@aultfarms/google';
 import { getClient as getTrelloClient } from '@aultfarms/trello';
 import debug from 'debug';
-import {Account, AccountTx, assertLivestockInventoryAccount} from '../../ledger/types.js';
-import moment, {Moment} from 'moment';
+import {type Account, type AccountTx, assertLivestockInventoryAccount} from '../../ledger/types.js';
+import moment, {type Moment} from 'moment';
 
 const info = debug('af/accounts#test/browser/inventory:info');
 

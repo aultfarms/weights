@@ -14,29 +14,33 @@ import sortAndSeparateTaxMkt from './sortAndSeparateTaxMkt.js';
 import { ledger2Str, line2Str } from './util.js';
 import { MultiError } from '../err.js';
 import { 
-  JSONSchema8, 
+  type JSONSchema8, 
   categorySchemas, 
-  validateNoteSchemaForCatgory, 
+  validateNoteSchemaForCategory, 
   validateNotesAllSchemas,
   validateNoOneLevelCategories,
 } from './postValidation.js';
 
 import {
-  Account,
+  type Account,
   assertAccount,
-  AccountSettings,
+  type AccountSettings,
   assertAccountSettings,
-  AccountTx,
+  type AccountTx,
   assertAccountTx,
-  CompositeAccount,
+  type InventoryAccountTx,
+  type LivestockInventoryAccountTx,
+  assertLivestockInventoryAccountTx,
+  type CompositeAccount,
   assertCompositeAccount,
-  FinalAccounts,
+  type FinalAccounts,
   assertFinalAccounts,
-  RawSheetAccount,
-  ValidatedRawSheetAccount,
-  ValidatedRawTx,
-  StatusFunction,
+  type RawSheetAccount,
+  type ValidatedRawSheetAccount,
+  type ValidatedRawTx,
+  type StatusFunction,
 } from './types.js';
+export * from './types.js';
 //import type {argv0} from 'process';
 
 export { accountToWorkbook } from './exporter.js';
@@ -46,15 +50,16 @@ export { recomputeBalances } from './sortAndSeparateTaxMkt.js';
 
 export { 
   // Exported types:
-  RawSheetAccount, ValidatedRawSheetAccount, AccountSettings, assertAccountSettings,
-  Account, assertAccount, AccountTx, assertAccountTx, ValidatedRawTx,
-  CompositeAccount, assertCompositeAccount, FinalAccounts, assertFinalAccounts,
-  MultiError, JSONSchema8,
+  type RawSheetAccount, type ValidatedRawSheetAccount, type AccountSettings, assertAccountSettings,
+  type Account, assertAccount, type AccountTx, assertAccountTx, type LivestockInventoryAccountTx,
+  assertLivestockInventoryAccountTx, type InventoryAccountTx, type ValidatedRawTx,
+  type CompositeAccount, assertCompositeAccount, type FinalAccounts, assertFinalAccounts,
+  MultiError, type JSONSchema8,
 
   // Exported individual functions to make them individually testable
   initialValidateAccounts, assetsToTxAccts, standardize, 
   splits, assertAllAccounts, validateBalances, sortAndSeparateTaxMkt,
-  validateNoteSchemaForCatgory, categorySchemas, validateNotesAllSchemas,
+  validateNoteSchemaForCategory, categorySchemas, validateNotesAllSchemas,
   validateNoOneLevelCategories,
 
   // Helper functions
@@ -297,9 +302,10 @@ export async function* loadInSteps(
       }
       status(magenta(`********     sortAndSeparateTaxMkt   ********: ${totalSummaryStr(accts)}`));
       try {
-        finalaccts = sortAndSeparateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
+        finalaccts = await sortAndSeparateTaxMkt({accts,status}) // returns { tax: { lines, accts }, mkt: { lines, accts }, errors: [] }
       } catch(e: any) {
         e = MultiError.wrap(e, `Failed to separate out tax/mkt accounts`);
+        info('ERROR: sortAndSeparateTaxMkt failed.  Error = ', e);
         yield {
           step: 'sortAndSeparateTaxMkt',
           errors: e.msgs(),
@@ -345,6 +351,7 @@ export async function loadAll(
   let step;
   for await (step of steps) { 
     /* Just go through all steps... */ 
+    await new Promise(resolve => setTimeout(resolve, 10)); // wait 10 ms to give UI's time to update
   }
   if (!step || !step.done || typeof step.final === 'undefined') {
     if (step?.errors && step.errors.length > 0) throw new MultiError({ msg: step.errors });

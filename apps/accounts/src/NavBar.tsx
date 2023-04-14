@@ -18,7 +18,7 @@ const info = debug('accounts#NavBar:info');
 
 import './NavBar.css';
 
-const pages = ['Activity', 'Ledger', 'Balance Sheet', 'Profit Loss', '1099' ];
+const pages = ['Activity', 'Ledger', 'Balance Sheet', 'Profit Loss', '1099', 'Inventory' ];
 const settings = ['Config'];
 
 // Mostly from the MaterialUI example page
@@ -36,11 +36,13 @@ export const NavBar = observer(() => {
       case 'Balance Sheet': actions.page('balance'); break;
       case 'Profit Loss': actions.page('profit'); break;
       case '1099': actions.page('ten99'); break;
+      case 'Inventory': actions.page('inventory'); break;
       default: info('Page ',page,' has no handler');
     }
     handleCloseNavMenu();
   }
-  const menuItemClickedUser = (_setting: string) => () => {
+  const menuItemClickedUser = (setting: string) => () => {
+    if (setting === 'Config') actions.modal('config');
     handleCloseUserMenu();
   }
 

@@ -10,11 +10,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/bluebird": "^3",
-    "@types/debug": "^4",
+    "@types/bluebird": "^3.5.38",
+    "@types/debug": "^4.1.7",
     "@types/lodash": "^4",
-    "@types/numeral": "^2",
-    "@yarnpkg/sdks": "^2.6.0-rc.4"
+    "@types/numeral": "^2.0.2",
+    "@yarnpkg/sdks": "^3.0.0-rc.42"
   },
   "dependencies": {
     "bluebird": "^3.7.2",

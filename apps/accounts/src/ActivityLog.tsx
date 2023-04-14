@@ -8,7 +8,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { Errors } from './Errors';
 import { linenoPrefix, accountPrefix } from './state/util';
 
-import ansispan from 'ansispan';
+import ansispan from './ansispan';
 import htmlparse from 'html-react-parser';
 
 function preprocessMessage(msg: string): React.ReactElement{

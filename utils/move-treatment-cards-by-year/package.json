@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@yarnpkg/sdks": "^2.6.0-rc.4"
+    "@yarnpkg/sdks": "^3.0.0-rc.42"
   }
 }

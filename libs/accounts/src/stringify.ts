@@ -26,9 +26,12 @@ const style = (v: any, s: 'bold' | 'italic' | 'dim') => `${ansi[s].open}${v}${an
 
 const color = (v: any, c: Color) => `${ansi.color[c].open}${v}${ansi.color.close}`;
 
-const getArraySize = (o: any) => Array.isArray(o) && o.length;
+const getArraySize = (o: any): number => o?.length || 0;
 
-const getObjectSize = (o: any) => isPlainObject(o) && Object.keys(o).length;
+const getObjectSize = (o: any) => {
+  if (!isPlainObject(o)) return 0;
+  return Object.keys(o).length;
+}
 
 const getFunctionSize = (o: any) => typeof o === 'function' && o.toString().split('\n').length;
 

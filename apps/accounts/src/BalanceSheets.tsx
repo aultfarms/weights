@@ -81,7 +81,18 @@ export const BalanceSheets = observer(function BalanceSheets() {
   }
 
   const bss = actions.balancesheets();
-  if (!bss) return <div>No balance sheets available yet</div>;
+  if (!bss) return (
+    <div style={{ margin: '10px' }}>
+      <div>No balance sheets computed yet.</div>
+      <Button 
+        disabled={!state.stepResult.rev || !(actions.ledger()?.final)} 
+        variant="contained" 
+        onClick={() => actions.computeBalanceSheets()}
+      >
+        Create Balance Sheets
+      </Button>
+    </div>
+  );
 
   const years = Object.keys(bss).sort().reverse();
 
@@ -255,7 +266,7 @@ export const BalanceSheets = observer(function BalanceSheets() {
   for (let i=0; i < numcategorylevels; i++) {
     marks.push({ value: i+1, label: ''+(i+1) });
   }
-  
+ 
   return (
     <Paper elevation={1}>
       <div style={{ paddingLeft: '10px', paddingRight: '10px', display: 'flex', flexDirection: 'row' }}>

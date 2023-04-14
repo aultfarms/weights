@@ -1,4 +1,4 @@
-import moment, { Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 import chalk from 'chalk';
 import { MultiError, LineError, AccountError } from '../err.js';
 import { stringify } from '../stringify.js';
@@ -120,6 +120,7 @@ export type BaseAccountSettings = {
   amounttype?: 'inverted',
   mktonly?: boolean,
   taxonly?: boolean,
+  ignoreAccount?: boolean, // this will cause the entire account to be ignored.  Useful for commenting out an account that you don't want to lose.
 
   [key: string]: any,
 };
@@ -141,6 +142,7 @@ export type BaseInventoryAccountSettings =  BaseAccountSettings & {
   inCategories?: string[], // list of categories from cash accounts that represent things coming into inventory.  Grain/feed/bales does not have inCategories (it's just harvested)
   outCategories: string[], // list of categories from cash accounts that represent things coming out of inventory
   qtyKey: string, // which key to pull out of the notes on those categories which represents the quantity
+  qtyPrecision?: number, // how many decimal places to keep in printing qty and qtyBalance (corn/beans are 3 decimals)
 }
 
 export type PriceWeightPoint = {
@@ -203,6 +205,9 @@ export function assertBaseAccountSettings(o: any): asserts o is BaseAccountSetti
     if (o.taxonly && typeof o.taxonly !== 'boolean') {
       errs.push('Settings has a taxonly ('+magenta(o.taxonly)+'), but it is not boolean');
     }
+    if ('ignoreAccount' in o && typeof o.ignoreAccount !== 'boolean') {
+      errs.push('Settings has ignoreAccount ('+magenta(o.ignoreAccount)+') but it is not true or false');
+    }
   }
   if (errs.length > 0) throw new MultiError({ msg: errs });
 }
@@ -238,7 +243,7 @@ export function assertInventoryAccountSettings(o: any): asserts o is InventoryAc
   if (o.accounttype !== 'inventory') {
     errs.push(`Settings accounttype (${o.accounttype}) is not inventory`);
   } else {
-    if (!o.startYear || typeof o.startYear !== 'number') errs.push('Settings startYear '+magenta(o.startYear)+'), but is not a number');
+    if (!o.startYear || typeof o.startYear !== 'number') errs.push('Settings startYear ('+magenta(o.startYear)+') is not a number');
     if (o.inCategories && typeof o.inCategories !== 'string') {
       if (Array.isArray(o.inCategories)) {
         if (o.inCategories.filter(c => typeof c !== 'string').length > 0) {
@@ -259,7 +264,8 @@ export function assertInventoryAccountSettings(o: any): asserts o is InventoryAc
         errs.push('Settings has outCategories, ('+stringify(o.outCategories)+'), but it is neither a string nor an array of strings');
       }
     }
-    if (!o.qtyKey || typeof o.qtyKey !== 'string') errs.push('Settings qtyKey '+magenta(o.qtyKey)+') is missing or is not a string');
+    if (!o.qtyKey || typeof o.qtyKey !== 'string') errs.push('Settings qtyKey ('+magenta(o.qtyKey)+') is missing or is not a string');
+    if (('qtyPrecision' in o) && typeof o.qtyPrecision !== 'number') errs.push('Settings qtyPrecision exists ('+magenta(o.qtyPrecision)+') but it is not a number');
   }
   if (errs.length > 0) throw new MultiError({ msg: errs });
 }

@@ -1,113 +1,146 @@
 // These functions can be run AFTER the ledger validates.  They are the sort of things that
 // shouldn't invalidate the ledger, but are "todos" that should be taken care of sometime.
-import moment, { Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 import type { AccountTx } from './types.js';
 import ajvLib from 'ajv';
 import type { JSONSchema8 } from 'jsonschema8';
-import debug from 'debug';
+//import debug from 'debug';
 import { isSameDayOrAfter } from '../util.js';
-const trace = debug('af/accounts#ledger/postValidation:trace'); export { JSONSchema8 };
+//const trace = debug('af/accounts#ledger/postValidation:trace'); 
+export { type JSONSchema8 };
 //const numberpat = '-?[0-9]+(\.[0-9]+)?';
 const datepat = '[0-9]{4}-[0-9]{2}-[0-9]{2}';
 const outidpat = `${datepat}_[A-Z0-9]`;
 const incomingidpat = '[A-Z0-9]:[A-Z]{3}[0-9]{2}-[0-9]';
-export const categorySchemas: { [cat: string]: JSONSchema8 } = {
+
+export type CategoryNoteSchema = {
+  ignoreInventoryAccounts?: boolean,
+  schema: JSONSchema8 
+};
+
+export const categorySchemas: { [category: string]: CategoryNoteSchema } = {
   // Any category name is the "startsWith" first, then any exclude's from that
   // come after sales-grain. i.e. sales-grain!sales-grain-trucking will exclude sales-grain-trucking
   // from sales-grain.  Just keep putting more !<exclude> to exclude multiple things.
   'sales-grain!sales-grain-trucking': {  // exclude sales-grain-trucking
-    type: 'object', 
-    properties: { 
-      bushels: { type: 'number' },
-    },
-    required: [ 'bushels' ],
-  },
-  'fuel!fuel-motoroil!fuel-oil!fuel-grease': { 
-    type: 'object',
-    properties: { 
-      gallons: { type: 'number' },
-    },
-    required: [ 'gallons' ],
-  },
-  'sales-cattle!sales-cattle-advance': {
-    oneOf: [ // could have one outid or multiple outid's
-      {
-        type: 'object',
-        properties: {
-          head: { type: 'number' },
-          loads: { type: 'number' },
-          weight: { type: 'number' },
-          inventorydate: { type: 'string', pattern: datepat },
-          outid: { type: 'string', pattern: outidpat },
-        },
-        required: ['head', 'loads', 'weight', 'outid'],
+    ignoreInventoryAccounts: true,
+    schema: {
+      type: 'object', 
+      properties: { 
+        bushels: { type: 'number' },
       },
-      {
-        type: 'object',
-        properties: {
-          head: { type: 'number' },
-          loads: { type: 'number' },
-          weight: { type: 'number' },
-          inventorydate: { type: 'string', pattern: datepat },
-          outids: { 
-            type: 'array', 
-            items: { type: 'string', pattern: outidpat },
+      required: [ 'bushels' ],
+    },
+  },
+  'fuel!fuel-motoroil!fuel-oil!fuel-grease': {
+    schema: {
+      type: 'object',
+      properties: { 
+        gallons: { type: 'number' },
+      },
+      required: [ 'gallons' ],
+    },
+  },
+  'sales-cattle!sales-cattle-advance!sales-cattle-refund': {
+    ignoreInventoryAccounts: true,
+    schema: {
+      oneOf: [ // could have one outid or multiple outid's
+        {
+          type: 'object',
+          properties: {
+            head: { type: 'number' },
+            loads: { type: 'number' },
+            weight: { type: 'number' },
+            inventorydate: { type: 'string', pattern: datepat },
+            outid: { type: 'string', pattern: outidpat },
           },
+          required: ['head', 'loads', 'weight', 'outid'],
         },
-        required: ['head', 'loads', 'weight', 'outids'],
-      },
-    ],
+        {
+          type: 'object',
+          properties: {
+            head: { type: 'number' },
+            loads: { type: 'number' },
+            weight: { type: 'number' },
+            inventorydate: { type: 'string', pattern: datepat },
+            outids: { 
+              type: 'array', 
+              items: { type: 'string', pattern: outidpat },
+            },
+          },
+          required: ['head', 'loads', 'weight', 'outids'],
+        },
+      ],
+    },
   },
   'cattle-purchase-cattle!cattle-purchase-cattle-fifoadj': {
-    oneOf: [
-      {
-        type: 'object',
-        properties: {
-          head: { type: 'number' },
-          loads: { type: 'number' },
-          weight: { type: 'number' }, // BKTKY:AUG20-1
-          inventorydate: { type: 'string', pattern: datepat },
-          incomingid: { type: 'string', pattern: incomingidpat },
-        },
-        required: [ 'head', 'loads', 'weight', 'incomingid' ],
-      },
-      {
-        type: 'object',
-        properties: {
-          head: { type: 'number' },
-          loads: { type: 'number' },
-          weight: { type: 'number' }, // BKTKY:AUG20-1
-          inventorydate: { type: 'string', pattern: datepat },
-          incomingids: { 
-            type: 'array',
-            items: { type: 'string', pattern: incomingidpat },
+    ignoreInventoryAccounts: true,
+    schema: {
+      oneOf: [
+        {
+          type: 'object',
+          properties: {
+            head: { type: 'number' },
+            loads: { type: 'number' },
+            weight: { type: 'number' }, // BKTKY:AUG20-1
+            inventorydate: { type: 'string', pattern: datepat },
+            incomingid: { type: 'string', pattern: incomingidpat },
           },
+          required: [ 'head', 'loads', 'weight', 'incomingid' ],
         },
-        required: [ 'head', 'loads', 'weight', 'incomingids' ],
+        {
+          type: 'object',
+          properties: {
+            head: { type: 'number' },
+            loads: { type: 'number' },
+            weight: { type: 'number' }, // BKTKY:AUG20-1
+            inventorydate: { type: 'string', pattern: datepat },
+            incomingids: { 
+              type: 'array',
+              items: { type: 'string', pattern: incomingidpat },
+            },
+          },
+          required: [ 'head', 'loads', 'weight', 'incomingids' ],
+        },
+      ],
+    },
+  },
+  'bedding-straw': {
+    ignoreInventoryAccounts: true,
+    schema: {
+      type: 'object',
+      properties: {
+        bales: { type: 'number' }
       },
-    ],
+      required: [ 'bales' ],
+    },
   },
   'crop-seed-corn': {
-    type: 'object',
-    properties: {
-      bags: { type: 'number' },
+    ignoreInventoryAccounts: true,
+    schema: {
+      type: 'object',
+      properties: {
+        bags: { type: 'number' },
+      },
+      required: [ 'bags' ],
     },
-    required: [ 'bags' ],
   },
   'crop-seed-beans!crop-seed-beans-treatment': {
-    type: 'object',
-    properties: {
-      units: { type: 'number' },
+    schema: {
+      type: 'object',
+      properties: {
+        units: { type: 'number' },
+      },
+      required: [ 'units'],
     },
-    required: [ 'units'],
   },
 };
 
-export function validateNoteSchemaForCatgory(
+export function validateNoteSchemaForCategory(
   { account, catname, startDate, schema, exactCatnameMatch }:
   { account: { lines: AccountTx[] }, 
     catname: string, 
-    schema: JSONSchema8,
+    schema: CategoryNoteSchema,
     startDate: string | Moment, 
     exactCatnameMatch?: true,
   }
@@ -124,9 +157,12 @@ export function validateNoteSchemaForCatgory(
   }
  
   const ajv = new ajvLib();
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile(schema.schema);
   const errs: { line: AccountTx, error: string }[] = [];
   for (const l of account.lines) {
+    // Notes have different requirements on inventory accounts than they do on cash accounts:
+    if (schema.ignoreInventoryAccounts && l.acct.settings.accounttype === 'inventory') continue;
+
     if (l.date.isBefore(startDate)) continue;
     // If not exact, then treat catname as a prefix:
     if (exactCatnameMatch) {
@@ -138,8 +174,8 @@ export function validateNoteSchemaForCatgory(
       }
     }
     // Do some pre-work to get clearer error messages for common mistakes:
-    if ((schema as any).properties) {
-      const required = (schema as any).required || [];
+    if ((schema.schema as any).properties) {
+      const required = (schema.schema as any).required || [];
       if (typeof l.note !== 'object') {
         errs.push({ line: l, error: `Note has no fields, but these are required: ${required.join(', ')}` });
         continue;
@@ -169,14 +205,14 @@ export function validateNotesAllSchemas(
   {account, schemas, startDate }:
   { account: { lines: AccountTx[] }, 
     startDate: string | Moment, 
-    schemas?: { [catname: string]: JSONSchema8 } 
+    schemas?: { [catname: string]: CategoryNoteSchema } 
   }
 ): {[catname: string]: {line: AccountTx, error: string}[] | null } {
   if (!schemas) schemas = categorySchemas;
   // Fancy way of getting res to be what we can reasonably return from this function:
   const res: Awaited<ReturnType<typeof validateNotesAllSchemas>> = {};
   for (const [catname, schema] of Object.entries(schemas)) {
-    res[catname] = validateNoteSchemaForCatgory({account, catname, schema, startDate});
+    res[catname] = validateNoteSchemaForCategory({account, catname, schema, startDate});
   }
   return res;
 }
