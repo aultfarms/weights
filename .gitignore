@@ -12,7 +12,7 @@ dist/
 
 # yarn 2 stuff
 /.yarn/*
-!/.yarn/releases/
+/.yarn/releases/
 !/.yarn/plugins/
 !/.yarn/versions/
 .pnp.*

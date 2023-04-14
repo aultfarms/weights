@@ -11,11 +11,6 @@ trybuild () {
   sleepbuild || sleepbuild || sleepbuild || sleepbuild
 }
 
-# Since we switched to vite, maybe yarn build is deterministic again?
-trybuildvite () {
-  yarn build
-}
-
 MONOREPODIR="/Users/aultac/repos/aultfarms/af-monorepo/apps/accounts"
 OLDVERSION=`jq -r '.version' package.json`
 NEWVERSION=`echo $OLDVERSION | awk -F '.' '{printf("%d.%d.%d", $1, $2, $3+1)}'`
@@ -32,7 +27,7 @@ git push
 cd ~/repos/aultfarms/accounts
 git pull monorepo master
 git push origin master
-# There are weird issues with yarn and react-scripts if you don't do it like this:
+# There are weird issues with yarn and paths being undefined if you don't do it like this:
 echo -e "$CYAN--------> root workspace yarn $NOCOLOR"
 yarn && \
 cd apps/accounts && \
@@ -42,8 +37,7 @@ echo -e "$CYAN--------> yarn build:libs $NOCOLOR" && \
 yarn build:libs && \
 echo -e "$CYAN--------> yarn build (try up to 4 times) $NOCOLOR" && \
 # Yep, build is non-deterministic.  Bleh
-#trybuild && \
-trybuildvite && \
+trybuild && \
 echo -e "$CYAN--------> yarn deploy$NOCOLOR" && \
 yarn deploy && \
 echo -e "$CYAN--------> Successfully Deployed v$NEWVERSION"
