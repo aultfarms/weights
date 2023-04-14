@@ -1,5 +1,5 @@
-import { PlatformSpecificTrelloLib, TrelloList } from './types.js';
-export declare type Client = ReturnType<typeof getUniversalClient>;
+import { type PlatformSpecificTrelloLib, type TrelloList } from './types.js';
+export type Client = ReturnType<typeof getUniversalClient>;
 export declare function getUniversalClient(client: PlatformSpecificTrelloLib): {
     connect: ({ org }: {
         org?: string | undefined;

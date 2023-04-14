@@ -1,4 +1,4 @@
-export declare type TrelloAuthorizeParams = {
+export type TrelloAuthorizeParams = {
     type: 'redirect';
     name: string;
     persist: true;
@@ -10,15 +10,15 @@ export declare type TrelloAuthorizeParams = {
     success: () => void;
     error: (err: any) => void;
 };
-export declare type TrelloRequestParams = {
+export type TrelloRequestParams = {
     fields?: string;
     name?: string;
     idList?: string;
 };
-export declare type TrelloLabel = {
+export type TrelloLabel = {
     color: string;
 };
-export declare type TrelloCard = {
+export type TrelloCard = {
     id: string;
     idList: string;
     name: string;
@@ -31,7 +31,7 @@ export declare type TrelloCard = {
 };
 export declare function assertTrelloCard(o: any): asserts o is TrelloCard;
 export declare function assertTrelloCards(o: any): asserts o is TrelloCard[];
-export declare type TrelloList = {
+export type TrelloList = {
     id: string;
     idBoard: string;
     pos?: number;
@@ -40,25 +40,25 @@ export declare type TrelloList = {
 };
 export declare function assertTrelloList(o: any): asserts o is TrelloList;
 export declare function assertTrelloLists(o: any): asserts o is TrelloList[];
-export declare type TrelloBoard = {
+export type TrelloBoard = {
     id: string;
     name: string;
 };
 export declare function assertTrelloBoard(o: any): asserts o is TrelloBoard;
 export declare function assertTrelloBoards(o: any): asserts o is TrelloBoard[];
-export declare type TrelloOrg = {
+export type TrelloOrg = {
     id: string;
     name: string;
     displayName: string;
 };
 export declare function assertTrelloOrg(o: any): asserts o is TrelloOrg;
 export declare function assertTrelloOrgs(o: any): asserts o is TrelloOrg[];
-export declare type TrelloRequestResponse = TrelloCard[] | TrelloList[] | TrelloBoard[];
-export declare type TrelloSuccessCallback = (response: TrelloRequestResponse) => any;
-export declare type TrelloRejectCallback = (err: any) => void;
-export declare type TrelloRESTFunction = (path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
-export declare type TrelloRequestFunction = (method: 'get' | 'put' | 'post' | 'delete', path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
-export declare type PlatformSpecificTrelloLib = {
+export type TrelloRequestResponse = TrelloCard[] | TrelloList[] | TrelloBoard[];
+export type TrelloSuccessCallback = (response: TrelloRequestResponse) => any;
+export type TrelloRejectCallback = (err: any) => void;
+export type TrelloRESTFunction = (path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
+export type TrelloRequestFunction = (method: 'get' | 'put' | 'post' | 'delete', path: string, params: TrelloRequestParams) => Promise<TrelloRequestResponse>;
+export type PlatformSpecificTrelloLib = {
     waitUntilLoaded: () => Promise<void>;
     authorize: () => Promise<void>;
     deauthorize: () => Promise<void>;

@@ -1,21 +1,21 @@
 import type { TrelloCard } from './types.js';
 import type { client } from './index.js';
-export declare type ErrorRecord = {
+export type ErrorRecord = {
     cardName?: string;
     idList?: string;
     id?: string;
     error: string;
 };
-export declare type Tag = {
+export type Tag = {
     number: number;
     color: string;
     groupname?: string;
 };
-export declare type TagRange = {
+export type TagRange = {
     start: Tag;
     end: Tag;
 };
-export declare type DeadRecord = {
+export type DeadRecord = {
     date: string;
     tags: Tag[];
     note?: string | false;
@@ -24,7 +24,7 @@ export declare type DeadRecord = {
     cardName: string;
     dateLastActivity: string;
 };
-export declare type IncomingRecord = {
+export type IncomingRecord = {
     date: string;
     groupname: string;
     into?: string;
@@ -37,7 +37,7 @@ export declare type IncomingRecord = {
     cardName: string;
     dateLastActivity: string;
 };
-export declare type TreatmentRecord = {
+export type TreatmentRecord = {
     date: string;
     treatment: string;
     tags: Tag[];
@@ -46,7 +46,7 @@ export declare type TreatmentRecord = {
     cardName: string;
     dateLastActivity: string;
 };
-export declare type LivestockRecords = {
+export type LivestockRecords = {
     dead: {
         records: DeadRecord[];
         errors: ErrorRecord[];

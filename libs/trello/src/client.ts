@@ -1,12 +1,11 @@
 // URL to manage redirect_uri's for your devKey: https://trello.com/app-key
 import debug from 'debug';
 import { 
-  TrelloBoard, 
-  PlatformSpecificTrelloLib, 
+  type PlatformSpecificTrelloLib, 
   assertTrelloOrgs, 
   assertTrelloBoards, 
   assertTrelloCards,
-  TrelloList, 
+  type TrelloList, 
   assertTrelloLists} from './types.js';
 
 const info = debug('af/trello#index:info');

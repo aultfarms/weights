@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import debug from 'debug';
 import type { TrelloCard } from './types.js';
 import type { client } from './index.js';
@@ -10,7 +9,6 @@ import type { client } from './index.js';
 // accounting, but you may want to add them back someday.
 //-------------------------------------------------------------------------------------------
 
-const info = debug('af/trello#livestock:info');
 const warn = debug('af/trello#livestock:warn');
 
 export type ErrorRecord = {
@@ -246,18 +244,18 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     let matches = name.match(/^([0-9]{4}-[0-9]{1,2}-[0-9]{1,2}):?(.*)$/);
     if (!matches) {
       warn('WARNING: attempted to convert card name (',name,') to dead record, but day/tag was not matched');
-      matches = [];
+      matches = null;
     }
 
     // Grab the day:
-    const day = matches[1] || '1970-01-01';
-    if (!matches[1]) {
+    const day = matches?.[1] || '1970-01-01';
+    if (!(matches?.[1])) {
       warn('WARNING: attempted to convert card name (',name,') to dead record, but day was not matched');
     }
 
     // Grab the tags/pens
-    let tags_and_pens_str = matches[2] || 'UNKNOWN';
-    if (!matches[2]) {
+    let tags_and_pens_str = matches?.[2] || 'UNKNOWN';
+    if (!(matches?.[2])) {
       warn('WARNING: attempted to convert card name (',name,') to dead record, but tag was not matched');
     }
 
@@ -268,7 +266,7 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
 
     // Ditch anything in parentheses:
     tags_and_pens_str = tags_and_pens_str.replace(/\(.*\)/g,'');
-    let tags_and_pens = tags_and_pens_str.match(/(([A-Z]+:[A-Z]{3}[0-9]{2}-[A-Z0-9]:)?[A-Za-z']+ ?([0-9]+)?)/g);
+    let tags_and_pens: RegExpMatchArray | null | string[] = tags_and_pens_str.match(/(([A-Z]+:[A-Z]{3}[0-9]{2}-[A-Z0-9]:)?[A-Za-z']+ ?([0-9]+)?)/g);
     if (!tags_and_pens) tags_and_pens = [];
     tags_and_pens = tags_and_pens.map(tp => tp.trim());
     tags_and_pens = tags_and_pens.map(tp => ( tp==='NT' ? 'NOTAG1' : tp));
