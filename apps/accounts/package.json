@@ -42,11 +42,7 @@
   "scripts": {
     "build:libs": "yarn workspace @aultfarms/trello build && yarn workspace @aultfarms/google build && yarn workspace @aultfarms/accounts build",
     "predeploy": "yarn run build:libs && yarn run build",
-    "deploy": "gh-pages -d build",
-    "oldstart": "react-scripts start",
-    "oldbuild": "react-scripts build",
-    "oldtest": "react-scripts test",
-    "oldeject": "react-scripts eject",
+    "deploy": "gh-pages -d dist",
     "dev": "vite",
     "build": "vite build"
   },
