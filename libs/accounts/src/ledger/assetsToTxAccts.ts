@@ -357,7 +357,7 @@ export default function(
                 // then this is just a copy of the original asset purchase in a subsequent year account.
                 initialLine = {
                   ...deepclone(linetemplate),
-                  category: linetemplate.category+'-'+(l.purchaseDate ? 'purchase' : 'initial'), // Added 4/2023
+                  category: (l.purchaseDate ? 'asset-purchases' : 'assetinitial') + '-' + linetemplate.category, // Added 4/2023
                   date: moment(date, 'YYYY-MM-DD'),
                   description: l.purchaseDate ? "Asset Purchase" : "Asset initial addition to inventory",
                   assetTxType: l.purchaseDate ? 'PURCHASE' : 'INITIAL',
@@ -373,7 +373,7 @@ export default function(
                   if (initialLine.date.isBefore(l.priorDate)) {
                     priorAsOfLine = {
                       ...deepclone(linetemplate),
-                      category: linetemplate.category+'-asof', // Added 4/2023
+                      category: 'asset-asof-'+linetemplate.category, // Added 4/2023
                       date: moment(`${l.priorDate.format('YYYY-MM-DD')} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // prioDate is an "as-of" the end of that prior day
                       description: "Initializing prior balance value after old purchase",
                       assetTxType: 'AS-OF',
@@ -393,7 +393,7 @@ export default function(
               if (isMoment(priorDate)) priorDate = priorDate.clone();
               asOfLine = {
                 ...deepclone(linetemplate),
-                category: linetemplate.category+'-asof', // Added 4/2023
+                category: 'asset-asof-'+linetemplate.category, // Added 4/2023
                 date: moment(`${l.asOfDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss'), // as-of at the end of the day
                 description: "asOfDate Balance Adjustment." + (l.description ? '  Orig desc: '+l.description : ''),
                 assetTxType: 'AS-OF',
@@ -424,7 +424,7 @@ export default function(
               // the balance to zero.
               saleLine = {
                 ...deepclone(linetemplate),
-                category: linetemplate.category+'-sale', // Added 4/2023
+                category: 'asset-sales-'+linetemplate.category, // Added 4/2023
                 date: saleDate,
                 description: "Asset sold." + (l.description ? "  Orig desc: "+l.description : ''),
                 assetTxType: 'SALE',
