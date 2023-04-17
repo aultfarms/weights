@@ -14,16 +14,14 @@ const info = debug('af/accounts#sortAndSeparateTaxMkt:info');
 // Let's return (tax, mkt) tx lines (for P&L) and balances (for balance sheets)
 
 function convertStartingBalancesToTxAmounts(lines: AccountTx[]) {
-  lines = deepclone(lines);
-  lines = lines.map(l => {
+  for (const l of lines) {
     // asset accounts already have a $0 starting balance w/ net changes in amounts.  
     // "+=" preserves the amounts.  I originally just did amount = balance, and that lost
     // all the asset starting amounts.
     if (l.isStart) {
       l.amount += l.balance;
     }
-    return l;
-  });
+  };
   // Decided to leave all start lines, but turn them into amounts so balance is right.
   // HOWEVER, when computing a P&L, you HAVE to remember to NOT include isStart lines!!
   // Make a new start w/ zero balance 1 day before current oldest:
@@ -41,8 +39,7 @@ function convertStartingBalancesToTxAmounts(lines: AccountTx[]) {
   if (lines[0] && 'taxAmount' in lines[0]) newstart.taxAmount = 0;
   if (lines[0] && 'taxBalance' in lines[0]) newstart.taxBalance = 0;
 
-  lines = [ newstart, ...lines ];
-  return lines;
+  return [ newstart, ...lines ];
 }
 
 function sortLinesByDate(lines: AccountTx[]) {
@@ -53,12 +50,9 @@ function sortLinesByDate(lines: AccountTx[]) {
     }
     return a.date.diff(b.date);
   });
-
-  return lines;
 }
 
 export function recomputeBalances(lines: AccountTx[]) {
-
   for (let i=0; i < lines.length; i++) {
     let prev = i===0 ? 0 : lines[i-1]?.balance || 0;
     if (Math.abs(prev) < 0.01) prev = 0;
@@ -79,19 +73,18 @@ export function recomputeBalances(lines: AccountTx[]) {
       }
     }
   };
-  return lines;
 }
 
 function combineAndSortLines(accts: Account[], status: StatusFunction) {
-  
-  // Combine lines together:
-  let lines: AccountTx[] = accts.reduce((acc,acct) => 
-    ([ ...acc, ...acct.lines ]), [] as AccountTx[]
-  );
 
-  lines = deepclone(lines); // deepclone before we mutate the balances
-  lines = sortLinesByDate(lines);
-  lines = recomputeBalances(lines);
+  const lines: AccountTx[] = [];
+  for (const acct of accts) {
+    for (const l of acct.lines) {
+      lines.push({ ...l }); // shallow copy of l so we can recompute balances later
+    }
+  }
+  sortLinesByDate(lines);
+  recomputeBalances(lines);
   return lines;
 }
 
@@ -109,8 +102,8 @@ export default async function(
   for (const a of accts) {
     if (a.lines.length < 1) continue; // no lines to worry about
     a.lines = convertStartingBalancesToTxAmounts(a.lines);
-    a.lines = sortLinesByDate(a.lines);
-    a.lines = recomputeBalances(a.lines);
+    sortLinesByDate(a.lines);
+    recomputeBalances(a.lines);
   }
 
   status('Lines sorted, now splitting tax/mkt');
@@ -141,18 +134,20 @@ export default async function(
   await breakExecution();
   // The livestock inventory accounts have taxAmount and taxBalance that need to be 
   // swapped into the amount and balance spots in the tax version of the account.
-  taxaccts = taxaccts.map(acct => {
-    if (acct.settings.accounttype !== 'inventory') return acct;
-    if (acct.settings.inventorytype !== 'livestock') return acct;
-    acct = deepclone(acct); // make a copy so we can mess with the transactions
-    for (const tx of acct.lines) {
-      tx.mktAmount = tx.amount;
-      tx.mktBalance = tx.balance;
-      tx.amount = tx.taxAmount;
-      tx.balance = tx.taxBalance;
+  for (const [index, acct] of taxaccts.entries()) {
+    if (acct.settings.accounttype !== 'inventory') continue;
+    if (acct.settings.inventorytype !== 'livestock') continue;
+    taxaccts[index] = { 
+      ...acct, // shallow clone, map the lines: this is because the tax/mkt version of this account is actually different, so we need 2 copies of actual lines
+      lines: acct.lines.map(tx => ({
+        ...tx,
+        mktAmount: tx.amount,
+        mktBalance: tx.balance,
+        amount: tx.taxAmount,
+        balance: tx.taxBalance,
+      }))
     }
-    return acct; // a new clone of the old account
-  });
+  }
 
   status('running combineAndSortLines for taxaccts');
   breakExecution();

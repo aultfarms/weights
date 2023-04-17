@@ -5,7 +5,6 @@ import { isStart, moneyEquals } from '../ledger/util.js';
 import type { FinalAccounts, AccountTx } from '../ledger/types.js';
 //import { MultiError } from '../err.js';
 //import { stringify } from '../stringify.js';
-import rfdc from 'rfdc';
 import debug from 'debug';
 import type { StatusFunction } from '../ledger/types.js';
 
@@ -15,7 +14,6 @@ export { type CategoryTree, treeToCategoryNames, getCategory, amount, type Amoun
 export { moneyEquals }; // mainly for tests
 
 const info = debug('af/accounts#profit-loss:info');
-const deepclone = rfdc({ proto: true });
 // Have to jump through some hoops to get TS and node both happy w/ moment-range:
 const { extendMoment } = momentrange;
 const { range } = extendMoment({ ...moment, default: moment});
@@ -87,18 +85,18 @@ export function profitLoss(
 
   const timeranges: ProfitLossTimeRange[] = [];
   for (const r of ranges) {
-    const tlines = deepclone(lines.filter(t => 
+    const tlines = lines.filter(t => 
       !isStart(t) && 
       t.date && 
       t.date.isValid() && 
       r.timerange.contains(t.date)
-    ));
-    const startlines = deepclone(lines.filter(t => 
+    );
+    const startlines = lines.filter(t => 
       isStart(t) && 
       t.date && 
       t.date.isValid() && 
       r.timerange.contains(t.date)
-    ));
+    );
 
     timeranges.push({
       ...r,
