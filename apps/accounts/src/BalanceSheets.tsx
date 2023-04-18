@@ -81,9 +81,10 @@ export const BalanceSheets = observer(function BalanceSheets() {
   }
 
   const bss = actions.balancesheets();
-  if (!bss) return (
+  const bb = actions.borrowingBase();
+  if (!bss || !bb) return (
     <div style={{ margin: '10px' }}>
-      <div>No balance sheets computed yet.</div>
+      <div>No balance sheets and borrowing base computed yet.</div>
       <Button 
         disabled={!state.stepResult.rev || !(actions.ledger()?.final)} 
         variant="contained" 
@@ -132,11 +133,13 @@ export const BalanceSheets = observer(function BalanceSheets() {
     return (new Date()).toISOString().replace(/T.*$/,'');
   };
 
-  const handleUploadDownload = (year: string, direction: 'up' | 'down') => async () => {
+  const handleUploadDownload = ({ year, direction, borrowingBase} : { year: string, direction: 'up' | 'down', borrowingBase?: boolean }) => async () => {
     const bs = bss[year]![state.balance.type];
-    const wb = balance.annualBalanceSheetToWorkbook(bs);
-    console.log('workbook = ', wb);
-    const filename = `${year}-12-31_BalanceSheet_${state.balance.type.toUpperCase()}_asAt${nowstr()}.xlsx`;
+    const wb = borrowingBase ? balance.borrowingBaseToWorkbook(bb) :  balance.annualBalanceSheetToWorkbook(bs);
+    const filename = borrowingBase 
+      ? `${nowstr()}_BorrowingBase.xlsx`
+      : `${year}-12-31_BalanceSheet_${state.balance.type.toUpperCase()}_asAt${nowstr()}.xlsx`
+      
     const fullpath = `${state.config.saveLocation.path}/${filename}`;
     if (direction === 'up') {
       actions.activity(`Uploading file to Google at ${fullpath}...`);
@@ -157,6 +160,21 @@ export const BalanceSheets = observer(function BalanceSheets() {
     }
   };
 
+  const displayBorrowingBaseButton = () => (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flexGrow: 1 }} />
+      <Button 
+        variant="outlined" 
+        size="small" 
+        onClick={handleUploadDownload({ year: years[0]!, direction: 'down', borrowingBase: true })}
+      >
+        <DownloadIcon />
+        Borrowing Base
+      </Button>
+      <div style={{ flexGrow: 1 }} />
+    </div>
+  );
+
   const displayYearBalanceHeader = () => {
     const ret = [];
     for (const y of Object.keys(bss).sort().reverse()) {
@@ -164,11 +182,11 @@ export const BalanceSheets = observer(function BalanceSheets() {
         <TableCell align="right">
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'right' }}>
-              <Button variant="outlined" onClick={handleUploadDownload(y, 'down')}>
+              <Button variant="outlined" onClick={handleUploadDownload({ year: y, direction: 'down' })}>
                 <DownloadIcon />
               </Button>
               <div style={{ width: '20px' }}></div>
-              <Button variant="outlined" onClick={handleUploadDownload(y, 'up')}>
+              <Button variant="outlined" onClick={handleUploadDownload({ year: y, direction: 'up' })}>
                 <CloudUploadIcon />
               </Button>
             </div>
@@ -271,6 +289,8 @@ export const BalanceSheets = observer(function BalanceSheets() {
     <Paper elevation={1}>
       <div style={{ paddingLeft: '10px', paddingRight: '10px', display: 'flex', flexDirection: 'row' }}>
         <h1>Balance Sheet - {state.balance.type === 'mkt' ? 'Market' : 'Tax'}</h1>
+        <div style={{width: '20px'}}></div>
+        {state.balance.type === 'mkt' ? displayBorrowingBaseButton() : <React.Fragment /> }
         <div style={{ flexGrow: 1 }}></div>
         {displayTypeChooser()}
         <div>

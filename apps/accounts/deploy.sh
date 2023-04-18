@@ -25,6 +25,7 @@ echo -e "$CYAN--------> Push latest from master (did you remember to commit?)$NO
 git push
 
 cd ~/repos/aultfarms/accounts
+git checkout -- yarn.lock
 git pull monorepo master
 git push origin master
 # There are weird issues with yarn and paths being undefined if you don't do it like this:

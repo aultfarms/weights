@@ -1,6 +1,6 @@
 import type { Account, AccountTx, FinalAccounts, StatusFunction } from './types.js';
 import moment from 'moment';
-import { AccountError, LineError } from '../err.js';
+import { LineError } from '../err.js';
 import debug from 'debug';
 import rfdc from 'rfdc';
 import { breakExecution } from './util.js';
@@ -20,6 +20,17 @@ function convertStartingBalancesToTxAmounts(lines: AccountTx[]) {
     // all the asset starting amounts.
     if (l.isStart) {
       l.amount += l.balance;
+      // For inventory accounts:
+      if ('qty' in l && 'qtyBalance' in l) {
+        l.qty += l.qtyBalance;
+      }
+      // For livestock inventory accounts:
+      if ('taxAmount' in l && 'taxBalance' in l) {
+        l.taxAmount += l.taxBalance;
+      }
+      if ('weight' in l && 'weightBalance' in l) {
+        l.weight += l.weightBalance;
+      }
     }
   };
   // Decided to leave all start lines, but turn them into amounts so balance is right.
@@ -35,9 +46,14 @@ function convertStartingBalancesToTxAmounts(lines: AccountTx[]) {
     lineno: -1,
     acct: lines[0]!.acct,
   };
-  // need these for livestock inventory accounts
+  // need these for inventory accounts:
+  if (lines[0] && 'qty' in lines[0]) newstart.qty = 0;
+  if (lines[0] && 'qtyBalance' in lines[0]) newstart.qtyBalance = 0;
+  // also need these for livestock inventory accounts
   if (lines[0] && 'taxAmount' in lines[0]) newstart.taxAmount = 0;
   if (lines[0] && 'taxBalance' in lines[0]) newstart.taxBalance = 0;
+  if (lines[0] && 'weight' in lines[0]) newstart.weight = 0;
+  if (lines[0] && 'weightBalance' in lines[0]) newstart.weightBalance = 0;
 
   return [ newstart, ...lines ];
 }

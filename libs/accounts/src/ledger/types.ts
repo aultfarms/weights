@@ -143,6 +143,7 @@ export type BaseInventoryAccountSettings =  BaseAccountSettings & {
   outCategories: string[], // list of categories from cash accounts that represent things coming out of inventory
   qtyKey: string, // which key to pull out of the notes on those categories which represents the quantity
   qtyPrecision?: number, // how many decimal places to keep in printing qty and qtyBalance (corn/beans are 3 decimals)
+  borrowingBase?: boolean, // whether to include this inventory account in the borrowing base (market-only)
 }
 
 export type PriceWeightPoint = {
@@ -266,6 +267,7 @@ export function assertInventoryAccountSettings(o: any): asserts o is InventoryAc
     }
     if (!o.qtyKey || typeof o.qtyKey !== 'string') errs.push('Settings qtyKey ('+magenta(o.qtyKey)+') is missing or is not a string');
     if (('qtyPrecision' in o) && typeof o.qtyPrecision !== 'number') errs.push('Settings qtyPrecision exists ('+magenta(o.qtyPrecision)+') but it is not a number');
+    if (('borrowingBase' in o) && typeof o.borrowingBase !== 'boolean') errs.push('Settings borrowingBase exists ('+magenta(o.borrowingBase)+') but it is not true or false');
   }
   if (errs.length > 0) throw new MultiError({ msg: errs });
 }

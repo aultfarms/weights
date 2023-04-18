@@ -60,6 +60,7 @@ export type State = {
     scroll: number,
   },
   balancesheets: BigData,
+  borrowingBase: BigData,
   profitlosses: BigData,
   balance: {
     type: 'mkt' | 'tax',
@@ -143,6 +144,7 @@ export const state = observable<State>({
     scroll: 0,
   },
   balancesheets: { rev: 0 },
+  borrowingBase: { rev: 0 },
   profitlosses: { rev: 0 },
   balance: {
     type: 'mkt',

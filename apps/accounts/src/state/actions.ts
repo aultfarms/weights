@@ -5,7 +5,7 @@ import { combinePrefixedMsgs } from './util';
 import debug from 'debug';
 import * as accountsLib from '@aultfarms/accounts';
 import chalk from 'chalk'
-import moment, { type Moment } from 'moment';
+import moment from 'moment';
 
 const { magenta, green } = chalk;
 const warn = debug("accounts#actions:warn");
@@ -91,6 +91,15 @@ export const balancesheets = action('balancesheets', (bss?: typeof _balancesheet
   _balancesheets = bss;
   info('set balance sheets to ', bss);
 });
+let _borrowingBase: accountsLib.balance.QuarterBalanceSheet[] | null = null;
+export const borrowingBase = action('borrowingBase', (bb?: typeof _borrowingBase): typeof _borrowingBase | void => {
+  if (typeof bb === 'undefined') return _borrowingBase;
+  if (state.borrowingBase.rev < 0) return null;
+  state.borrowingBase.rev++;
+  _borrowingBase = bb;
+  info('set borrowing base', bb);
+});
+
 
 let _profitlosses: IndexedStatements<accountsLib.profitloss.ProfitLoss> | null = null;
 export const profitlosses = action('profitlosses', (pls?: typeof _profitlosses): typeof _profitlosses | void => {
@@ -172,6 +181,7 @@ export const profitlossScroll = action('profitlossScroll', (scroll: number) => {
   state.profitloss.scroll = scroll;
 });
 
+// Also compute borrowing base:
 export const computeBalanceSheets = action('computeBalanceSheets', async () => {
   try {
     page('activity');
@@ -191,9 +201,13 @@ export const computeBalanceSheets = action('computeBalanceSheets', async () => {
         mkt: await accountsLib.balance.annualBalanceSheet({ year, type: 'mkt', ledger: final }),
       };
     }
-    activity('Registering balance sheets...');
+    activity('Creating borrowing base');
+    const bb = await accountsLib.balance.borrowingBase({ ledger: final });
+
+    activity('Registering balance sheets and borrowing base...');
     await breakExecution();
     balancesheets(bss);
+    borrowingBase(bb);
     activity('Successfully created balance sheets');
     page('balance');
   } catch(e: any) {
@@ -406,3 +420,4 @@ export const inventoryApplyAllChanges = action('inventoryApplyAllChanges', async
   }
 
 });
+
