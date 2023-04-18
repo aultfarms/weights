@@ -7,6 +7,7 @@ import { ActivityLog } from './ActivityLog';
 import { Ledger } from './Ledger';
 import { BalanceSheets } from './BalanceSheets';
 import { ProfitLoss } from './ProfitLoss';
+import { Chart } from './Chart';
 import { Ten99 } from './Ten99';
 import { Inventory } from './Inventory';
 import { Config } from './Config';
@@ -34,6 +35,7 @@ export const App = observer(function App() {
       case 'ledger': return <Ledger />;
       case 'balance': return <BalanceSheets />;
       case 'profit': return <ProfitLoss />;
+      case 'chart': return <Chart />;
       case 'ten99': return <Ten99 />;
       case 'inventory': return <Inventory />;
     }

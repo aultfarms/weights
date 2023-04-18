@@ -1,18 +1,21 @@
 import type { AccountTx } from '../ledger/types.js';
 import { LineError } from '../err.js';
-import type { Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 import type { DateRange }from 'moment-range';
+import type { Dayjs } from 'dayjs';
 import { stringify } from '../stringify.js';
+import { isSameDayOrAfter } from '../util.js';
 import debug from 'debug';
 const info = debug('af/accounts#profit-loss/categorize');
 
 export type AmountConfig = {
   start?: Moment,
-  end?: Moment,
+  end?: Moment | Dayjs,
   timerange?: DateRange,
   type?: 'debit' | 'credit',
   only?: string,
   exclude?: string,
+  debug?: true,
 };
 
 export type CategoryTree = {
@@ -25,16 +28,21 @@ export type CategoryTree = {
 export function amount(cat: CategoryTree, cfg?: AmountConfig): number {
   cfg = cfg || {};
   const {start,end,timerange,type,only,exclude} = cfg;
+  const endMoment = end ? moment(+end) : null;
+
   // if this one it explicitly excluded, no need to recurse
   if (exclude && cat.name === exclude) return 0;
   // if this one does not contain the only one we want, we're done
   if (only && !containsCategory(cat,only) && !underCategory(cat,only)) return 0;
   // total of transactions at this level plus amounts of children
   const mysum = cat.transactions.reduce((sum,tx) => {
+    // 2020-07-19 has straw checks
     if (type === 'credit' && tx.amount < 0) return sum; // credits are positive
     if (type === 'debit'  && tx.amount > 0) return sum; // debits are negative
     if (start && tx.date.isBefore(start)) return sum; // before start time
-    if (end   && tx.date.isAfter(end))    return sum; // after end time
+    if (endMoment && !isSameDayOrAfter(endMoment, tx.date)) { // I don't know why, but if you do tx.date.isAfter, it doesn't work.
+      return sum; // after end time
+    }
     if (timerange && !timerange.contains(tx.date)) return sum; // does not fall within the time range
     return sum + tx.amount; // otherwise, include in resulting sum
   },0);

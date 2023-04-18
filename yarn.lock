@@ -80,6 +80,7 @@ __metadata:
     chalk: 5.2.0
     commander: ^9.0.0
     concurrently: ^8.0.1
+    dayjs: ^1.11.7
     debug: ^4.3.4
     deep-equal: ^2.2.0
     get-own-enumerable-property-symbols: ^3.0.2
@@ -2894,6 +2895,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kurkle/color@npm:^0.3.0":
+  version: 0.3.2
+  resolution: "@kurkle/color@npm:0.3.2"
+  checksum: 79e97b31f8f6efb28c69d373f94b0c7480226fe8ec95221f518ac998e156444a496727ce47de6d728eb5c3369288e794cba82cae34253deb0d472d3bfe080e49
+  languageName: node
+  linkType: hard
+
 "@maxim_mazurok/gapi.client.drive@npm:latest":
   version: 3.0.20220116
   resolution: "@maxim_mazurok/gapi.client.drive@npm:3.0.20220116"
@@ -4768,6 +4776,8 @@ __metadata:
     "@vitejs/plugin-react": ^3.1.0
     ansispan: ^0.0.4
     chalk: 5.2.0
+    chart.js: ^4.2.1
+    dayjs: ^1.11.7
     debug: ^4.3.4
     gh-pages: ^5.0.0
     html-escaper: ^3.0.3
@@ -4777,6 +4787,7 @@ __metadata:
     moment: ^2.29.1
     numeral: ^2.0.6
     react: ^18.2.0
+    react-chartjs-2: ^5.2.0
     react-dom: ^18.2.0
     react-helmet-async: ^1.3.0
     react-json-view: ^1.21.3
@@ -6365,6 +6376,15 @@ __metadata:
   version: 0.2.0
   resolution: "charcodes@npm:0.2.0"
   checksum: 972443ed359d54382e721b9db0a298eb95c4c454386f7e98886586f433e1e6686225416114e6f6bb2e6ef3facc9ba3b4ab9946a56a180fe64ef67816a05d4fe4
+  languageName: node
+  linkType: hard
+
+"chart.js@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "chart.js@npm:4.2.1"
+  dependencies:
+    "@kurkle/color": ^0.3.0
+  checksum: 7319fdfd1e29812e87bbc07737e8c9072ff659bbc09ade8dd262f83424cd7e48f89afe5220e11e002c9f236883fae3f3adb8adc16acb4682b0ddcc0b661c3af9
   languageName: node
   linkType: hard
 
@@ -15749,6 +15769,16 @@ __metadata:
     lodash.flow: ^3.3.0
     pure-color: ^1.2.0
   checksum: 00a12dddafc8a9025cca933b0dcb65fca41c81fa176d1fc3a6a9d0242127042e2c0a604f4c724a3254dd2c6aeb5ef55095522ff22f5462e419641c1341a658e4
+  languageName: node
+  linkType: hard
+
+"react-chartjs-2@npm:^5.2.0":
+  version: 5.2.0
+  resolution: "react-chartjs-2@npm:5.2.0"
+  peerDependencies:
+    chart.js: ^4.1.1
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+  checksum: ace702185be1450e5888a8bcd8b5fc1995067e3b11d236764a67f5567a3d7c32ff16923b8d48d3d39bda6e45135da6c044c9b43fbe8e1978f95aca9d2c0ce348
   languageName: node
   linkType: hard
 

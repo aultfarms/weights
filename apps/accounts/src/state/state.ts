@@ -42,7 +42,7 @@ export type ActivityMessage = {
 export type BigData = { rev: number };
 
 export type State = {
-  page: 'activity' | 'ledger' | 'balance' | 'profit' | 'ten99' | 'inventory',
+  page: 'activity' | 'ledger' | 'balance' | 'profit' | 'chart' | 'ten99' | 'inventory',
   modal: 'none' | 'config',
   config: Config,
   activityLog: ActivityMessage[],

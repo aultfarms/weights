@@ -71,6 +71,7 @@
     "bluebird": "^3.7.2",
     "chalk": "5.2.0",
     "commander": "^9.0.0",
+    "dayjs": "^1.11.7",
     "debug": "^4.3.4",
     "get-own-enumerable-property-symbols": "^3.0.2",
     "is-obj": "^3.0.0",
