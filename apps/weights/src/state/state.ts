@@ -69,6 +69,9 @@ export type State = {
   stats: {
     [name: string]: WeightStat,
   },
+  groupstats: {
+    [group: string]: WeightStat,
+  },
   records: { rev: number }, // big data
   // Current year things:
   weights: WeightRecord[],
@@ -113,6 +116,7 @@ export const state = observable<State>({
     heavy: { limit: 1530, count: 0 },
   },
   stats: {},
+  groupstats: {},
   records: { rev: 0 },
   weights: [],
   sheetinfo: { id: '', path: '', worksheetName: '' },

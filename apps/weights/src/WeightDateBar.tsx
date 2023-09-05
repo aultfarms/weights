@@ -12,7 +12,7 @@ import './WeightDateBar.css';
 
 export const WeightDateBar = observer(function WeightDateBar() {
   const ctx = React.useContext(context);
-  const { state, actions } = ctx;
+  const { state } = ctx;
 
   function renderStatsObj(name: string, stats: livestock.WeightStat) {
     return <Card key={'weightdatebarstats'+name} className="weightdatebarcard">
@@ -51,10 +51,14 @@ export const WeightDateBar = observer(function WeightDateBar() {
     if (!stats) return <React.Fragment key={'weightdatebarfrag'+name}/>; // this is dumb I have to put a key on a react fragment
     return renderStatsObj(name, stats);
   }
+  function renderGroupStatsFromState(name: string) {
+    const stats = state.groupstats[name];
+    if (!stats) return <React.Fragment key={'weightdatebarfrag'+name}/>; // this is dumb I have to put a key on a react fragment
+    return renderStatsObj(name, stats);
+  }
   
   return (
     <div className="weightdatebar">
-    
       <div className="weightdatebarleft">
         <Card className="weightdatebarinputcard">
           <input className='weightdatebarinput'
@@ -81,6 +85,11 @@ export const WeightDateBar = observer(function WeightDateBar() {
       <div className="weightdatebarright">
         { ['KEEP', 'JUNK' ].map(renderStatsFromState) }
         { renderCombinedStats('S+H', ['SELL', 'HEAVY']) }
+      </div>
+      <div className="weightdatebarright"
+        style={{ maxHeight: '200px', display: 'flex', flexDirection: 'column', overflowY: 'scroll' }}
+      >
+        { Object.keys(state.groupstats).map(renderGroupStatsFromState) }
       </div>
 
     </div>

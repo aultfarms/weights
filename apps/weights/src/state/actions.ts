@@ -99,6 +99,7 @@ export const loadWeights = action('loadWeights', async () => {
 export const updateStats = action('updateStats', () => {
   const stats = livestock.weights.computeStats(state.weights);
   state.stats = stats.sorts;
+  state.groupstats = stats.incoming;
 });
 
 export const msg = action('msg', (msg: string | Msg, type?: 'good' | 'bad') => {
