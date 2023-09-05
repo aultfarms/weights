@@ -1,4 +1,5 @@
 import { type PlatformSpecificTrelloLib, type TrelloList } from './types.js';
+export declare const defaultOrg = "Ault Farms";
 export type Client = ReturnType<typeof getUniversalClient>;
 export declare function getUniversalClient(client: PlatformSpecificTrelloLib): {
     connect: ({ org }: {

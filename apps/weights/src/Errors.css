@@ -1,0 +1,12 @@
+.errors {
+  display: flex;
+  flex-direction: row;
+}
+
+.errorslink {
+  flex-grow: 1;
+  color: #0000FF;
+  text-decoration: underline;
+  padding-left: 10px;
+  padding-top: 10px;
+}

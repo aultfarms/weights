@@ -39,6 +39,7 @@ export default async function run(accounts: typeof accountsLib, pathroot: string
   const sourceInfo = await drive.idFromPath({ path: sourceAccountsDir });
   if (!sourceInfo) throw `Could not find info on source path ${sourceAccountsDir}`;
   const sourceFolderid = sourceInfo.id;
+  info('Copying all files from',sourceAccountsDir,'to',destpath);
   await drive.copyAllFilesFromFolderToExistingFolder({ sourceFolderid, destinationFolderid });
 
   info('It should be able to read all those test accounts');

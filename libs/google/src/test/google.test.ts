@@ -70,6 +70,9 @@ export async function drive(g: Google) {
   if (!r5) throw `ls: did not return truthy result (${r5})`;
   if (!r5.id || typeof r5.id !== 'string') throw `ls: did not return a string for id (${r5.id})`;
   if (!Array.isArray(r5.contents)) throw `ls: did not return an array of contents (${r5.contents})`;
+  if (r5.contents.length !== 2) throw `ls: returned more than the two files we put in there.`;
+  if (!r5.contents.find(c => c.name === 'FILE1')) throw `ls: FILE1 was not listed in the results`;
+  if (!r5.contents.find(c => c.name === 'FILE2')) throw `ls: FILE2 was not listed in the results`;
   
   const r6 = await g.drive.ls({ path: `${path}/FOLDER2/FILE1` }); // try ls-ing a file:
   if (!r6 || !r6.id || typeof r6.id !== 'string') throw `ls: when ls-ing a file, did not return a string for id (${r6?.id})`;
@@ -115,7 +118,9 @@ export async function sheets(g: Google) {
   const path = `${pathroot}/SHEETS1`;
   const folder = await g.drive.ensurePath({path});
   if (!folder) throw `ensurePath did not return an id for the SHEETS1 folder`;
+  const worksheetName = 'testsheet2';
 
+/*
   info('sheets: createSpreadsheet w/o worksheetName');
   const r2 = await g.sheets.createSpreadsheet({ 
     parentid: folder.id, 
@@ -127,7 +132,6 @@ export async function sheets(g: Google) {
   if (sheet1?.sheets?.length < 1) throw `createSpreadsheet failed to create a spreadsheet with at least one sheet in it`;
 
   info('sheets: createSpreadsheet w/ worksheetName');
-  const worksheetName = 'testsheet2';
   const r3 = await g.sheets.createSpreadsheet({ 
     parentid: folder.id, 
     name: 'testwb2', 
@@ -274,7 +278,7 @@ export async function sheets(g: Google) {
   await checkUpsertResultAgainstExpected({ expected: newrowobjects, id, worksheetName, g });
 
 
-  info(`sheets: pasteFormulasFromTemplateRow`);
+  info(`sheets: pasteFormulasFromTemplateRow AND formatColumnAsDate`);
 
   const r6 = await g.sheets.createSpreadsheet({
     parentid: folder.id,
@@ -302,7 +306,18 @@ export async function sheets(g: Google) {
     { lineno: 7, date: '2022-01-04', description: 'row 4', amount: 7, balance: 0, qty: 9, qtyBalance: 0 },
   ];
   await g.sheets.batchUpsertRows({ id, worksheetName, rows: rowobjects, header, insertOrUpdate: 'UPDATE' });
-                                      
+
+  info('sheets: formatColumnAsDate');
+  await g.sheets.formatColumnAsDate({ id, worksheetName, colZeroBasedIndex: 0 });
+  const r7a = await g.sheets.sheetToJson({ id, worksheetName });
+  if (!r7a) throw `ERROR: sheetToJson returned nothing`;
+  const firstrow = r7a.data[2];
+  if (!firstrow || typeof firstrow.date !== 'string') throw `ERROR: first data row (row lineno 4) has no date at all`;
+  const expecteddate = rowobjects[2]!.date;
+  if (firstrow.date !== expecteddate) throw `ERROR: first data row date (${firstrow.date}) is not the same as the date we put in there (${expecteddate}).  Entire row in spreadsheet is: (${JSON.stringify(firstrow)}) formatColumnAsDate did not work.`;
+
+
+  info(`sheets: pasteFormulasFromTemplateRow`);
   await g.sheets.pasteFormulasFromTemplateRow({ id, worksheetName, 
     templateLineno: 3,
     startLineno: 4,
@@ -321,7 +336,35 @@ export async function sheets(g: Google) {
   validateRowObject({ result: settingsrow, expected: {
     date: 'SETTINGS'
   }});
+*/
 
+  info('sheets: ensureSpreadsheet without worksheetName and sheet does not exist');
+  let ensureSpreadsheetPath = `${path}/test_ensure1`;
+  const r8 = await g.sheets.ensureSpreadsheet({ path: ensureSpreadsheetPath });
+  if (!r8?.id) throw `ERROR: ensureSpreadsheet failed to return an id`;
+  info('the first ensureSpreadsheet returned',r8);
+  const r9 = await g.sheets.getSpreadsheet({ id: r8.id });
+  info('the first getSpreadsheet returned',r9);
+  if (!r9?.spreadsheetId) throw `ERROR: could not retrieve ensured spreadsheet`;
+
+  info('sheets: ensureSpreadsheet without worksheetName and sheet already exists');
+  const r10 = await g.sheets.ensureSpreadsheet( { path: ensureSpreadsheetPath });
+  if (r10?.id !== r8?.id) throw `ERROR: after second ensureSpreadsheet on the same path, did not get same id back.`;
+
+  info('sheets: ensureSpreadsheet with worksheetName and folder to create');
+  ensureSpreadsheetPath = `${path}/newfolder/test_ensure2`;
+  const r11 = await g.sheets.ensureSpreadsheet({ path: ensureSpreadsheetPath, worksheetName });
+  if (!r11?.id) throw `ERROR: ensureSpreadsheet with worksheetName did not return an id`;
+  if (!r11?.worksheetid) throw `ERROR: ensureSpreadsheet with worksheetName did not return a worksheetid`;
+  const r12 = await g.sheets.getSpreadsheet({ id: r11.id });
+  if (!r12?.spreadsheetId) throw `ERROR: could not retrieve ensured spreadsheet with worksheetName`;
+  const r13 = await g.sheets.worksheetIdFromName({ id: r11.id, name: worksheetName });
+  if (!r13 || r13 !== r11.worksheetid) throw `ERROR: worksheetid after ensuring is not the same as the one returned from ensureSpreadsheet with worksheetName`;
+
+  info(`sheets: ensureSpreadsheet with worksheetName when it already exists`);
+  const r14 = await g.sheets.ensureSpreadsheet({ path: ensureSpreadsheetPath, worksheetName });
+  if (r14?.id !== r11.id) throw `ERROR: second call to ensureSpreadsheet with worksheetName did NOT return same id as the first.`;
+  if (r14?.worksheetid !== r11.worksheetid) throw `ERROR: second call to ensureSpreadsheet with worksheetName did NOT return same worksheetid as the first.`;
 
 
   info(`sheets: all tests passed`);

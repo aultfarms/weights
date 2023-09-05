@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@aultfarms/google": "workspace:^",
+    "@aultfarms/livestock": "workspace:^",
     "@aultfarms/trello": "workspace:^",
     "@overleaf/o-error": "^3.4.0",
     "@rollup/plugin-json": "^6.0.0",

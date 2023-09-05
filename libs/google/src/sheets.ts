@@ -1,5 +1,5 @@
 import { client } from './core';
-import { createFile, ensurePath, idFromPath, getFileContents } from './drive';
+import { createFile, ensurePath, idFromPath, getFileContents, ls } from './drive';
 import xlsx from 'xlsx-js-style';
 import debug from 'debug';
 //import pReduce from 'p-reduce';
@@ -9,9 +9,10 @@ import type { sheets_v4 as Sheets } from '@googleapis/sheets';
 
 const warn = debug('af/google#sheets:warn');
 const info = debug('af/google#sheets:info');
-//const trace = debug('af/google#sheets:trace');
+const trace = debug('af/google#sheets:trace');
 
 export const XlsxMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const GoogleSheetsMimeType = "application/vnd.google-apps.spreadsheet";
 // From: https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number (lower-down post about typescript)
 const isNumeric = (num: unknown) => (typeof(num) === 'number' || typeof(num) === "string" && num.trim() !== '') && !isNaN(num as number);
 
@@ -191,8 +192,7 @@ export async function batchUpsertRows(
     };
     request.requests!.push(updateCellsRequest);
   }
-  const ret = await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
-  info('Returned value from google spreadsheets batchUpdate: ', ret);
+  await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
   return;
 }
 
@@ -275,7 +275,7 @@ export async function worksheetIdFromName({ id, name }: { id: string, name: stri
 
 export async function getSpreadsheet(
   {id=null,path=null}:
-  {id?: string | null, path?: string | null}
+  {id?: string | null, path?: string | null, createIfNotExist?: boolean}
 ): Promise<Sheets.Schema$Spreadsheet | null> {
   if (!id) {
     if (!path) {
@@ -296,6 +296,84 @@ export async function getSpreadsheet(
   // I don't know why the type of spreadsheets.get doesn't have result on it
   // @ts-ignore
   return res?.result;
+}
+
+// You can eithre just ensure a spreadhseet file exists as a google sheet, or 
+// you can also ensure a worksheet exists within that spreadsheet
+export async function ensureSpreadsheet({ path, worksheetName }: { path: string, worksheetName?: string }) {
+  const parts = path.split('/');
+  if (!path) {
+    warn('ensureSpreadsheet: you passed an empty path.');
+    return null;
+  }
+  const filename = parts[parts.length-1]!;
+  const dirname = parts.slice(0,-1).join('/');
+  trace('ensureSpreadsheet: ensuring directory',dirname,'exists');
+  const dir = await ensurePath({ path: dirname});
+  if (!dir) {
+    warn('WARNING: ensureSpreadsheet unable to ensure parent directory of',dirname,'exists.');
+    return null;
+  }
+  trace('ensureSpreadsheet: directory exists, listing files');
+
+  // Grab the files in the parent directory to see if the one we want is there.
+  const files = await ls(dir);
+  if (!files) {
+    warn('WARNING: ensureSpreadsheet unable to list contents of directory after ensuring it exists');
+    return null;
+  }
+  trace('ensureSpreadsheet: list of files is: ', files);
+
+  const thefile = files.contents.find(f => f.name === filename);
+  if (thefile && thefile?.mimeType !== GoogleSheetsMimeType) {
+    warn('WARNING: the file at',path,'already exists, but it is not a spreadsheet (',GoogleSheetsMimeType,').  It is a',thefile?.mimeType,' instead.  You need to move or delete it first.');
+    return null;
+  }
+  let id = thefile?.id; // could still be undefined
+  trace('ensureSpreadsheet: after listing files, id is', id);
+
+  // If the file isn't there, make it.
+  if (!id) {
+    trace('ensureSpreadsheet: directory exists, but sheet does not.  Creating sheet at id',dir.id,' with filename',filename);
+    const spreadsheet = await createSpreadsheet({ parentid: dir.id, name: filename, worksheetName });
+    if (!spreadsheet) {
+      warn('WARNING: ensureSpreadsheet unable to createSpreadsheet in parent folder',dir.id,'with filename',filename);
+      return null;
+    }
+    id = spreadsheet.id;
+    trace('ensureSpreadsheet: spreadsheet was created, id = ', id);
+  }
+
+  // Now we know we have an id for the spreadsheet and it is a Google Sheet
+  // If they don't want to ensure a worksheet, we're done
+  if (!worksheetName) return { id };
+
+  // Otherwise, ensure the worksheet is in there too:
+  let worksheetid = await worksheetIdFromName({id, name: worksheetName })
+  if (!worksheetid) {
+    await ((await client()).sheets.spreadsheets.batchUpdate(
+      { spreadsheetId: id },
+      { 
+        requests: [ 
+          { 
+            addSheet: { 
+              properties: { 
+                title: worksheetName, 
+                index: 0 
+              } 
+            } 
+          } 
+        ]
+      }
+    ));
+    worksheetid = await worksheetIdFromName({ id, name: worksheetName });
+    if (!worksheetid) {
+      warn('WARNING: ensureSpreadsheet tried to create worksheet',worksheetName,', but it does not exist in the spreadsheet after creating it.');
+      return null;
+    }
+  }
+  // Now we know we have both an id and a worksheetid
+  return { id, worksheetid };
 }
 
 export type SheetJson = {
@@ -417,4 +495,36 @@ export function headerFromXlsxSheet({ sheet }: { sheet: xlsx.WorkSheet }): strin
     header.push(sheet[cellref]?.w || '');
   }
   return header;
+}
+
+
+// colindex is zero-based, not 1-based
+export async function formatColumnAsDate({ id, worksheetName, colZeroBasedIndex } : {
+  id: string, 
+  worksheetName: string, 
+  colZeroBasedIndex: number,
+}) {
+  const sheetId = await worksheetIdFromName({ id, name: worksheetName });
+  // From: https://developers.google.com/sheets/api/samples/formatting
+  const formatColumnRequest : gapi.client.sheets.Request = {
+    repeatCell: {
+      range: {
+        sheetId,
+        startColumnIndex: colZeroBasedIndex,
+        endColumnIndex: colZeroBasedIndex+1,     // endIndex is exclusive
+      },
+      cell: {
+        userEnteredFormat: {
+          numberFormat: {
+            type: 'DATE',
+            pattern: 'yyyy-MM-dd',
+          },
+        }
+      },
+      fields: 'userEnteredFormat.numberFormat',
+    }
+  };
+
+  const res = await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, { requests: [ formatColumnRequest ] });
+  trace('formatColumnRequest: request was', formatColumnRequest, ', result was: ', res);
 }

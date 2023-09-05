@@ -1,17 +1,60 @@
 {
   "name": "weights",
-  "homepage": "https://aultfarms.github.io/weights/",
-  "version": "0.1.0",
+  "homepage": ".",
+  "version": "2.0",
   "private": true,
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+  "dependencies": {
+    "@aultfarms/livestock": "workspace:^",
+    "@aultfarms/trello": "workspace:^",
+    "@emotion/react": "^11.10.6",
+    "@emotion/styled": "^11.10.6",
+    "@mui/icons-material": "^5.11.11",
+    "@mui/material": "^5.11.15",
+    "@react-hook/window-size": "^3.1.1",
+    "@types/node": "^16.11.26",
+    "@vitejs/plugin-react": "^3.1.0",
+    "chart.js": "^4.2.1",
+    "dayjs": "^1.11.7",
+    "debug": "^4.3.4",
+    "mobx": "^6.9.0",
+    "mobx-react-lite": "^3.4.3",
+    "numeral": "^2.0.6",
+    "p-limit": "^4.0.0",
+    "p-map": "^6.0.0",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-helmet-async": "^1.3.0",
+    "react-scripts": "5.0.0",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.3",
+    "vite": "^4.2.1"
   },
   "devDependencies": {
-    "@yarnpkg/sdks": "^3.0.0-rc.42"
+    "@types/debug": "^4.1.7",
+    "@types/gh-pages": "^3.2.1",
+    "@types/numeral": "^2.0.2",
+    "@types/react": "^18.0.31",
+    "@types/react-dom": "^18.0.11",
+    "gh-pages": "^5.0.0"
+  },
+  "scripts": {
+    "build:libs": "yarn workspace @aultfarms/trello build && yarn workspace @aultfarms/google build && yarn workspace @aultfarms/livestock build",
+    "predeploy": "yarn run build:libs && yarn run build",
+    "deploy": "gh-pages -d dist",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

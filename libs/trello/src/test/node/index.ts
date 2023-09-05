@@ -1,7 +1,6 @@
 import * as trelloNode from '../../node/index.js';
 import debug from 'debug';
 import trelloTests from '../trello.test.js';
-import livestockTests from '../livestock.test.js';
 
 const info = debug('af/trello-node:info');
 
@@ -14,10 +13,6 @@ const info = debug('af/trello-node:info');
     info('Testing universal trello tests');
     await trelloTests(client, trelloNode);
     info('All universal trello tests passed');
-
-    info('Testing livestock tests');
-    await livestockTests(client, trelloNode);
-
 
     info('All tests passed!');
   } catch(e) {

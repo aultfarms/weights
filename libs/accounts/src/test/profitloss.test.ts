@@ -20,9 +20,9 @@ export default async function run(a: typeof profitloss, accounts: ledger.FinalAc
   const expected = [
 //    { pl: mkt2022, type: 'mkt', category: 'inventory-cattle-dailygain', value: 25214.66 },
     { pl: tax2022, type: 'tax', category: 'inventory-cattle-dailygain', value: 0 },
-    { pl: mkt, type: 'mkt', category: 'equipment-chopper-2013.newholland.fr9050chopper', value: -20000 },
-    { pl: tax, type: 'tax', category: 'equipment-chopper-taxonlysplit', value: -31016.19 },
-    { pl: mkt, type: 'mkt', category: 'equipment-loader-2015.jcb.ecoskidsteer', value: -20000 }, // a "sold" asset that still had mkt value
+    { pl: mkt, type: 'mkt', category: 'asset-asof-equipment-chopper-2013.newholland.fr9050chopper', value: -20000 },
+    { pl: tax, type: 'tax', category: 'asset-asof-equipment-chopper-taxonlysplit', value: -31016.19 },
+    { pl: mkt, type: 'mkt', category: 'asset-asof-equipment-loader-2015.jcb.ecoskidsteer', value: -3000 }, // a "sold" asset that still had mkt value
   ];
   for (const expect of expected) {
     const cat = a.getCategory(expect.pl.categories, expect.category);

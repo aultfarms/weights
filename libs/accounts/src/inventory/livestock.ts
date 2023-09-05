@@ -1,10 +1,13 @@
 import { MultiError, LineError, AccountError } from '../err.js';
-import { assertPriceWeightPoints, type PriceWeightPoint, type LivestockInventoryAccount, type LivestockInventoryAccountTx } from '../ledger/types.js';
-import moment, { type Moment } from 'moment';
+import { assertPriceWeightPoints } from '../ledger/types.js';
+import type { PriceWeightPoint, LivestockInventoryAccount, LivestockInventoryAccountTx } from '../ledger/types.js';
+import type { Moment } from 'moment';
+import moment from 'moment';
 import { moneyEquals, integerEquals } from '../ledger/util.js';
 import debug from 'debug';
 import { compareDays, isAfterDay, isBeforeDay, isSameDay, isSameDayOrAfter, isSameDayOrBefore} from '../util.js';
 import * as trello from '@aultfarms/trello';
+import { records as livestockRecords } from '@aultfarms/livestock';
 import numeral from 'numeral';
 //import rfdc from 'rfdc';
 
@@ -162,7 +165,7 @@ export async function computeDailyDeadsFromTrello({ acct }: { acct: LivestockInv
   }
   const client = trello.getClient();
   await client.connect({ org });
-  const records = await trello.livestock.fetchRecords(client);
+  const records = await livestockRecords.fetchRecords(client);
   if (records.dead.errors.length > 0) {
     throw new Error(
       'There are errors on cards in the Dead list in the Livestock board: '

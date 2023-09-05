@@ -258,7 +258,7 @@ function testValidateBalanaces(a: typeof ledger) {
   info('passed checking for error on intentionally bad balance');
 }
 
-function testSeparateTaxMkt(a: typeof ledger) {
+async function testSeparateTaxMkt(a: typeof ledger) {
   info('It should not error when separating tax/mkt on sample accounts');
   const accts0 = [ deepclone(testacct), deepclone(testacctWithSettings), deepclone(testacctAsset) ];
   let accts1 = a.initialValidateAccounts({ rawaccts: accts0, status: () => {} });
@@ -267,7 +267,7 @@ function testSeparateTaxMkt(a: typeof ledger) {
   let accts4 = a.splits({ accts: accts3, status: () => {} });
   let accts5 = a.assertAllAccounts({ accts: accts4, status: () => {} });
   let accts6 = a.validateBalances({ accts: accts5 });
-  let res = a.sortAndSeparateTaxMkt({ accts: accts6.accts, status: () => {} });
+  let res = await a.sortAndSeparateTaxMkt({ accts: accts6.accts, status: () => {} });
   info('passed no errors when separating tax/mkt');
 
   for (const type of ['tax', 'mkt']) {

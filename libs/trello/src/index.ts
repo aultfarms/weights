@@ -1,2 +1,3 @@
 export * as client from './client.js';
-export * as livestock from './livestock.js';
+export { defaultOrg } from './client.js';
+export * from './types.js';

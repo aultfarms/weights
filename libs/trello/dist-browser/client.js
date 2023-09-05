@@ -2,6 +2,7 @@
 import debug from 'debug';
 import { assertTrelloOrgs, assertTrelloBoards, assertTrelloCards, assertTrelloLists } from './types.js';
 const info = debug('af/trello#index:info');
+export const defaultOrg = 'Ault Farms';
 // Browser or Node passes the appropriate thing to this universal library.
 // When you import the browser or node version, you'll use "getClient"
 export function getUniversalClient(client) {
@@ -10,7 +11,7 @@ export function getUniversalClient(client) {
         await client.waitUntilLoaded();
         await client.authorize();
         if (!org)
-            org = 'Ault Farms';
+            org = defaultOrg;
         const orgs = await client.get('/members/me/organizations', { fields: 'id,name,displayName' });
         assertTrelloOrgs(orgs);
         for (const o of orgs) {

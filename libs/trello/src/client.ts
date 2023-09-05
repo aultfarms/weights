@@ -9,6 +9,7 @@ import {
   assertTrelloLists} from './types.js';
 
 const info = debug('af/trello#index:info');
+export const defaultOrg = 'Ault Farms';
 
 export type Client = ReturnType<typeof getUniversalClient>;
 // Browser or Node passes the appropriate thing to this universal library.
@@ -19,7 +20,7 @@ export function getUniversalClient(client: PlatformSpecificTrelloLib) {
   async function connect({ org }: { org?: string }) {
     await client.waitUntilLoaded();
     await client.authorize();
-    if (!org) org = 'Ault Farms';
+    if (!org) org = defaultOrg;
     const orgs = await client.get('/members/me/organizations', { fields: 'id,name,displayName' });
     assertTrelloOrgs(orgs);
     for (const o of orgs) {

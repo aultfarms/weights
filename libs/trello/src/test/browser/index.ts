@@ -3,7 +3,6 @@ import debug from 'debug';
 
 // trello.test.js has all the universal tests
 import trelloTests from '../trello.test.js';
-import livestockTests from '../livestock.test.js';
 
 const info = debug('af/trello#test/browser:info');
 
@@ -30,9 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       info('Testing trello universal...');
       await trelloTests(client, libsundertest);
-
-      info('Testing livestock...');
-      await livestockTests(client, libsundertest);
 
     } catch(e: any) {
       info('FAILED: tests threw exception: ', e);

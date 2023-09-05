@@ -189,7 +189,7 @@ export async function getFileContents({ id, exportMimeType=null }: { id: string,
   });
 }
 
-export type FileList = { id: string, name: string, kind?: string }[];
+export type FileList = { id: string, name: string, kind?: string, mimeType?: string }[];
 export async function ls(
   {id,path}: 
   { id: string, path?: null } | { path: string, id?: null }
@@ -214,14 +214,16 @@ export async function ls(
   });
   const files = (res?.result as Drive.Schema$FileList)?.files;
   if (!files) return { id,  contents: [] };
-  return {
+  const ret = {
     id,
     contents: files.map(f => ({ 
       id: f.id || '', 
       name: f.name || '', 
-      kind: f.kind || '' 
+      kind: f.kind || '',
+      mimeType: f.mimeType || '',
     })),
   };
+  return ret;
 }
 
 export async function uploadArrayBuffer(
@@ -267,10 +269,15 @@ export async function copyAllFilesFromFolderToExistingFolder({ sourceFolderid, d
   let count = 0;
   const queue = dir.contents.map(f => limit(async () => {
     try { 
+      // Drive has an oddity in ls-ing a folder that it returns a non-existent folder whose name is the part of the parent folder name
+      // before any "-".  i.e. if the parent folder is "MUTABLE-ACCOUNTS", it returns one entry with name "MUTABLE".  The "kind" is set to
+      // "drive#file", but the mimeType is application/vnd.google-apps.folder.  This function doesn't recursively copy anyway, so we can 
+      // hack a solution by just ignoring that mimeType
+      if (f.mimeType === 'application/vnd.google-apps.folder') return;
       await (await client()).drive.files.copy({ fileId: f.id }, { name: f.name, parents: [ destinationFolderid ] });
     } catch(e: any) {
       info('ERROR: tried to copy file',f,' but copy failed for reason:',e);
-      throw new Error('FAIL: could not copy file '+f.name+' from source to destination.  Error was: '+e.toString());
+      throw new Error('FAIL: could not copy file '+f.name+' from source to destination.  Source directory contents were: '+JSON.stringify(dir.contents)+'.  Error was: '+e.toString());
     }
     count++;
   }));
