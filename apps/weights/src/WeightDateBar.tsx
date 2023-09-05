@@ -12,23 +12,22 @@ import './WeightDateBar.css';
 
 export const WeightDateBar = observer(function WeightDateBar() {
   const ctx = React.useContext(context);
-  const { state } = ctx;
+  const { state, actions } = ctx;
 
   function renderStatsObj(name: string, stats: livestock.WeightStat) {
-    return <Card key={'weightdatebarstats'+name} className="weightdatebarcard">
-      <div className="weightdatebarcardtitle">
-        { name }
-      </div>
-      <div className='weightdatebarfilter'>
-        { stats.count + ' head' }
-      </div>
-      <div className='weightdatebarfilter'>
-        { stats.days ? numeral(stats.lbsGain / stats.days).format('0.00') : 0 } RoG
-      </div>
-      <div className='weightdatebarfilter'>
-        { stats.count ? numeral(stats.lbsGain / stats.count).format('0') : 0 } lbs
-      </div>
-    </Card>
+    return <tr key={'weightdatebarstats'+name}>
+      <td align="right">{ name }</td>
+      <td align="right">{ stats.count }</td>
+      <td align="right">
+        { stats.days ? numeral(stats.lbsGain / stats.days).format('0.00') : 0 }
+      </td>
+      <td align="right">
+        { stats.count ? numeral(stats.lbsGain / stats.count).format('0') : 0 }
+      </td>
+      <td align="right">
+        {stats.count ? numeral(stats.days / stats.count).format('0') : 0 }
+      </td>
+    </tr>
   }
 
   // For S+H:
@@ -78,19 +77,28 @@ export const WeightDateBar = observer(function WeightDateBar() {
           </div>
         </Card>
       </div>
-      <div className="weightdatebarright">
-        { renderCombinedStats('ALL', livestock.weights.sorts) }
-        { [ 'SELL', 'HEAVY' ].map(renderStatsFromState) }
-      </div>
-      <div className="weightdatebarright">
-        { ['KEEP', 'JUNK' ].map(renderStatsFromState) }
-        { renderCombinedStats('S+H', ['SELL', 'HEAVY']) }
-      </div>
-      <div className="weightdatebarright"
-        style={{ maxHeight: '200px', display: 'flex', flexDirection: 'column', overflowY: 'scroll' }}
-      >
-        { Object.keys(state.groupstats).map(renderGroupStatsFromState) }
-      </div>
+      <table>
+        <tr>
+          <th>Sort</th>
+          <th>#</th>
+          <th>RoG</th>
+          <th>Lbs</th>
+          <th>Days</th>
+         </tr>
+         { renderCombinedStats('ALL', livestock.weights.sorts) }
+         { livestock.weights.sorts.map(renderStatsFromState) }
+         { renderCombinedStats('S+H', ['SELL', 'HEAVY']) }
+      </table>
+      <table className="weightdatebarstatstable">
+       <tr>
+         <th>Group</th>
+         <th>#</th>
+         <th>RoG</th>
+         <th>Lbs</th>
+         <th>Days</th>
+        </tr>
+        { Object.keys(state.groupstats).sort().map(renderGroupStatsFromState) }
+      </table>
 
     </div>
   );

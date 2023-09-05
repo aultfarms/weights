@@ -48,8 +48,10 @@ export const records = action('records', (records?: livestock.LivestockRecords):
   return _records;
 });
 
-export const changeDate = action('changeDate', (date: string) => {
+export const changeDate = action('changeDate', async (date: string) => {
   state.date = date;
+  // Refilter things for "today" for this date
+  await loadWeights();
 });
 
 export const changeHeavyLimit = action('changeHeavyLimit', (limit: number) => {
