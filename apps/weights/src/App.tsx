@@ -26,21 +26,23 @@ export const App = observer(function App() {
       <Helmet>
         <title>AF/Weights - v{pkg.version}</title>
       </Helmet>
-      <div className="App" style={{ flexDirection: dir }}>
-        { state.isInitialized 
-        ? <React.Fragment>
-            <WeightsPane />
-            <div className="inputs" style={{ flexDirection: inputdir, maxWidth: maxinputwidth }}>
-              <TagInput />
-              <div className="spacer"></div>
-              <WeightInput />
+      <div className="App">
+        <div className="container" style={{ flexDirection: dir}}>
+          { state.isInitialized 
+          ? <React.Fragment>
+              <WeightsPane />
+              <div className="inputs" style={{ flexDirection: inputdir, maxWidth: maxinputwidth }}>
+                <TagInput />
+                <div className="spacer"></div>
+                <WeightInput />
+              </div>
+            </React.Fragment>
+          : <div>
+              Initializing...
+              <Errors/>
             </div>
-          </React.Fragment>
-        : <div>
-            Initializing...
-            <Errors/>
-          </div>
-        }
+          }
+        </div>
       </div>
     </HelmetProvider>
   );
