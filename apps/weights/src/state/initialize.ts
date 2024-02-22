@@ -1,6 +1,6 @@
 import { state } from './state';
 import debug from 'debug';
-import { windowSize, msg, records, loadWeights, moveTagInput, moveWeightInput, scrollToTag, appendNewRow, changeIsInitialized } from './actions';
+import { windowSize, msg, records, loadWeights, moveTagInput, moveWeightInput, scrollToTag, appendNewRow, changeIsInitialized, changeTab } from './actions';
 import * as livestock from '@aultfarms/livestock';
 import { getClient as getTrelloClient } from '@aultfarms/trello';
 
@@ -13,6 +13,7 @@ async function breakExecution() {
 
 export const initialize = async () => {
   try {
+    changeTab({ active: 'errors' });
     windowSize({ width: document.body.clientWidth, height: document.body.clientHeight });
     msg('Checking trello authorization...', 'bad');
     const trello = getTrelloClient();
@@ -41,12 +42,15 @@ export const initialize = async () => {
   
     changeIsInitialized(true);
   
-    const end = state.weights.length; // this changes between the two calls below, so save a copy
-    moveTagInput(end); // move to empty row at end
-    moveWeightInput(end);
-  
     msg('Loaded successfully.', 'good');
-  
+    changeTab({ active: 'weights' });
+
+    const end = state.weights.length;
+    if (end > 1) { 
+      moveTagInput(end);
+      moveWeightInput(end);
+    }
+
     scrollToTag();
   } catch(e: any) {
     msg('ERROR: could not initialize!  Error was: '+e.toString(), 'bad');

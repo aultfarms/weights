@@ -14,6 +14,8 @@ export type TrelloRequestParams = {
     fields?: string;
     name?: string;
     idList?: string;
+    desc?: string;
+    pos?: "top" | "bottom" | number;
 };
 export type TrelloLabel = {
     color: string;

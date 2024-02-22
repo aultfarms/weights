@@ -1,6 +1,6 @@
 {
   "name": "@aultfarms/trello",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Universal Libraries for Ault Farms connections to Trello",
   "type": "module",
   "comment1": "dist/node/index.js is normal output of tsc, used for node",

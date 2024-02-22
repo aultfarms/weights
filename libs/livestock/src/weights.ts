@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import * as google from '@aultfarms/google';
 import debug from 'debug';
-import type { WeightRecord, ErrorWeight, SpreadsheetInfo, GroupWeightStats, WeightRecordsInfo, LivestockRecords } from './types.js';
+import type { WeightRecord, ErrorWeight, SpreadsheetInfo, GroupWeightStats, WeightRecordsInfo, LivestockRecords, ComputedStats } from './types.js';
 import { assertWeightRecord } from './types.js';
 import oerror from '@overleaf/o-error';
 import {groupForTag} from './util.js';
@@ -66,6 +66,12 @@ export async function fetchYearWeights({ basepath, year, sheetinfo }: { basepath
     r.days = +(r.days) || 0;
     r.lbs_gain = +(r.lbs_gain) || 0;
     r.rog = +(r.rog) || 0;
+    r.number = +(r.number) || 0;
+    if (!r.group) r.group = '';
+    if (!r.sort) r.sort = '';
+    if (!r.color) r.color = '';
+    if (!r.in_date) r.in_date = '';
+    if (!r.weighdate) r.weighdate = '';
     if (r.color && r.number) {
       r.tag = { color: r.color, number: +(r.number) };
       delete r.color;
@@ -146,12 +152,18 @@ function updateGroupStat(group: string, weight: WeightRecord, stats: GroupWeight
       days: 0,
       adj_wt: 0,
       count: 0,
+      notags: 0,
     };
   }
   const s = stats[group]!;
-  s.lbsGain += weight.lbs_gain,
-  s.days += weight.days,
-  s.adj_wt += weight.adj_wt,
+  s.adj_wt += weight.adj_wt;
+  if (weight.tag.color === 'NOTAG') {
+    s.notags++;
+    return;
+  }
+  // only for legit tags:
+  s.lbsGain += weight.lbs_gain;
+  s.days += weight.days;
   s.count++;
 }
 
@@ -170,7 +182,7 @@ function updateGroupStat(group: string, weight: WeightRecord, stats: GroupWeight
 // - See what % of today's weights are from each group
 // - Do I want to compare years?
 // - Let's get this library done, then come back to this when we make it to the app.
-export function computeStats(weights: WeightRecord[]) {
+export function computeStats(weights: WeightRecord[]): ComputedStats {
   const sorts: GroupWeightStats = {};
   const incoming: GroupWeightStats = {};
   const sources: GroupWeightStats = {};
@@ -180,20 +192,23 @@ export function computeStats(weights: WeightRecord[]) {
   const years: GroupWeightStats = {};
 
   for (const w of weights) {
+    // Only include in stats if there is actually a tag and a weight:
+    if (!w.tag.color || !w.tag.number || !w.weight) continue;
+
     const range = Math.floor(w.adj_wt / 100) * 100;
     const source = (w.group || 'UNKNOWN').split(':')[0] || 'UNKNOWN';
     updateGroupStat(w.group || 'UNKNOWN', w, incoming);
     updateGroupStat(source, w, sources);
     updateGroupStat(w.sort,w, sorts);
     updateGroupStat(range+'',w, ranges);
-    updateGroupStat(w.weighdate, w, days);
-    const d = dayjs(w.weighdate, 'YYYY-MM-DD');
-    if (d.isValid()) {
-      updateGroupStat(d.format('YYYY-MM'), w, months);
-      updateGroupStat(d.format('YYYY'), w, years);
+    if (w.weighdate) {
+      const [year, month, _day] = w.weighdate.split('-');
+      updateGroupStat(w.weighdate, w, days);
+      updateGroupStat(year+'-'+month, w, months);
+      updateGroupStat(year!, w, years);
     }
   }
-  return { incoming, sorts, ranges, days, months, years };
+  return { incoming, sorts, sources, ranges, days, months, years };
 }
 
 // This mutates the row:
@@ -204,11 +219,28 @@ export function computeRow({ row, records, recheckTagGroup }: { row: WeightRecor
   if (!row.tag) return false;
   if (!row.weighdate || !row.weighdate.match(/[0-9]{4}-[0-9]{2}-[0-9]{2}/)) return false;
 
+  // Things we can compute regardless of other things:
+  const adj_wt = adjFactor * row.weight;
+  if (adj_wt !== row.adj_wt) {
+    changed = true;
+    row.adj_wt = adj_wt;
+  }
+
   // Now figure out the incoming group and validate it:
   let incoming = records.incoming.records.find(r => r.groupname === row.group);
-  if (!incoming || recheckTagGroup) incoming = groupForTag(records, row.tag) || undefined;
+  if (!incoming || recheckTagGroup) incoming = groupForTag(records, row.tag, row.weighdate) || undefined; // can't forget asOfDateString here for tag search context
   if (!incoming) {
-    warn('ERROR: Could not find incoming record from name (',row.group, ') or from tag (',row.tag.color,row.tag.number,')');
+    if (recheckTagGroup && row.tag.color === 'NOTAG') {
+      // Tag got changed from something that had a group name to something without a group
+      // So reset the rest of the numbers
+      if (row.in_date)  { changed = true; row.in_date = ''; }
+      if (row.days)     { changed = true; row.days = 0; }
+      if (row.group)    { changed = true; row.group = ''; }
+      if (row.lbs_gain) { changed = true; row.lbs_gain = 0; }
+      if (row.rog)      { changed = true; row.rog= 0; }
+      return changed;
+    }
+    warn('ERROR: Could not find incoming record from name (',row.group, ') or from tag (',row.tag.color,row.tag.number,').  Incoming groups are: ', records.incoming.records);
     throw new Error(`ERROR: Could not find incoming record from name (${row.group}) or from tag (${row.tag.color+row.tag.number})`);
   }
   let arrive = dayjs(row.in_date, 'YYYY-MM-DD');
@@ -226,11 +258,6 @@ export function computeRow({ row, records, recheckTagGroup }: { row: WeightRecor
   if (incoming.groupname !== row.group) {
     changed = true;
     row.group = incoming.groupname;
-  }
-  const adj_wt = adjFactor * row.weight;
-  if (adj_wt !== row.adj_wt) {
-    changed = true;
-    row.adj_wt = adj_wt;
   }
   if (row.in_date !== arrive_str) {
     changed = true;
@@ -263,8 +290,9 @@ export function computeRow({ row, records, recheckTagGroup }: { row: WeightRecor
   return changed;
 }
 
-export async function batchSaveWeightRows({ sheetinfo, weights, header }: {
-  sheetinfo: SpreadsheetInfo, weights: WeightRecord[], header: string[]
+// Note that if you "update" instead of "insert", you'll need to make sure the sheet has enough rows first.
+export async function batchSaveWeightRows({ sheetinfo, weights, header, insertOrUpdate='UPDATE' }: {
+  sheetinfo: SpreadsheetInfo, weights: WeightRecord[], header: string[], insertOrUpdate?: 'INSERT' | 'UPDATE'
 }) {
   // Flatten tag object back out:
   const rows: RowObject[] = weights.map(w => {
@@ -279,8 +307,14 @@ export async function batchSaveWeightRows({ sheetinfo, weights, header }: {
     ...sheetinfo,
     rows,
     header,
-    insertOrUpdate: 'UPDATE'
+    insertOrUpdate,
   });
+  const weighdatecol = header.findIndex(h => h === 'weighdate');
+  const indatecol = header.findIndex(h => h === 'in_date');
+  info('Setting weighdate column format to date for column zero-index', weighdatecol);
+  await google.sheets.formatColumnAsDate({ ...sheetinfo, colZeroBasedIndex: weighdatecol });
+  info('Setting indate column format to date for column zero-index', indatecol);
+  await google.sheets.formatColumnAsDate({ ...sheetinfo, colZeroBasedIndex: indatecol });
 }
 
 export async function recomputeAll({ weights, sheetinfo, header, records }: WeightRecordsInfo & { records: LivestockRecords }) {
@@ -289,5 +323,6 @@ export async function recomputeAll({ weights, sheetinfo, header, records }: Weig
     const isChanged = computeRow({ row, records, recheckTagGroup: true });
     if (isChanged) changes.push(row);
   }
-  return batchSaveWeightRows({ sheetinfo, weights: changes, header });
+  //return batchSaveWeightRows({ sheetinfo, weights: changes, header });
+  return changes; // USe batchSaveWeightRows to save back to the spreadsheet
 }

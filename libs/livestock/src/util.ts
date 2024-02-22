@@ -58,7 +58,7 @@ export function groupForTag(
 
   const filteredToDate = allfound.filter(g => !dayjs(g.date,'YYYY-MM-DD').isAfter(asOfDate)); // !isAfter = equal or before
   if (!filteredToDate || filteredToDate.length < 1) {
-    warn('WARNING: groupForTag: found multiple possible groups, but after filtering for date there were none left!');
+    warn('WARNING: groupForTag: found multiple possible groups (',allfound,') for tag (',tag,'), but after filtering for date (',asOfDate,') there were none left!');
     return false;
   }
   // string comparison below from https://stackoverflow.com/questions/1179366/is-there-a-javascript-strcmp:
@@ -68,7 +68,7 @@ export function groupForTag(
   return filteredToDate[filteredToDate.length-1] || false;
 };
 
-export function tagStrToObj(str:string): Tag {
+export function tagStrToObj(str:string): Tag | null {
   str = str.trim();
   // First, check if it is group-prefixed tag:
   const groupmatches = str.match(/^([A-Z]+:[A-Z]{3}[0-9]{2}-[0-9A-Z]):([A-Za-z]+) *([0-9]+)$/);
@@ -84,9 +84,14 @@ export function tagStrToObj(str:string): Tag {
   }
   // Otherwise, it is just a color/number combo:
   const matches = str.match(/^([A-Za-z]+) ?([0-9]+)?$/);
-  if (!matches) return { color: 'NOTAG', number: 1 };
+  if (!matches) {
+    warn('WARNING: tag string', str, 'did not match pattern for a tag string');
+    return null;
+  }
+
   if (!matches[1] || !matches[2]) {
     warn('WARNING: attempted to convert string ', str, 'to tag (not a group tag), but had invalid matches.  Matches = ', matches);
+    return null;
   }
   return { 
     color: matches[1] || 'UNKNOWNCOLOR', 

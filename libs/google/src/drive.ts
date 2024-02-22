@@ -284,3 +284,14 @@ export async function copyAllFilesFromFolderToExistingFolder({ sourceFolderid, d
   await Promise.all(queue);
   info('Copied',count,'files from source to destination folder');
 }
+
+export async function rename({ sourceFileid, newFilename }: { sourceFileid: string, newFilename: string }) {
+  const c = await client();
+  return c.drive.files.update({ fileId: sourceFileid }, { name: newFilename });
+}
+
+export async function move({ sourceFileid, sourceFolderid, destinationFolderid }: { sourceFileid: string, sourceFolderid: string, destinationFolderid: string }) {
+  const c = await client();
+  // @ts-ignore
+  return c.drive.files.update({ fileId: sourceFileid, addParents: destinationFolderid, removeParents: sourceFolderid });
+}

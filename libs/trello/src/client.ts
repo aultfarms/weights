@@ -65,10 +65,17 @@ export function getUniversalClient(client: PlatformSpecificTrelloLib) {
     return lists;
   }
 
+  async function saveNewCardAtBottomOfList({ name, desc, idList }: {name: string, desc?: string, idList?: string }) {
+    await client.waitUntilLoaded();
+    if (!desc) desc = '';
+    await client.post('/cards', { idList, pos: 'bottom', name, desc });
+  }
+
   return {
     ...client,
     connect,
     findBoardidByName,
     findListsAndCardsOnBoard,
+    saveNewCardAtBottomOfList,
   };
 }

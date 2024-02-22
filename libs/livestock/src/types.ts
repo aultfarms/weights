@@ -128,11 +128,21 @@ export function assertWeightRecord(o: any): asserts o is WeightRecord {
   if (typeof o.sort !== 'string') throw `ERROR: Not a WeightRecord: sort (${o.sort}) is not a string`;
 }
 
+export type ComputedStats = {
+  sorts: GroupWeightStats,
+  incoming: GroupWeightStats,
+  sources: GroupWeightStats,
+  ranges: GroupWeightStats,
+  days: GroupWeightStats,
+  months: GroupWeightStats,
+  years: GroupWeightStats,
+}
 export type WeightStat = {
-  lbsGain: number,
-  days: number,
-  adj_wt: number,
-  count: number,
+  adj_wt: number,  // notags DO affect this number
+  notags: number,  // count of just the no-tags
+  count: number,   // count WITHOUT the no-tags
+  lbsGain: number, // notags DO NOT affect this number
+  days: number,    // notags DO NOT affect this number 
 }
 export type GroupWeightStats = {
   [key: string]: WeightStat,

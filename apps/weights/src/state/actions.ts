@@ -4,8 +4,10 @@ import dayjs from 'dayjs';
 import debug from 'debug';
 import * as livestock from '@aultfarms/livestock';
 import pLimit from 'p-limit';
+export { cleanOldSheets } from './helpers';
 
 const info = debug("weights/state#actions:info");
+//const warn = debug("weights/state#actions:warn");
 
 const limit = pLimit(4); // allows up to 4 simultaneous promises
 
@@ -54,12 +56,8 @@ export const changeDate = action('changeDate', async (date: string) => {
   await loadWeights();
 });
 
-export const changeHeavyLimit = action('changeHeavyLimit', (limit: number) => {
-  state.limits.heavy.limit = limit;
-});
-
 export const loadWeights = action('loadWeights', async () => {
-  msg('Loading past three year\'s weights');
+  msg('Loading past 5 year\'s weights');
   const date = dayjs(state.date, 'YYYY-MM-DD');
   if (!date.isValid()) {
     msg('ERROR: date '+state.date+' is not valid, cannot loadWeights', 'bad');
@@ -71,17 +69,23 @@ export const loadWeights = action('loadWeights', async () => {
     basepath: state.config.basepath,
     year,
   }));
-  // Then, in parallel, grab the previous 2 years
-  const [ lastyearresult, twoyearresult ] = await Promise.all([
+  // Then, in parallel, grab the previous 5 years
+  const [ year1, year2, year3, year4, year5 ] = await Promise.all([
     limit(() => livestock.weights.fetchYearWeights({ basepath: state.config.basepath, year: year-1 })),
     limit(() => livestock.weights.fetchYearWeights({ basepath: state.config.basepath, year: year-2 })),
+    limit(() => livestock.weights.fetchYearWeights({ basepath: state.config.basepath, year: year-3 })),
+    limit(() => livestock.weights.fetchYearWeights({ basepath: state.config.basepath, year: year-4 })),
+    limit(() => livestock.weights.fetchYearWeights({ basepath: state.config.basepath, year: year-5 })),
   ]);
 
   runInAction(() => {
     // Store them all in the state for now:
     state.yearsheets[year] = thisyearresult;
-    state.yearsheets[year-1] = lastyearresult;
-    state.yearsheets[year-2] = twoyearresult;
+    state.yearsheets[year-1] = year1;
+    state.yearsheets[year-2] = year2;
+    state.yearsheets[year-3] = year3;
+    state.yearsheets[year-4] = year4;
+    state.yearsheets[year-5] = year5;
     // Set the current stuff for current year and today:
     state.sheetinfo = thisyearresult.sheetinfo;
     state.errors = thisyearresult.errors;
@@ -94,15 +98,60 @@ export const loadWeights = action('loadWeights', async () => {
     state.maxlineno = maxlineno;
     // Always make sure we have at least one row for the UI:
     if (state.weights.length < 1) appendNewRow();
-    updateStats();
+    updateAllStats();
   });
 });
 
-export const updateStats = action('updateStats', () => {
-  const stats = livestock.weights.computeStats(state.weights);
-  state.stats = stats.sorts;
-  state.groupstats = stats.incoming;
+export const changeIncludeTodayInPastStats = action('includeTodayInPastStats', (val: boolean) => {
+  state.includeTodayInPastStats = val;
+  updateAllStats();
 });
+
+// XXX STOPPED HERE:
+// - update all stats each time for now until we see it's too slow (or at least compare turning on/off).
+//   you can do that by just calling updateAllStats at end of updateTodayStats
+// - then finish fixing things for new stats model
+// - Could add button to refresh stats in app, or a choice whether "all stats" includes today or not.
+//   Could also show a +/- on "all" stats based on the effect today has on it. <-- I like this
+
+export const updateTodayStats = action('updateTodayStats', () => {
+  state.stats.today = livestock.weights.computeStats(state.weights);
+});
+
+// Tests is a is before b without needing to make a full dayjs object
+function fastIsOnOrAfterDay(a: string, b: Date) {
+  const aparts = a.split('-');
+  const adate = new Date(+(aparts[0]), +(aparts[1])-1, +(aparts[2]));
+  return adate >= b;
+}
+export const updateAllStats = action('updateAllStats', () => {
+  const thisyear = dayjs(state.date, 'YYYY-MM-DD').year();
+  const lastyear = thisyear - 1;
+  const oneYearAgoDate = dayjs(state.date, 'YYYY-MM-DD').subtract(1, 'year').toDate();
+  let pastYearWeights: livestock.WeightRecord[] = state.includeTodayInPastStats ? state.weights : [];
+  let allWeights: livestock.WeightRecord[] = state.includeTodayInPastStats ? state.weights : [];
+  updateTodayStats();
+  for (const [yearstr, info] of Object.entries(state.yearsheets)) {
+    const year = +(yearstr);
+    let weights = info.weights;
+    // This may seem wrong to always remove today's weights from the list, but it's actually just removing
+    // the stale old copies of today's weights from the list since they were already included or not above
+    // from the in-memory copy in state.weights that is more recent.
+    if (year === thisyear) { // quick pre-determiniation of whether we need filtering
+      weights = weights.filter(w => w.weighdate === state.date);
+    }
+    allWeights = [ ...allWeights, ...weights ];
+    // Quick pre-determination of whether we need to compare all the years to include in past year stats:
+    if (year >= lastyear) {
+      pastYearWeights = [ ...pastYearWeights, ...(weights.filter(w => fastIsOnOrAfterDay(w.weighdate, oneYearAgoDate))) ];
+    }
+  }
+  state.stats.all = livestock.weights.computeStats(allWeights);
+  state.stats.pastyear = livestock.weights.computeStats(pastYearWeights);
+  updateTodayStats();
+});
+
+
 
 export const msg = action('msg', (msg: string | Msg, type?: 'good' | 'bad') => {
   if (typeof msg === 'string') msg = { text: msg };
@@ -140,7 +189,7 @@ export const changeSort = action('changeSort', async (index: number, sort: strin
   }
   runInAction(() => state.weights![index].sort = sort);
   livestock.weights.saveWeightRow({ sheetinfo: state.sheetinfo, header: state.header, weight: state.weights[index]  });
-  updateStats();
+  updateTodayStats();
   msg('Sort type change saved', 'good');
 });
 
@@ -237,7 +286,7 @@ export const saveTag = action('saveTag', async () => {
   info('About to save this computed weight record: ', row, ' with these headers: ', state.header);
   await limit(() => livestock.weights.saveWeightRow({ weight: row, header: state.header, sheetinfo: state.sheetinfo }));
   moveTagInputDown();
-  updateStats();
+  updateTodayStats();
   msg('Tag Saved', 'good');
 });
 
@@ -260,7 +309,8 @@ export const saveWeight = action('saveWeight', async () => {
   }
   await limit(() => livestock.weights.saveWeightRow({ weight: row, header: state.header, sheetinfo: state.sheetinfo }));
   moveWeightInputDown();
-  updateStats();
+  updateTodayStats();
   msg('Weight Saved', 'good');
 });
+
 

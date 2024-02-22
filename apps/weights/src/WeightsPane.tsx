@@ -6,7 +6,7 @@ import { context } from './state';
 import { Msg } from './Msg';
 import { TabContainer } from './TabContainer';
 import { TabSelector } from './TabSelector';
-import { WeightDateBar } from './WeightDateBar';
+import { Stats } from './Stats';
 
 import './WeightsPane.css';
 
@@ -18,7 +18,7 @@ export const WeightsPane = observer(function WeightsPane() {
     <div className='weightspane' style={{ height: state.window.orientation === 'landscape' ? '100vh' : '100vw' }}>
       <Msg />
       <TabSelector />
-      <WeightDateBar />
+      <Stats />
       <TabContainer />
     </div>
    );

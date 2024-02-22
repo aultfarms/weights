@@ -335,6 +335,8 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
   }
 
   // Finally, print a table of day\tcount dead totals to simplify making the inventory
+  // No longer needed after inventory is handled automatically in accounting
+  /*
   console.log('------------------------------------------------------------------------');
   console.log('------------------------------------------------------------------------');
   console.log('------------------------------------------------------------------------');
@@ -344,6 +346,7 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
   for (const d of sorted) {
     console.log(`${d.date},${d.tags.length}`);
   }
+  */
 })
 
 

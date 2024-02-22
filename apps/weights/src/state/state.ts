@@ -1,6 +1,6 @@
 import { observable, autorun } from 'mobx';
 import dayjs from 'dayjs';
-import {ErrorWeight, SpreadsheetInfo, WeightRecord, WeightRecordsInfo, WeightStat} from '@aultfarms/livestock';
+import {ErrorWeight, SpreadsheetInfo, WeightRecord, WeightRecordsInfo} from '@aultfarms/livestock';
 import * as livestock from '@aultfarms/livestock';
 import debug from 'debug';
 import { defaultOrg } from '@aultfarms/trello';
@@ -37,7 +37,6 @@ try {
 localStorage.setItem('weights-config', JSON.stringify(config));
 //----------------------------------------
 
-
 export type State = {
   config: Config,
   isInitialized: boolean,
@@ -62,16 +61,13 @@ export type State = {
     row: number,
     weight: number,
   },
-  limits: {
-    light: { limit: number, count: number },
-    heavy: { limit: number, count: number },
-  },
+  includeTodayInPastStats: boolean,
   stats: {
-    [name: string]: WeightStat,
+    today: livestock.ComputedStats,
+    pastyear: livestock.ComputedStats,
+    all: livestock.ComputedStats,
   },
-  groupstats: {
-    [group: string]: WeightStat,
-  },
+
   records: { rev: number }, // big data
   // Current year things:
   weights: WeightRecord[],
@@ -85,6 +81,7 @@ export type State = {
   },
   msgs: Msg[],
 };
+
 
 
 export const state = observable<State>({
@@ -111,12 +108,12 @@ export const state = observable<State>({
     row: 0,
     weight: 0,
   },
-  limits: {
-    light: { limit: 1200, count: 0 },
-    heavy: { limit: 1530, count: 0 },
+  includeTodayInPastStats: false,
+  stats: {
+    today:    { sorts: {}, incoming: {}, sources: {}, ranges: {}, days: {}, months: {}, years: {}, },
+    pastyear: { sorts: {}, incoming: {}, sources: {}, ranges: {}, days: {}, months: {}, years: {}, },
+    all:      { sorts: {}, incoming: {}, sources: {}, ranges: {}, days: {}, months: {}, years: {}, },
   },
-  stats: {},
-  groupstats: {},
   records: { rev: 0 },
   weights: [],
   sheetinfo: { id: '', path: '', worksheetName: '' },

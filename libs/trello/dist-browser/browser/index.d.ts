@@ -10,6 +10,11 @@ export declare function getClient(): {
         boardid: string;
         listnames?: string[] | undefined;
     }) => Promise<import("../types.js").TrelloList[]>;
+    saveNewCardAtBottomOfList: ({ name, desc, idList }: {
+        name: string;
+        desc?: string | undefined;
+        idList?: string | undefined;
+    }) => Promise<void>;
     waitUntilLoaded: () => Promise<void>;
     authorize: () => Promise<void>;
     deauthorize: () => Promise<void>;

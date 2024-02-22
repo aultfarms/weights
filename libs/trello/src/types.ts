@@ -13,6 +13,8 @@ export type TrelloRequestParams = {
   fields?: string, // name, id, closed, cards
   name?: string, // for posting new lists/boards/etc.
   idList?: string, // for posting new cards
+  desc?: string, // for posting new cards only
+  pos?: "top" | "bottom" | number, // to position new cards
 };
 
 export type TrelloLabel = {

@@ -23,16 +23,18 @@ export const Errors = observer(function Errors() {
             </div>
           )
         }
-        <hr/>
       </div>
     );
   }
   return (
     <div className="errors" style={{ display: 'flex', flexDirection: 'column' }}>
-      <hr/>
+      <hr />
       {displayErrors('incoming')}
+      <hr />
       {displayErrors('dead')}
+      <hr />
       {displayErrors('treatments')}
+      <hr />
       <div>
         <h3>Messages</h3>
         {state.msgs.map((m,i) => 

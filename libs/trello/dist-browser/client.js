@@ -56,11 +56,18 @@ export function getUniversalClient(client) {
         }
         return lists;
     }
+    async function saveNewCardAtBottomOfList({ name, desc, idList }) {
+        await client.waitUntilLoaded();
+        if (!desc)
+            desc = '';
+        await client.post('/cards', { idList, pos: 'bottom', name, desc });
+    }
     return {
         ...client,
         connect,
         findBoardidByName,
         findListsAndCardsOnBoard,
+        saveNewCardAtBottomOfList,
     };
 }
 //# sourceMappingURL=client.js.map

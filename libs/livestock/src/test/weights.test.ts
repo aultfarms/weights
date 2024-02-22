@@ -133,14 +133,14 @@ export default async function weightsTest(l: Livestock) {
   if (row.lbs_gain !== 1128) throw `ERROR: computeRow lbs_gain wrong`;
   if (Math.abs(row.rog - 2.66) > 0.01) throw `ERROR: computeRow gain wrong`;
 
-  info('recomputeAll and batchSaveWeightRows: change tag and weight on existing rows');
+  info('recomputeAll: change tag and weight on existing rows');
   const r8 = await l.weights.fetchYearWeights({ basepath, year });
   for (const row of r8.weights) {
     row.tag.color = 'YELLOW'; // change from GREEN to YELLOW which should match test group
     row.weight = 1400; // change weight from 1350 to 1400
   } 
   const before = { ...(r8.weights[1]!) };
-  await l.weights.recomputeAll({ ...r8, records }); // weights were mutated in-place, so can re-used r8
+  const changes = await l.weights.recomputeAll({ ...r8, records }); // weights were mutated in-place, so can re-used r8
   const afterInMemory = r8.weights[1]!;
   if (before.group === afterInMemory.group) throw `ERROR: recomputeAll failed to change group in memory`;
   if (before.in_date === afterInMemory.in_date) throw `ERROR: recomputeAll failed to change in_date in memory`;
@@ -148,6 +148,9 @@ export default async function weightsTest(l: Livestock) {
   if (before.lbs_gain === afterInMemory.lbs_gain) throw `ERROR: recomputeAll failed to change lbs_gain in memory`;
   if (before.rog === afterInMemory.rog) throw `ERROR: recomputeAll failed to change rog in memory`;
   if (before.days === afterInMemory.days) throw `ERROR: recomputeAll failed to change days in memory`;
+
+  info('batchSaveWeightRows: update sheet with changes from recomputeAll');
+  await l.weights.batchSaveWeightRows({ sheetinfo, weights: changes, header });
 
   const r9 = await l.weights.fetchYearWeights({ sheetinfo });
   const after = r9.weights[1];

@@ -2,7 +2,7 @@ import debug from 'debug';
 import type { TrelloCard } from '@aultfarms/trello';
 import { client } from '@aultfarms/trello';
 import { tagStrToObj } from './util.js';
-import type { ErrorRecord, DeadRecord, IncomingRecord, TreatmentRecord, LivestockRecords } from './types.js';
+import type { ErrorRecord, DeadRecord, IncomingRecord, TreatmentRecord, LivestockRecords, Tag } from './types.js';
 
 //-------------------------------------------------------------------------------------------
 // NOTE: there is more code for dead/treatments/incoming from the original apps leftover in
@@ -152,9 +152,12 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     tags = tags.map(t=>(t === 'NOTAG' ? 'NOTAG1' : t));
     // parse all the tag strings into tag objects
     const tagObjs = tags.map(tagStrToObj);
+    if (tagObjs.filter(t => !t).length > 0) { // if there are any null tags, call this an error
+      throw new Error('ERROR: could not map one of the tags ('+tags.join(',')+') to a tag object.');
+    }
     return {
       date: day,
-      tags: tagObjs,
+      tags: (tagObjs as Tag[]), // cast it here b/c we already ensured there are no nulls
       note,
       id: c.id,
       idList: c.idList,
@@ -239,10 +242,13 @@ export function treatmentCardToRecord(c: TrelloCard): TreatmentRecord | ErrorRec
     const treatment = treatmentmatches[1]!.trim();
     rest = treatmentmatches[2]!.trim();
     const tags = rest.split(' ').map(tagStrToObj);
+    if (tags.filter(t => !t).length > 0) { // if there are any null tags, call this an error
+      throw new Error('ERROR: could not map one of the tags ('+tags.join(',')+') to a tag object.');
+    }
     return { 
       date, 
       treatment, 
-      tags,
+      tags: (tags as Tag[]), // cast here b/c we already ensured no nulls with the filter above
       id: c.id,
       idList: c.idList,
       cardName: c.name, 

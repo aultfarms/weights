@@ -10,6 +10,11 @@ export declare function getUniversalClient(client: PlatformSpecificTrelloLib): {
         boardid: string;
         listnames?: string[] | undefined;
     }) => Promise<TrelloList[]>;
+    saveNewCardAtBottomOfList: ({ name, desc, idList }: {
+        name: string;
+        desc?: string | undefined;
+        idList?: string | undefined;
+    }) => Promise<void>;
     waitUntilLoaded: () => Promise<void>;
     authorize: () => Promise<void>;
     deauthorize: () => Promise<void>;
