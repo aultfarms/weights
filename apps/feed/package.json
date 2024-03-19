@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:libs": "yarn workspace @aultfarms/trello build && yarn workspace @aultfarms/google build && yarn workspace @aultfarms/livestock build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "predeploy": "yarn build",
+    "predeploy": "yarn run build:libs && yarn run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
