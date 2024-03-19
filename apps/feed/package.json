@@ -1,6 +1,6 @@
 {
   "name": "feed",
-  "homepage": ".",
+  "homepage": "/feed",
   "private": true,
   "version": "0.0.7",
   "type": "module",
