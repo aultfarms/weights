@@ -53,7 +53,7 @@ function mapCard(c) {
     rest = matches[2];
     matches = rest.match(/^([^.]+)\.(.*)$/);
     const notes = (rest && rest.trim()) || '';
-  
+
   // TODO: add labels
     return {date,bushels,crop,destination,ticket,notes,
       seller: list.seller,
@@ -68,7 +68,8 @@ function mapCard(c) {
 }
 
 // Get board info:
-t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
+info('Getting boards for user')
+t.getAsync('/members/me/boards', { fields: 'name,id,closed' })
 .filter(b => !b.closed)
 .filter(b => b.name === 'Grain hauling')
 .then(gb => config.board.id = gb[0].id)
@@ -127,9 +128,9 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
       prevyear = year;
       monthtotal += c.bushels;
       total += c.bushels;
-      console.log(c.date.format('YYYY-MM-DD'), '\t', 
+      console.log(c.date.format('YYYY-MM-DD'), '\t',
                   c.bushels < 1000 ? '  ' : '',
-                  numeral(c.bushels).format('0,0.00'), ' bu\t', 
+                  numeral(c.bushels).format('0,0.00'), ' bu\t',
                   c.date.format('MMMYY'), '\t',
                   monthtotal < 1000 ? '   ' : monthtotal < 10000 ? ' ' : '' ,
                   numeral(monthtotal).format('0,0.00'), 'bu\t',
@@ -139,5 +140,4 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
     });
   });
   return lkey;
-});
-
+});*/

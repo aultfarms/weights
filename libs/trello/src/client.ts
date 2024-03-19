@@ -1,11 +1,11 @@
 // URL to manage redirect_uri's for your devKey: https://trello.com/app-key
 import debug from 'debug';
-import { 
-  type PlatformSpecificTrelloLib, 
-  assertTrelloOrgs, 
-  assertTrelloBoards, 
+import {
+  type PlatformSpecificTrelloLib,
+  assertTrelloOrgs,
+  assertTrelloBoards,
   assertTrelloCards,
-  type TrelloList, 
+  type TrelloList,
   assertTrelloLists} from './types.js';
 
 const info = debug('af/trello#index:info');
@@ -71,11 +71,18 @@ export function getUniversalClient(client: PlatformSpecificTrelloLib) {
     await client.post('/cards', { idList, pos: 'bottom', name, desc });
   }
 
+  // Used in the feed board to take an existing load number, fill it out, and move to the bottom of the delivered list
+  async function updateExistingCardNameAndMoveToBottomOfList({ name, cardid, idList }: { cardid: string, name: string, idList: string }) {
+    await client.waitUntilLoaded();
+    await client.put(`/cards/${cardid}`, { name, idList, pos: 'bottom' });
+  }
+
   return {
     ...client,
     connect,
     findBoardidByName,
     findListsAndCardsOnBoard,
     saveNewCardAtBottomOfList,
+    updateExistingCardNameAndMoveToBottomOfList,
   };
 }

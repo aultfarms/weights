@@ -38,7 +38,7 @@ export async function feedBoard({ client, force }: { client: client.Client, forc
     if (!availableList || !availableList.cards) throw new Error('ERROR: could not find "'+feedTrelloConfig.availableList +'" list in board for feed');
     ret.available.idList = availableList.id;
     for (const c of availableList.cards) {
-      ret.available.records.push(c.name);
+      ret.available.records.push({ id: c.id, name: c.name });
     }
 
     // WebControls:
@@ -47,19 +47,19 @@ export async function feedBoard({ client, force }: { client: client.Client, forc
     ret.webControls.idList = webControlsList.id;
     for (const c of webControlsList.cards) {
       switch(c.name.trim()) {
-        case 'Drivers': 
+        case 'Drivers':
           ret.webControls.settings.drivers = c.desc.split(';').map(d => d.trim()).filter(d => !!d);
         break;
-        case 'Destinations': 
+        case 'Destinations':
           ret.webControls.settings.destinations = c.desc.split(';').map(d => d.trim()).filter(d => !!d);
         break;
-        case 'Sources': 
+        case 'Sources':
           ret.webControls.settings.sources = c.desc.split(';').map(d => d.trim()).filter(d => !!d);
         break;
       }
     }
 
-    _feedBoard = ret;   
+    _feedBoard = ret;
   }
   return _feedBoard;
 }
@@ -71,7 +71,7 @@ export function feedDeliveredCardToRecord(c: TrelloCard): FeedRecord | ErrorReco
     let matches = c.name.match(/([0-9]{4}-[0-9]{2}-[0-9]{2}): *(.*)$/);
     if (!matches || !matches[1]) throw 'Could not match date';
     const date = matches[1].trim();
-    
+
     let rest = matches[2];
     if (!rest) throw 'No string after date';
     // Next is source+number (up to a period)
@@ -114,18 +114,18 @@ export function feedDeliveredCardToRecord(c: TrelloCard): FeedRecord | ErrorReco
     const      paidFor = !!c.labels.find(l => l === 'green');
     const truckingPaid = !!c.labels.find(l => l === 'blue');
 
-    return { 
-      date, 
-      source, 
-      loadNumber, 
-      weight, 
-      dest, 
-      driver, 
-      note, 
-      invoiced, 
-      paidFor, 
-      truckingPaid, 
-      cardName: c.name, 
+    return {
+      date,
+      source,
+      loadNumber,
+      weight,
+      dest,
+      driver,
+      note,
+      invoiced,
+      paidFor,
+      truckingPaid,
+      cardName: c.name,
       id: c.id,
       idList: c.idList,
       dateLastActivity: c.dateLastActivity,
@@ -143,6 +143,15 @@ export async function saveFeedDelivered({ client, record }: { client: client.Cli
   const fb = await feedBoard({ client });
   let name = `${r.date}: ${r.source} ${r.loadNumber}.  ${numeral(r.weight).format('0,0')} lbs - ${r.dest} - ${r.driver}`;
   if (r.note) name += '.  '+r.note;
-  await client.saveNewCardAtBottomOfList({ name, idList: fb.delivered.idList });
+  const idList = fb.delivered.idList;
+  if (r.id) { // This is an existing card
+    await client.updateExistingCardNameAndMoveToBottomOfList({name, idList, cardid: r.id });
+  } else { // New card (i.e. a new load number)
+    await client.saveNewCardAtBottomOfList({ name, idList: fb.delivered.idList });
+  }
 }
 
+export async function saveAvailableLoadNumber({ client, loadnumstr }: { client: client.Client, loadnumstr: string }) {
+  const fb = await feedBoard({ client });
+  await client.saveNewCardAtBottomOfList({ name: loadnumstr, idList: fb.available.idList });
+}

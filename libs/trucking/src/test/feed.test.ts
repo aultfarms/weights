@@ -47,7 +47,28 @@ export default async function run(l: typeof trucking) {
     throw new Error('Failed to re-parse the feed load we saved earlier: '+e.toString());
   }
 
+  info('It should be able to add an available load number to Trello');
+  await l.feed.saveAvailableLoadNumber({ client, loadnumstr: 'Cie 12345' });
+  const result3 = await l.feed.feedBoard({ client, force: true });
+  const lastcard2 = result3.available.records.slice(-1)?.[0];
+  try {
+    if (!lastcard2) throw new Error('ERROR: after saving new feed card, there are no cards in feed delivered list');
+    if (lastcard2.name !== 'Cie 12345') throw new Error('Last card did not have same load number as record we put');
+  } catch(e: any) {
+    info('Last card did not match: ', lastcard2, '. feedBoard = ', result3);
+    throw new Error('Failed to re-parse the available load number we saved earlier: '+e.toString());
+  }
+
+  info('It should be able to update an existing available load number')
+  record.loadNumber = lastcard2.name; // Cie 12345
+  record.id = lastcard2.id;
+  await l.feed.saveFeedDelivered({ client, record });
+  const result5 = await l.feed.feedBoard({ client, force: true });
+  const stillAvailable = result5.available.records.find(r => r.name === 'Cie 12345');
+  if (!!stillAvailable) throw new Error('ERROR: after saving new feed card from existing available number, the original available card is still in the available list');
+  const resultingRecord = result5.delivered.records.find(r => r.id === record.id);
+  if (!resultingRecord) throw new Error('ERROR: after saving new feed card from existing available number, the original available card is not in the delivered list');
+
 
   info('All Feed Tests Passed');
 }
-

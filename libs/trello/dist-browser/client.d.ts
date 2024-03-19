@@ -15,6 +15,11 @@ export declare function getUniversalClient(client: PlatformSpecificTrelloLib): {
         desc?: string | undefined;
         idList?: string | undefined;
     }) => Promise<void>;
+    updateExistingCardNameAndMoveToBottomOfList: ({ name, cardid, idList }: {
+        cardid: string;
+        name: string;
+        idList: string;
+    }) => Promise<void>;
     waitUntilLoaded: () => Promise<void>;
     authorize: () => Promise<void>;
     deauthorize: () => Promise<void>;

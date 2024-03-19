@@ -10,6 +10,11 @@ export const grainTrelloConfig = {
   webControlsList: "Web Controls",
 };
 
+export type AvailableLoadNumber = {
+  id: string, // id of existing card in Trello
+  name: string,
+}
+
 export type FeedBoard = {
   delivered: {
     idList: string,
@@ -17,7 +22,7 @@ export type FeedBoard = {
   },
   available: {
     idList: string,
-    records: string[],
+    records: AvailableLoadNumber[],
   },
   webControls: {
     idList: string,
@@ -40,7 +45,7 @@ export type GrainBoard = {
   },
   errors: string[],
 };
-    
+
 
 export type FeedRecord = {
   date: string,
@@ -63,6 +68,25 @@ export type FeedRecord = {
   error?: string,
 };
 
+export function assertFeedRecord(o: any): asserts o is FeedRecord {
+  if (!o || typeof o !== 'object') throw 'Feed record must be an object';
+  if (typeof o.date !== 'string') throw 'Date must exist and be a string';
+  if (typeof o.source !== 'string') throw 'Source must exist and be a string';
+  if (typeof o.loadNumber !== 'string') throw 'Load number must exist and be a string';
+  if (typeof o.dest !== 'string') throw 'Destination must exist and be a string';
+  if (typeof o.weight !== 'number') throw 'Weight must exist and be a number';
+  if (typeof o.driver !== 'string') throw 'Driver must exist and be a string';
+  if ('note' in o && typeof o.note !== 'string') throw 'If note exists, it must be a string';
+  if ('invoiced' in o && typeof o.invoiced !== 'boolean') throw 'If invoiced exists, it must be a boolean';
+  if ('paidFor' in o && typeof o.paidFor !== 'boolean') throw 'If paidFor exists, it must be a boolean';
+  if ('truckingPaid' in o && typeof o.truckingPaid !== 'boolean') throw 'If truckingPaid exists, it must be a boolean';
+  if ('id' in o && typeof o.id !== 'string') throw 'If id exists, it must be a string';
+  if ('idList' in o && typeof o.idList !== 'string') throw 'If idList exists, it must be a string';
+  if ('cardName' in o && typeof o.cardName !== 'string') throw 'If cardName exists, it must be a string';
+  if ('dateLastActivity' in o && typeof o.dateLastActivity !== 'string') throw 'If dateLastActivity exists, it must be a string';
+  if ('error' in o && typeof o.error !== 'string') throw 'If error exists, it must be a string';
+}
+
 export type GrainRecord = {
   date: string,
   sellerList: string,
@@ -80,6 +104,25 @@ export type GrainRecord = {
 
   error?: string,
 };
+
+export function assertGrainRecord(o: any): asserts o is GrainRecord {
+  if (!o || typeof o !== 'object') throw 'Grain record must be an object';
+  if (typeof o.date !== 'string') throw 'Date must exist and be a string';
+  if (typeof o.sellerList !== 'string') throw 'Seller list must exist and be a string';
+  if (typeof o.dest !== 'string') throw 'Destination must exist and be a string';
+  if (typeof o.loadNumber !== 'string') throw 'Load number must exist and be a string';
+  if (typeof o.bushels !== 'number') throw 'Weight must exist and be a number';
+  if (typeof o.ticket !== 'string') throw 'Ticket must exist and be a string';
+  if (typeof o.driver !== 'string') throw 'Driver must exist and be a string';
+  if ('note' in o && typeof o.note !== 'string') throw 'If note exists, it must be a string';
+  if ('id' in o && typeof o.id !== 'string') throw 'If id exists, it must be a string';
+  if ('idList' in o && typeof o.idList !== 'string') throw 'If idList exists, it must be a string';
+  if ('cardName' in o && typeof o.cardName !== 'string') throw 'If cardName exists, it must be a string';
+  if ('dateLastActivity' in o && typeof o.dateLastActivity !== 'string') throw 'If dateLastActivity exists, it must be a string';
+  if ('error' in o && typeof o.error !== 'string') throw 'If error exists, it must be a string';
+}
+
+
 
 export type FeedWebControls = {
   drivers: string[],
