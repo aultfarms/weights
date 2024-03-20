@@ -11809,6 +11809,40 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"grain@workspace:apps/grain":
+  version: 0.0.0-use.local
+  resolution: "grain@workspace:apps/grain"
+  dependencies:
+    "@aultfarms/trello": "workspace:^"
+    "@aultfarms/trucking": "workspace:^"
+    "@emotion/react": "npm:^11.11.3"
+    "@emotion/styled": "npm:^11.11.0"
+    "@mui/material": "npm:^5.15.10"
+    "@mui/system": "npm:^5.15.9"
+    "@mui/x-date-pickers": "npm:^6.19.4"
+    "@types/debug": "npm:^4.1.7"
+    "@types/gh-pages": "npm:^6"
+    "@types/react": "npm:^18.2.56"
+    "@types/react-dom": "npm:^18.2.19"
+    "@typescript-eslint/eslint-plugin": "npm:^7.0.2"
+    "@typescript-eslint/parser": "npm:^7.0.2"
+    "@vitejs/plugin-react": "npm:^4.2.1"
+    dayjs: "npm:^1.11.10"
+    debug: "npm:^4.3.4"
+    eslint: "npm:^8.56.0"
+    eslint-plugin-react-hooks: "npm:^4.6.0"
+    eslint-plugin-react-refresh: "npm:^0.4.5"
+    gh-pages: "npm:^6.1.1"
+    mobx: "npm:^6.12.0"
+    mobx-react-lite: "npm:^4.0.5"
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    react-helmet-async: "npm:^2.0.4"
+    typescript: "npm:^5.2.2"
+    vite: "npm:^5.1.4"
+  languageName: unknown
+  linkType: soft
+
 "grapheme-splitter@npm:^1.0.4":
   version: 1.0.4
   resolution: "grapheme-splitter@npm:1.0.4"

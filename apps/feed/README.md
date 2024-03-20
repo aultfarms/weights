@@ -1,30 +1,24 @@
-# React + TypeScript + Vite
+# Feed App
+----------
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This app enters feed delivery loads in Trello.
 
-Currently, two official plugins are available:
+## Testing:
+-----------
+To test on Android, install command line tools:
+(http://johnborg.es/2019/04/android-setup-macos.html)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+Specifically, the packages to pass to sdkmanager are:
+```bash
+sdkmanager "build-tools;34.0.0" "platform-tools" "emulator" "system-images;android-34;google_apis_playstore;x86_64" "platforms;android-34"
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+Then you need that same system-images name when you run `avdmanager` to create the emulator image:
+```
+avdmanager create avd -n "Pixel_6" -d "pixel_6" -k "system-images;android-34;google_apis_playstore;x86_64"
+```
+
+Finally, the "emulator" is not present in the path after `sdkmanager` installs it.  Run it from absolute path:
+```
+/usr/local/share/android-commandlinetools/emulator/emulator -avd Pixel_6
+```
