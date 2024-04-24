@@ -11375,6 +11375,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fuzzball@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "fuzzball@npm:2.1.2"
+  dependencies:
+    heap: "npm:>=0.2.0"
+    setimmediate: "npm:^1.0.5"
+    string.fromcodepoint: "npm:^0.2.1"
+    string.prototype.codepointat: "npm:^0.2.0"
+  checksum: 10/609dcb5fbb5b2638a529c1279895dcf477c18a4ac0d27dc3ebb3d2b73573b051cd3b66e749fe712675d6d29e6b78abb5f5fd5f7346bff7a3204d2f8705f1a6a8
+  languageName: node
+  linkType: hard
+
 "gauge@npm:^4.0.0":
   version: 4.0.0
   resolution: "gauge@npm:4.0.0"
@@ -11832,6 +11844,7 @@ __metadata:
     eslint: "npm:^8.56.0"
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-react-refresh: "npm:^0.4.5"
+    fuzzball: "npm:^2.1.2"
     gh-pages: "npm:^6.1.1"
     mobx: "npm:^6.12.0"
     mobx-react-lite: "npm:^4.0.5"
@@ -12045,6 +12058,13 @@ __metadata:
   bin:
     he: bin/he
   checksum: 10/d09b2243da4e23f53336e8de3093e5c43d2c39f8d0d18817abfa32ce3e9355391b2edb4bb5edc376aea5d4b0b59d6a0482aab4c52bc02ef95751e4b818e847f1
+  languageName: node
+  linkType: hard
+
+"heap@npm:>=0.2.0":
+  version: 0.2.7
+  resolution: "heap@npm:0.2.7"
+  checksum: 10/6374f6510af79bf47f2cfcee265bf608e6ed2b2694875974d1cb5654ddc98af05347dcf3a42ee9a7de318b576022d6f4d00fe06fa65a4a65c4c60638375eabfe
   languageName: node
   linkType: hard
 
@@ -19516,6 +19536,20 @@ __metadata:
     is-fullwidth-code-point: "npm:^3.0.0"
     strip-ansi: "npm:^6.0.1"
   checksum: 10/e52c10dc3fbfcd6c3a15f159f54a90024241d0f149cf8aed2982a2d801d2e64df0bf1dc351cf8e95c3319323f9f220c16e740b06faecd53e2462df1d2b5443fb
+  languageName: node
+  linkType: hard
+
+"string.fromcodepoint@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "string.fromcodepoint@npm:0.2.1"
+  checksum: 10/6ba80f70c3e2a36dab87f5d68168936403295a73838564e701f5c861d397d77d9e97b0e2aa0f3c163a25a96c785dcc2145452b220753fb7b3e6c6fe431c9c411
+  languageName: node
+  linkType: hard
+
+"string.prototype.codepointat@npm:^0.2.0":
+  version: 0.2.1
+  resolution: "string.prototype.codepointat@npm:0.2.1"
+  checksum: 10/bafa15844d7ea5bed24a01fa8954327c0c49226cefe68ab70573f1338f6a4680587db962724924f2cceb91abe408e11bd38c80095f25ee080f136a6c9d300f00
   languageName: node
   linkType: hard
 

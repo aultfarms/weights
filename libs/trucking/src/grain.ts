@@ -117,7 +117,7 @@ export function grainCardToRecord(c: TrelloCard, l: TrelloList): GrainRecord | E
 }
 
 // Note: currently does not do the labels yet.  Look to lib/overmind/src/grain to see how that was done, or just the trello API.
-export async function saveGrainDelivered({ client, record }: { client: client.Client, record: GrainRecord, idList: string }) {
+export async function saveGrainDelivered({ client, record }: { client: client.Client, record: GrainRecord }) {
   const r = record;
   let name = `${r.date}: ${numeral(r.bushels).format('0,0.000')} bu ${r.crop}.  ${r.dest} - Tkt #${r.ticket} - ${r.driver}`;
   if (r.note) name += '.  '+r.note;

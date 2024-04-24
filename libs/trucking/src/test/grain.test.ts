@@ -36,7 +36,7 @@ export default async function run(l: typeof trucking) {
     driver: 'tester',
     note: 'note: '+(new Date()).toString(),
   };
-  await l.grain.saveGrainDelivered({ client, record, idList: sl.idList });
+  await l.grain.saveGrainDelivered({ client, record });
   const result2 = await l.grain.grainBoard({ client, force: true });
   const lastcard = result2.sellerLists[0]?.records.slice(-1)?.[0];
   try {
