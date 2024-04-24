@@ -39,9 +39,10 @@ async function authorize(): Promise<void> {
     info('WARNING: window.location.hash (', window.location.hash, ') has token, but it was not valid, retrying redirect.')
   }
 
+  const return_url = window.location.href.replace(/#.*$/, '');
   // Redirect browser to Trello authorization endpoint
   const newhref = 'https://api.trello.com/1/authorize'
-    + '?return_url='+window.location.href
+    + '?return_url='+return_url
     + '&callback_method=fragment'
     + '&scope=read,write'
     + '&expiration=never'
