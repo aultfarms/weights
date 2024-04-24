@@ -24,11 +24,11 @@ export default async function run(l: typeof trucking) {
   }
 
   info('It should be able to save a new grain load card');
-  const sl = result1.sellLists[0];
+  const sl = result1.sellerLists[0];
   if (!sl) throw new Error('There should be at least one sellerList in Trello.');
   let record: trucking.GrainRecord = {
     date: '2023-02-21',
-    sellerList: sl.name,
+    sellerList: { name: sl.name, idList: sl.idList },
     dest: 'TEST DEST',
     bushels: 123,
     ticket: '789',
@@ -38,7 +38,7 @@ export default async function run(l: typeof trucking) {
   };
   await l.grain.saveGrainDelivered({ client, record, idList: sl.idList });
   const result2 = await l.grain.grainBoard({ client, force: true });
-  const lastcard = result2.sellLists[0]?.records.slice(-1)?.[0];
+  const lastcard = result2.sellerLists[0]?.records.slice(-1)?.[0];
   try {
     if (!lastcard) throw new Error('ERROR: after saving new grain card, there are no cards in grain delivered list');
     if (lastcard.date !== record.date) throw new Error('Last card did not have same date as record we put');
@@ -54,4 +54,3 @@ export default async function run(l: typeof trucking) {
 
   info('All Grain Tests Passed');
 }
-

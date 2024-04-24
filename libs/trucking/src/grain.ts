@@ -1,7 +1,7 @@
 import debug from 'debug';
 import type { TrelloCard, TrelloList } from '@aultfarms/trello';
 import { client } from '@aultfarms/trello';
-import type { GrainBoard, GrainRecord, ErrorRecord, GrainSellList } from './types.js';
+import type { GrainBoard, GrainRecord, ErrorRecord, GrainSellerList } from './types.js';
 import { grainTrelloConfig } from './types.js';
 import numeral from 'numeral';
 
@@ -14,7 +14,7 @@ export async function grainBoard({ client, force }: { client: client.Client, for
     if (!boardid) throw new Error('ERROR: could not find "'+grainTrelloConfig.board+'" board in Trello for grain');
     const lists = await client.findListsAndCardsOnBoard({ boardid });
     const ret: GrainBoard = {
-      sellLists: [],
+      sellerLists: [],
       webControls: { idList: '', settings: { drivers: [], destinations: [], crops: [] } },
       errors: [],
     };
@@ -23,7 +23,7 @@ export async function grainBoard({ client, force }: { client: client.Client, for
     const allLists = lists.filter(l => l.name !== grainTrelloConfig.webControlsList);
     if (!allLists || allLists.length < 1) throw new Error('ERROR: did not find any seller lists in board for grain');
     for (const l of allLists) {
-      const sl: GrainSellList = {
+      const sl: GrainSellerList = {
         idList: l.id,
         name: l.name,
         records: [],
@@ -38,7 +38,7 @@ export async function grainBoard({ client, force }: { client: client.Client, for
           }
         }
       }
-      ret.sellLists.push(sl);
+      ret.sellerLists.push(sl);
     }
 
     // WebControls:
@@ -47,30 +47,30 @@ export async function grainBoard({ client, force }: { client: client.Client, for
     ret.webControls.idList = webControlsList.id;
     for (const c of webControlsList.cards) {
       switch(c.name.trim()) {
-        case 'Drivers': 
+        case 'Drivers':
           ret.webControls.settings.drivers = c.desc.split(';').map(d => d.trim()).filter(d => !!d);
         break;
-        case 'Destinations': 
+        case 'Destinations':
           ret.webControls.settings.destinations = c.desc.split(';').map(d => d.trim()).filter(d => !!d);
         break;
-        case 'Crops': 
+        case 'Crops':
           ret.webControls.settings.crops = c.desc.split(';').map(d => d.trim()).filter(d => !!d);
         break;
       }
     }
 
-    _grainBoard = ret;   
+    _grainBoard = ret;
   }
   return _grainBoard;
 }
 
 export function grainCardToRecord(c: TrelloCard, l: TrelloList): GrainRecord | ErrorRecord {
   try {
-    const sellerList = l.name;
+    const sellerList = { name: l.name, idList: l.id };
     let rest = c.name.trim();
     let matches = rest.match(/^([0-9]{4}-[0-9]{1,2}-[0-9]{1,2}): *(.*)$/);
     if (!matches) return {
-      error: 'Tried to read grain hauling card "'+c.name+'" from list "'+sellerList+'", but main pattern failed to match',
+      error: 'Tried to read grain hauling card "'+c.name+'" from list "'+sellerList.name+'", but main pattern failed to match',
     };
     const date = matches?.[1] || '';
     rest = matches[2] || '';
@@ -115,10 +115,9 @@ export function grainCardToRecord(c: TrelloCard, l: TrelloList): GrainRecord | E
 }
 
 // Note: currently does not do the labels yet.  Look to lib/overmind/src/grain to see how that was done, or just the trello API.
-export async function saveGrainDelivered({ client, record, idList }: { client: client.Client, record: GrainRecord, idList: string }) {
+export async function saveGrainDelivered({ client, record }: { client: client.Client, record: GrainRecord, idList: string }) {
   const r = record;
   let name = `${r.date}: ${numeral(r.bushels).format('0,0.000')} bu ${r.crop}.  ${r.dest} - Tkt #${r.ticket} - ${r.driver}`;
   if (r.note) name += '.  '+r.note;
-  await client.saveNewCardAtBottomOfList({ name, idList });
+  await client.saveNewCardAtBottomOfList({ name, idList: record.sellerList.idList });
 }
-

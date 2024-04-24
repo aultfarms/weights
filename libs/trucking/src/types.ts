@@ -32,13 +32,13 @@ export type FeedBoard = {
   errors: string[],
 };
 
-export type GrainSellList = {
+export type GrainSellerList = {
   idList: string,
   name: string,
   records: GrainRecord[],
 };
 export type GrainBoard = {
-  sellLists: GrainSellList[],
+  sellerLists: GrainSellerList[],
   webControls: {
     idList: string,
     settings: GrainWebControls,
@@ -89,7 +89,7 @@ export function assertFeedRecord(o: any): asserts o is FeedRecord {
 
 export type GrainRecord = {
   date: string,
-  sellerList: string,
+  sellerList: { name: string, idList: string }, // name and id of list that this record should be in
   dest: string,
   bushels: number,
   ticket: string,
@@ -108,7 +108,9 @@ export type GrainRecord = {
 export function assertGrainRecord(o: any): asserts o is GrainRecord {
   if (!o || typeof o !== 'object') throw 'Grain record must be an object';
   if (typeof o.date !== 'string') throw 'Date must exist and be a string';
-  if (typeof o.sellerList !== 'string') throw 'Seller list must exist and be a string';
+  if (typeof o.sellerList !== 'object') throw 'Seller list must exist and be an object';
+  if (typeof o.sellerList.name !== 'string') throw 'Seller list name must exist and be a string';
+  if (typeof o.sellerList.id !== 'string') throw 'Seller list id must exist and be a string';
   if (typeof o.dest !== 'string') throw 'Destination must exist and be a string';
   if (typeof o.loadNumber !== 'string') throw 'Load number must exist and be a string';
   if (typeof o.bushels !== 'number') throw 'Weight must exist and be a number';

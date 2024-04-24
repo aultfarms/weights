@@ -1,87 +1,89 @@
 export * from '../types.js';
 import debug from 'debug';
-import type { TrelloAuthorizeParams, TrelloRESTFunction, TrelloRequestParams, TrelloRequestFunction, TrelloSuccessCallback, TrelloRejectCallback } from '../types.js';
+import { type TrelloRESTFunction, type TrelloRequestFunction,
+  assertTrelloBoards, assertTrelloBoard, assertTrelloOrgs, assertTrelloOrg,
+  assertTrelloLists, assertTrelloList, assertTrelloCards, assertTrelloCard } from '../types.js';
 import { getUniversalClient } from '../client.js';
-import $ from 'jquery' // for trello
 const info = debug('af/trello#browser:info');
 
-export * from '../index.js';
-
-(window as any).jQuery = $; // put this on there for Trello to use
+export * from '../index.js'; // export all the universal things
 
 // dev key: 3ad06cb25802014a3f24f479e886771c
 // URL to refresh client lib: https://api.trello.com/1/client.js?key=3ad06cb25802014a3f24f479e886771c
-type BrowserTrelloRESTFunction = (path: string, params: TrelloRequestParams, success: TrelloSuccessCallback, err: TrelloRejectCallback) => void;
+const devKey = '3ad06cb25802014a3f24f479e886771c';
+//type BrowserTrelloRESTFunction = (path: string, params: TrelloRequestParams, success: TrelloSuccessCallback, err: TrelloRejectCallback) => void;
 
-
-type WindowTrello = typeof window & {
-  Trello: {
-    authorize: (params: TrelloAuthorizeParams) => Promise<void>,
-    deauthorize: () => Promise<void>,
-    get: BrowserTrelloRESTFunction,
-    put: BrowserTrelloRESTFunction,
-    post: BrowserTrelloRESTFunction,
-    delete: BrowserTrelloRESTFunction,
-  }
-}
-
-
-async function waitUntilLoaded(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Get the trello browser client
-    import('./trello-client.js').then(() => {
-      let count = 0;
-      const check = () => {
-        if ('Trello' in window) return resolve();
-        if (count++ > 50) return reject(new Error('Could not load Trello client library'));
-        setTimeout(check, 250);
-      }
-      check();
-    });
-  });
-};
-
+async function waitUntilLoaded(): Promise<void> { return; } // This library is always loaded
 
 //-----------------------------------------------------------------
-// Trello client keeps the token locally in order to make requests
+let token = '';
 async function authorize(): Promise<void> {
+  info('Authorize started.')
+
   await waitUntilLoaded();
-  const win = (window as WindowTrello);
-  return new Promise<void>((resolve,reject) => {
-    win.Trello.authorize({
-      type: 'redirect',
-      name: 'Ault Farms - Invoices',
-      persist: true,
-      scope: { read: 'true', write: 'true' },
-      expiration: 'never',
-      success: resolve,
-      error: (err) => { info('Failed to authorize Trello: err =', err); reject(err); }
-    });
-  });
+  // Check localStorage for existing token
+  token = localStorage.getItem('trello_token') || '';
+  if (token) return;
+
+  // Check if we're getting here as a result of a previous redirect
+  // that is now coming back to us with a token
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  token = hashParams.get('token') || '';
+  if (token) {
+    const error = hashParams.get('error') || '';
+    if (error) throw new Error('ERROR: User declined access or other Trello failure.  Error was: '+error);
+    if (token) {
+      localStorage.setItem('trello_token', token);
+      return;
+    }
+    info('WARNING: window.location.hash (', window.location.hash, ') has token, but it was not valid, retrying redirect.')
+  }
+
+  // Redirect browser to Trello authorization endpoint
+  const newhref = 'https://api.trello.com/1/authorize'
+    + '?return_url='+window.location.href
+    + '&callback_method=fragment'
+    + '&scope=read,write'
+    + '&expiration=never'
+    + '&name=Ault%20Farms%20Apps'
+    + '&key='+devKey
+    + '&response_type=fragment';
+  window.location.href = newhref; // adds to browser history
+  window.location.replace(newhref); // actually immediately redirects and stops execution
 }
 
 async function deauthorize(): Promise<void> {
+  localStorage.removeItem('trello_token');
   await waitUntilLoaded();
-  const win = (window as WindowTrello);
-  return new Promise((resolve) => { 
-    win.Trello.deauthorize(); 
-    resolve(); 
-  });
 };
-
-
 
 const request: TrelloRequestFunction = async (method, path, params) => {
   await waitUntilLoaded();
-  const win = (window as WindowTrello);
-  return new Promise((resolve,reject) => 
-    win.Trello[method]( 
-      path, 
-      params||{}, 
-      resolve, 
-      err => { info(`Trello.${method} ERROR: `, err); reject(err); } 
-    )
-  );
+  const stringParams: Record<string,string> = {};
+  for (const [key,val] of Object.entries(params)) {
+    stringParams[key] = ''+val;
+  }
+  stringParams['key'] = devKey;
+  stringParams['token'] = token;
+  const searchParams = new URLSearchParams(stringParams);
+  const joiner = path.indexOf('?') >= 0 ? '&' : '?';
+  path += joiner + searchParams.toString();
+  if (path[0]!== '/') path = '/' + path;
+  const result = await fetch('https://api.trello.com/1'+path, {
+    method,
+  });
+  // Check if we have a card, list, board, or org:
+  const body = await result.json();
+  try { assertTrelloOrgs(body);   return  body;  } catch(e: any) {};
+  try { assertTrelloOrg(body);    return [body]; } catch(e: any) {};
+  try { assertTrelloBoards(body); return  body;  } catch(e: any) {};
+  try { assertTrelloBoard(body);  return [body]; } catch(e: any) {};
+  try { assertTrelloLists(body);  return  body;  } catch(e: any) {};
+  try { assertTrelloList(body);   return [body]; } catch(e: any) {};
+  try { assertTrelloCards(body);  return  body;  } catch(e: any) {};
+  try { assertTrelloCard(body);   return [body]; } catch(e: any) {};
+  info('ERROR: did not return Org[], Board[], List[], or Card[],  Result was: ', body);
+  throw new Error('ERROR: request did not return a valid Trello Org[], Board[], List[], or Card[]')
 };
 
 const get: TrelloRESTFunction = async (path,params) => request('get', path, params);
@@ -97,6 +99,6 @@ const _client = getUniversalClient({
   get,
   put,
   post,
-  delete: del,
+  delete: del, // delete is a reserved word
 });
 export function getClient() { return _client; }

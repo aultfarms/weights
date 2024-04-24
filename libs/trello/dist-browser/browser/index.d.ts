@@ -1,5 +1,5 @@
 export * from '../types.js';
-import type { TrelloRESTFunction, TrelloRequestFunction } from '../types.js';
+import { type TrelloRESTFunction, type TrelloRequestFunction } from '../types.js';
 export * from '../index.js';
 export declare function getClient(): {
     connect: ({ org }: {
