@@ -8,10 +8,12 @@ import numeral from 'numeral';
 const warn = debug('af/trucking#feed:warn');
 
 let _feedBoard: FeedBoard | null = null;
-export async function feedBoard({ client, force }: { client: client.Client, force?: true }): Promise<FeedBoard> {
+let feedBoardName = feedTrelloConfig.board;
+export async function feedBoard({ client, name, force }: { client: client.Client, name?: string, force?: true }): Promise<FeedBoard> {
   if (!_feedBoard || force) {
-    const boardid = await client.findBoardidByName(feedTrelloConfig.board);
-    if (!boardid) throw new Error('ERROR: could not find "'+feedTrelloConfig.board+'" board in Trello for feed');
+    feedBoardName = name || feedBoardName;
+    const boardid = await client.findBoardidByName(feedBoardName);
+    if (!boardid) throw new Error('ERROR: could not find "'+name+'" board in Trello for feed');
     const lists = await client.findListsAndCardsOnBoard({ boardid });
     const ret: FeedBoard = {
       delivered: { idList: '', records: [] },

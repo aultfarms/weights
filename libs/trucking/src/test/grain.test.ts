@@ -16,7 +16,7 @@ export default async function run(l: typeof trucking) {
   await client.connect({ org: testorg });
 
   info('It should be able to load all the records in the test org grain board');
-  const result1 = await l.grain.grainBoard({ client });
+  const result1 = await l.grain.grainBoard({ client, name: 'Grain Hauling - TEST' });
 
   if (result1.errors.length > 0) {
     info('FAIL: could not get entire grain delivered board without errors.  Result = ', result1);

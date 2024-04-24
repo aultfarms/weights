@@ -8,10 +8,12 @@ import numeral from 'numeral';
 const warn = debug('af/trucking#grain:warn');
 
 let _grainBoard: GrainBoard | null = null;
-export async function grainBoard({ client, force }: { client: client.Client, force?: true }): Promise<GrainBoard> {
+let grainBoardName = grainTrelloConfig.board;
+export async function grainBoard({ client, name, force }: { client: client.Client, name?: string, force?: true }): Promise<GrainBoard> {
   if (!_grainBoard || force) {
-    const boardid = await client.findBoardidByName(grainTrelloConfig.board);
-    if (!boardid) throw new Error('ERROR: could not find "'+grainTrelloConfig.board+'" board in Trello for grain');
+    grainBoardName = name || grainBoardName;
+    const boardid = await client.findBoardidByName(grainBoardName);
+    if (!boardid) throw new Error('ERROR: could not find "'+name+'" board in Trello for grain');
     const lists = await client.findListsAndCardsOnBoard({ boardid });
     const ret: GrainBoard = {
       sellerLists: [],

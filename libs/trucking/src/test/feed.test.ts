@@ -16,7 +16,7 @@ export default async function run(l: typeof trucking) {
   await client.connect({ org: testorg });
 
   info('It should be able to load all the records in the test org feed board');
-  const result1 = await l.feed.feedBoard({ client });
+  const result1 = await l.feed.feedBoard({ client, name: 'Feed - TEST' });
 
   if (result1.errors.length > 0) {
     info('FAIL: could not get entire feed delivered board without errors.  Result = ', result1);
