@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import {grain, assertGrainRecord, GrainRecord} from '@aultfarms/trucking';
 
 const warn = debug("af/grain:warn");
-const info = debug("af/grain:info");
+//const info = debug("af/grain:info");
 
 export const page = action('page', () => {
   console.log('Hello');
