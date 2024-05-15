@@ -1,6 +1,12 @@
 import type * as google from '../';
+import debug from 'debug';
+import core from './core.test';
+import drive from './drive.test';
+import sheets from './sheets.test';
 
-import googleTests from './google.test.js';
+const info = debug('test/google#index:info');
+const pathroot = `/AF-AUTOMATEDTESTS/TEST-${+(new Date())}`;
+info('Running tests against root path: ', pathroot);
 
 type WindowWithLibs = {
   libsundertest: typeof google
@@ -18,9 +24,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('ERROR: did not find root element!');
   } else {
     root.innerHTML = "The test is running!"
-
-    await googleTests(libsundertest);
+/*
+    info('Testing core:')
+    await core(libsundertest);
+    info('Testing drive:')
+    await drive(libsundertest);
+*/
+    info('Testing sheets:')
+    await sheets(libsundertest);
+    info('All Google Tests Passed');
   }
 
 });
-

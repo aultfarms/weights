@@ -39,25 +39,55 @@ export function arrayToLetterRange(row:string|number,arr:any[]):string {
 }
 
 export async function getAllRows(
-  { id, worksheetName }: 
+  { id, worksheetName }:
   { id: string, worksheetName: string }
 ): Promise<Sheets.Schema$ValueRange> {
-  const res = await ((await sheets()).spreadsheets.values.get({ 
-    spreadsheetId: id, 
+  const res = await ((await sheets()).spreadsheets.values.get({
+    spreadsheetId: id,
     range: worksheetName+'!A:ZZ',
   }));
+  await cachedWorksheetNumAvailableRows({ id, worksheetName, forceUpdate: true });
   // Not sure why result is not on the type
   // @ts-ignore
   return res.result;
 }
 
+const _sheetNumAvailableRowsCache: {[key: string]: number} = {};
+export async function cachedWorksheetNumAvailableRows({ id, worksheetName, forceUpdate }: { id: string, worksheetName: string, forceUpdate?: boolean }): Promise<number> {
+  const key = id + ':' + worksheetName;
+  if (forceUpdate || typeof _sheetNumAvailableRowsCache[key] === 'undefined') {
+    _sheetNumAvailableRowsCache[key] = await worksheetNumAvailableRows({ id, worksheetName });
+  }
+  return _sheetNumAvailableRowsCache[key]!;
+}
+
+export async function ensureSheetHasEnoughRows({ id, worksheetName, row }: { id: string, worksheetName: string, row: number }) {
+  const numAvailableRows = await cachedWorksheetNumAvailableRows({ id, worksheetName });
+  if (row < numAvailableRows) return; // sheet is big enough
+  let length = 1000;
+  if (row - numAvailableRows >= 1000) length += row - numAvailableRows; // always add 1000 more rows than we need
+  const request: gapi.client.sheets.BatchUpdateSpreadsheetRequest = { requests: [ {
+    appendDimension: {
+      sheetId: await worksheetIdFromName({ id, name: worksheetName }),
+      dimension: 'ROWS',
+      length,
+    },
+  } ] };
+  await (await client()).sheets.spreadsheets.batchUpdate({spreadsheetId: id}, request);
+  // Update the cache with the new number.  Use google's number in case I messed up math
+  await cachedWorksheetNumAvailableRows({ id, worksheetName, forceUpdate: true });
+}
+
 // cols is just an array of your data, in order by the columns you want to
 // put it at.  i.e. cols[0] will go in column A, cols[1] in B, etc. in your chosen row.
 export async function putRow(
-  {id,row,cols,worksheetName,rawVsUser }
-: {id: string, row: string, cols: string[], worksheetName: string, rawVsUser?: 'USER_ENTERED' | 'RAW' }
+  {id,row,cols,worksheetName,rawVsUser}
+: {id: string, row: string, cols: string[], worksheetName: string, rawVsUser?: 'USER_ENTERED' | 'RAW'}
 ) {
   if (!rawVsUser) rawVsUser = 'RAW'; // this is what putRow originally did
+  // If they pass what they do not pass what they think is the current number of rows, grab it from Google first:
+  await ensureSheetHasEnoughRows({ id, worksheetName, row: (+row) });
+
   //const range = worksheetName+'!'+arrayToLetterRange(row,cols);
   let params = {
     spreadsheetId: id,
@@ -108,9 +138,9 @@ function dateStringToDateSerialNumber(datestr: string): number {
 }
 
 //------------------------------------------------------------
-// batchInsert is tricky with the lineno's.  I settled on you give 
-// this function lineno's as of the state of the sheet when you 
-// call this function.  i.e. if you need to insert 3 rows above 
+// batchInsert is tricky with the lineno's.  I settled on you give
+// this function lineno's as of the state of the sheet when you
+// call this function.  i.e. if you need to insert 3 rows above
 // lineno 5 (as final rows 5, 6, 7), then you'll give three row
 // objects that all list the same lineno of 5, and they will end
 // up as the first one line 5, the second line 6, and the third line 7,
@@ -126,7 +156,7 @@ function dateStringToDateSerialNumber(datestr: string): number {
 //             |    7   third new
 //             +--> 8   orig5
 export async function batchUpsertRows(
-  { id, worksheetName, rows, header, insertOrUpdate }: { 
+  { id, worksheetName, rows, header, insertOrUpdate }: {
     id: string,
     worksheetName: string,
     rows: RowObject[],
@@ -137,7 +167,7 @@ export async function batchUpsertRows(
     throw new Error('ERROR: must have at least one row to batchUpsert');
   }
   const sheetId = await worksheetIdFromName({ id, name: worksheetName });
-    
+
   const request: gapi.client.sheets.BatchUpdateSpreadsheetRequest = {
     requests: [],
   };
@@ -169,9 +199,9 @@ export async function batchUpsertRows(
     const rowvals = rowObjectToArray({row, header});
     const updateCellsRequest: gapi.client.sheets.Request = {
       updateCells: {
-        rows: [ 
+        rows: [
           {  // A single row is an object with a "values" key, and each "value" is just a userEnteredValue
-            values: rowvals.map(v => { 
+            values: rowvals.map(v => {
               if (typeof v === 'number') return { userEnteredValue: { numberValue: +(v) } };
               if (typeof v === 'object') return { userEnteredValue: { stringValue: JSON.stringify(v) } }; // notes
               if (typeof v === 'string') {
@@ -183,8 +213,8 @@ export async function batchUpsertRows(
                 return { userEnteredValue: { stringValue: v } };
               }
               return { userEnteredValue: { stringValue: ''+v } };
-            }) 
-          } 
+            })
+          }
         ], // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/sheets#RowData
         fields: 'userEnteredValue', // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/cells#CellData
         start: { sheetId, rowIndex: lineno-1, columnIndex: 0 }, // these are zero-based, but lineno is 1-based
@@ -193,6 +223,7 @@ export async function batchUpsertRows(
     request.requests!.push(updateCellsRequest);
   }
   await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
+  await cachedWorksheetNumAvailableRows({ id, worksheetName, forceUpdate: true });
   return;
 }
 
@@ -202,7 +233,7 @@ export async function batchUpsertRows(
 // that have formulas you want to paste down in limitToCols.  This is so that you don't have to put template rows in everything that you
 // want to test.
 export async function pasteFormulasFromTemplateRow(
-  { templateLineno, limitToCols, startLineno, id, worksheetName }: 
+  { templateLineno, limitToCols, startLineno, id, worksheetName }:
   { templateLineno: number, limitToCols?: number[], startLineno: number, id: string, worksheetName: string }
 ): Promise<void> {
   const sheetId = await worksheetIdFromName({ id, name: worksheetName });
@@ -216,7 +247,7 @@ export async function pasteFormulasFromTemplateRow(
   if (!templaterow) {
     throw new Error('ERROR: could not retrieve template row from sheet');
   }
-  
+
   // Figure out last line of data:
   const sheetdata = await sheetToJson({ id, worksheetName });
   if (!sheetdata) throw new Error('ERROR: could not retrieve all values in sheet to determine last line to paste');
@@ -255,21 +286,38 @@ export async function pasteFormulasFromTemplateRow(
     request.requests!.push(req);
   }
   await (await client()).sheets.spreadsheets.batchUpdate({ spreadsheetId: id }, request);
+  await cachedWorksheetNumAvailableRows({ id, worksheetName, forceUpdate: true });
 }
 
-
-
-export async function worksheetIdFromName({ id, name }: { id: string, name: string }) {
-  const response = await (await client()).sheets.spreadsheets.get({ 
+export async function worksheetNumAvailableRows({ id, worksheetName }: { id: string, worksheetName: string }) {
+  const response = await (await client()).sheets.spreadsheets.get({
     spreadsheetId: id,
-    ranges: [name+'!A1'],
+    ranges: [worksheetName+'!A1'],
   });
-  const sheetId = response.result?.sheets![0]?.properties?.sheetId;
-  if (!sheetId) {
+  const num = response.result?.sheets![0]?.properties?.gridProperties?.rowCount;
+  if (typeof num === 'undefined') {
     warn('FAIL: sheets.spreadsheets.get result = ', response);
-    throw new Error('ERROR: failed to find sheetId for worksheetName '+name+', result.status  was'+response.status+': '+response.statusText);
+    throw new Error('ERROR: failed to find num rows for worksheetName '+name+', result.status  was'+response.status+': '+response.statusText);
   }
-  return sheetId; 
+  return num;
+}
+
+const _worksheetNameToSheetIdCache: { [name: string]: number } = {};
+export async function worksheetIdFromName({ id, name, forceUpdate }: { id: string, name: string, forceUpdate?: boolean }) {
+  const key = id+':'+name;
+  if (forceUpdate || !_worksheetNameToSheetIdCache[key]) {
+    const response = await (await client()).sheets.spreadsheets.get({
+      spreadsheetId: id,
+      ranges: [name+'!A1'],
+    });
+    const sheetId = response.result?.sheets![0]?.properties?.sheetId;
+    if (!sheetId) {
+      warn('FAIL: sheets.spreadsheets.get result = ', response);
+      throw new Error('ERROR: failed to find sheetId for worksheetName '+name+', result.status  was'+response.status+': '+response.statusText);
+    }
+    _worksheetNameToSheetIdCache[key] = sheetId;
+  }
+  return _worksheetNameToSheetIdCache[key]!;
 }
 
 
@@ -298,7 +346,7 @@ export async function getSpreadsheet(
   return res?.result;
 }
 
-// You can eithre just ensure a spreadhseet file exists as a google sheet, or 
+// You can eithre just ensure a spreadhseet file exists as a google sheet, or
 // you can also ensure a worksheet exists within that spreadsheet
 export async function ensureSpreadsheet({ path, worksheetName }: { path: string, worksheetName?: string }) {
   const parts = path.split('/');
@@ -353,16 +401,16 @@ export async function ensureSpreadsheet({ path, worksheetName }: { path: string,
   if (!worksheetid) {
     await ((await client()).sheets.spreadsheets.batchUpdate(
       { spreadsheetId: id },
-      { 
-        requests: [ 
-          { 
-            addSheet: { 
-              properties: { 
-                title: worksheetName, 
-                index: 0 
-              } 
-            } 
-          } 
+      {
+        requests: [
+          {
+            addSheet: {
+              properties: {
+                title: worksheetName,
+                index: 0
+              }
+            }
+          }
         ]
       }
     ));
@@ -372,6 +420,7 @@ export async function ensureSpreadsheet({ path, worksheetName }: { path: string,
       return null;
     }
   }
+  await cachedWorksheetNumAvailableRows({id, worksheetName, forceUpdate: true});
   // Now we know we have both an id and a worksheetid
   return { id, worksheetid };
 }
@@ -465,19 +514,20 @@ export async function createSpreadsheet({
   // If we have a worksheetName, add a worksheet with that name
   await ((await client()).sheets.spreadsheets.batchUpdate(
     { spreadsheetId: id },
-    { 
-      requests: [ 
-        { 
-          addSheet: { 
-            properties: { 
-              title: worksheetName, 
-              index: 0 
-            } 
-          } 
-        } 
+    {
+      requests: [
+        {
+          addSheet: {
+            properties: {
+              title: worksheetName,
+              index: 0
+            }
+          }
+        }
       ]
     }
   ));
+  await cachedWorksheetNumAvailableRows({id, worksheetName, forceUpdate: true});
   return {id};
 }
 
@@ -500,8 +550,8 @@ export function headerFromXlsxSheet({ sheet }: { sheet: xlsx.WorkSheet }): strin
 
 // colindex is zero-based, not 1-based
 export async function formatColumnAsDate({ id, worksheetName, colZeroBasedIndex } : {
-  id: string, 
-  worksheetName: string, 
+  id: string,
+  worksheetName: string,
   colZeroBasedIndex: number,
 }) {
   const sheetId = await worksheetIdFromName({ id, name: worksheetName });
