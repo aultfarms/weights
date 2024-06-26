@@ -13,7 +13,7 @@ export const TabSelector = observer(function TabSelector() {
     <div className="tabselector">
 
       <div className={'tabselectorbutton'}>
-        <a onClick={() => (false)/*() => /*actions.changeToPreviousDateWithWeights()*/}>|&lt;</a>
+        <a onClick={() => actions.changeToPreviousOrNextDateWithWeights('prev')}>|&lt;</a>
         &nbsp;
         <input className="tabselectordateinput"
           value={state.date}
@@ -22,11 +22,11 @@ export const TabSelector = observer(function TabSelector() {
           onBlur={() => actions.loadWeights()}
         />
         &nbsp;
-        <a onClick={() => (false)/*actions.changeToNextDateWithWeights()*/}>&gt;|</a>
+        <a onClick={() => actions.changeToPreviousOrNextDateWithWeights('next')}>&gt;|</a>
         &nbsp;&nbsp;
-        <input type="checkbox" 
-          defaultChecked={state.includeTodayInPastStats} 
-          onChange={(evt) => actions.changeIncludeTodayInPastStats(evt.target.checked)} 
+        <input type="checkbox"
+          defaultChecked={state.includeTodayInPastStats}
+          onChange={(evt) => actions.changeIncludeTodayInPastStats(evt.target.checked)}
         />Today Stats
       </div>
 
@@ -52,4 +52,3 @@ export const TabSelector = observer(function TabSelector() {
   );
 
 });
-

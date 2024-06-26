@@ -5,8 +5,6 @@ import { context } from './state';
 import numeral from 'numeral';
 import * as livestock from '@aultfarms/livestock';
 
-import Card from '@mui/material/Card';
-
 import './Stats.css';
 
 
@@ -72,7 +70,7 @@ export const Stats = observer(function Stats() {
           <tr><th># &gt; lbs</th></tr>
         </thead>
         <tbody>
-          { Object.entries(state.stats.today.ranges).map(([lbs, stat]) => 
+          { Object.entries(state.stats.today.ranges).map(([lbs, stat]) =>
             <tr key={'rangesrow'+lbs}>
               <td align="right">{stat.count + stat.notags} &gt; {lbs}</td>
             </tr>

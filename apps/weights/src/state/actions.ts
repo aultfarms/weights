@@ -1,6 +1,6 @@
 import { action, runInAction } from 'mobx';
-import { Msg, state, State } from './state';
-import dayjs from 'dayjs';
+import { Msg, state, State, Order } from './state';
+import dayjs, { Dayjs } from 'dayjs';
 import debug from 'debug';
 import * as livestock from '@aultfarms/livestock';
 import pLimit from 'p-limit';
@@ -56,6 +56,34 @@ export const changeDate = action('changeDate', async (date: string) => {
   await loadWeights();
 });
 
+export const changeToPreviousOrNextDateWithWeights = action('changeToPreviousOrNextDateWithWeights', async (which: 'prev' | 'next') => {
+  const startdate = dayjs(state.date, 'YYYY-MM-DD');
+  let prevdate = startdate.subtract(1, 'day').format('YYYY-MM-DD');
+  // Grab weight for same year as this date
+  const year = startdate.year();
+  const yearweights = state.yearsheets[year];
+  if (!yearweights) {
+    msg('ERROR: no weights for year '+year+', just backing up one day', 'bad');
+    return await changeDate(prevdate);
+  }
+  // Now, find all the unique dates for this year
+  let datesMap: { [date: string]: true } = {};
+  for (const w of yearweights.weights) {
+    if (!datesMap[w.weighdate]) datesMap[w.weighdate] = true;
+  }
+  let dates = Object.keys(datesMap).sort();
+  if (which === 'prev') dates = dates.reverse();
+  for (const dstr of dates) {
+    const d = dayjs(dstr, 'YYYY-MM-DD');
+    if (   which === 'prev' && d.isBefore(startdate)
+        || which === 'next' && d.isAfter(startdate)) {
+      prevdate = dstr;
+      break;
+    }
+  }
+  await changeDate(prevdate);
+});
+
 export const loadWeights = action('loadWeights', async () => {
   msg('Loading past 5 year\'s weights');
   const date = dayjs(state.date, 'YYYY-MM-DD');
@@ -100,6 +128,13 @@ export const loadWeights = action('loadWeights', async () => {
     if (state.weights.length < 1) appendNewRow();
     updateAllStats();
   });
+
+  // Move the cursor down to the last weight:
+
+
+  // Move the tag input down to the row after the last row
+  moveTagInput(state.weights.length-1);
+  moveWeightInput(state.weights.length-1);
 });
 
 export const changeIncludeTodayInPastStats = action('includeTodayInPastStats', (val: boolean) => {
@@ -224,7 +259,7 @@ export const loadTagInputFromRow = action('loadTagInputFromRow', (row: number) =
   }
   if (state.weights[row]) {
     changeTag(state.weights[row]!.tag);
-  } 
+  }
 });
 
 export const loadWeightInputFromRow = action('loadWeightInputFromRow', (row: number) => {
@@ -257,7 +292,7 @@ export const moveWeightInput = action('moveWeightInput', (row: number) => {
     loadWeightInputFromRow(row);
     scrollToTag();
 });
- 
+
 export const moveTagInputUp   = action('moveTagInputUp',   () => moveTagInput(state.tagInput.row-1));
 export const moveTagInputDown = action('moveTagInputDown', () => moveTagInput(state.tagInput.row+1));
 export const moveWeightInputUp   = action('moveWeightInputUp',   () => moveWeightInput(state.weightInput.row-1));
@@ -277,7 +312,7 @@ export const saveTag = action('saveTag', async () => {
     return;
   }
   row.tag = { ...state.tagInput.tag };
-  try { 
+  try {
     livestock.weights.computeRow({ row, records: records(), recheckTagGroup: true });
   } catch(e: any) {
     msg('ERROR: could not compute row values.  Error was:'+e.toString());
@@ -300,7 +335,7 @@ export const saveWeight = action('saveWeight', async () => {
     msg('WARNING: row '+state.weightInput.row+' from weightInput does not exist in weight records', 'bad');
     return;
   }
-  row.weight = state.weightInput.weight*10;
+  row.weight = state.weightInput.weight;
   try {
     livestock.weights.computeRow({ row, records: records() });
   } catch(e: any) {
@@ -313,4 +348,8 @@ export const saveWeight = action('saveWeight', async () => {
   msg('Weight Saved', 'good');
 });
 
-
+export const changeOrder = action('changeOrder', async (neworder: Order) => {
+  const cur = state.order[0];
+  if (cur === neworder) return; // no need to keep pushing the same thing on
+  state.order = [ neworder, ...state.order ].slice(0,4); // keep last 4 to sort within same things like sort order
+});

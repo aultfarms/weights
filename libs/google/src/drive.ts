@@ -3,7 +3,7 @@ import debug from 'debug';
 import { client, auth2 } from './core';
 import oerror from '@overleaf/o-error';
 import { stringify } from 'q-i';
-// Note these are node-specific @googleapis libraries, but they have the 
+// Note these are node-specific @googleapis libraries, but they have the
 // typescript typings we need:
 import type { drive_v3 as Drive  } from '@googleapis/drive';
 import pLimit from 'p-limit';
@@ -29,13 +29,13 @@ export async function ensurePath({
   }
   // If leading slash, this is root:
   if (path[0] === '/') path = path.slice(1); // just get rid of preceding slash since id defaults to 'root'
-  const parts = path.split('/'); 
-  const name = parts[0]; // get the top one 
+  const parts = path.split('/');
+  const name = parts[0]; // get the top one
   if (!name) {
     trace('after split, name is empty, returning id ', id);
     return id ? {id} : null;
   }
-  const rest = parts.slice(1); 
+  const rest = parts.slice(1);
   trace('ensurePath: checking for file ',name,' in folder with  id ', id);
   let found = null;
   let founderror = null;
@@ -45,7 +45,7 @@ export async function ensurePath({
     founderror = e;
     // Did not find it, logic below to handle that case
   }
-   
+
   if (!found) {
     if (donotcreate) {
       warn('WARNING: google.ensurePath: did not find path, and donotcreate=true so we did not create it');
@@ -54,15 +54,15 @@ export async function ensurePath({
     // Create this part of the path if it doesn't exist
     info('ensurePath: creating folder ', name, ' in parent id ', id);
     const result = await createFolder({name, parentid: id==='root' ? null : id,});
-    return ensurePath({ 
-      path: rest.join('/'), 
-      id: result?.id, 
+    return ensurePath({
+      path: rest.join('/'),
+      id: result?.id,
     });
   }
   trace('google.ensurePath: found ',name,', going down rest of path ',rest.join('/'));
-  return ensurePath({ 
-    path: rest.join('/'), 
-    id: found.id, 
+  return ensurePath({
+    path: rest.join('/'),
+    id: found.id,
   });
 };
 
@@ -70,7 +70,7 @@ export async function ensurePath({
 // Given a path, find it's ID:
 export async function idFromPath({path}: {path: string}): Promise<{ id: string }> {
   let result = null;
-  try { 
+  try {
     result = await ensurePath({path,donotcreate: true});
   } catch(e:any) {
     throw oerror.tag(e, `af/google#drive/idFromPath: Could not find file at path ${path}`);
@@ -79,7 +79,7 @@ export async function idFromPath({path}: {path: string}): Promise<{ id: string }
   return {id:result.id};
 }
 
-// Create a file in 
+// Create a file in
 export async function createFile({
   parentid=null,
   name,
@@ -89,11 +89,11 @@ export async function createFile({
   name: string,
   mimeType: string
 }): Promise<{ id: string } | null> {
-  try { 
+  try {
     const c = await client();
     const res = await c.drive.files.create({
-      resource: { 
-        name, 
+      resource: {
+        name,
         mimeType,
         parents: parentid ? [parentid] : [],
       },
@@ -113,20 +113,20 @@ export function createFolder({parentid=null,name}: { parentid?: string | null, n
 }
 
 export async function findFileInFolder(
-  {id,name}: 
+  {id,name}:
   { id: string | null, name: string}
 ): Promise<Drive.Schema$File | null> {
   if (!id) return null;
   let res;
   const c = await client();
-  try { 
+  try {
     res = await c.drive.files.list({
       q: `name='${name}' and trashed=false and '${id}' in parents`,
       //fileId: id,
       spaces: 'drive',
     });
   } catch(e) {
-    try { 
+    try {
       res = await c.drive.files.list({
         q: `'${id}' in parents`,
         spaces: 'drive',
@@ -191,7 +191,7 @@ export async function getFileContents({ id, exportMimeType=null }: { id: string,
 
 export type FileList = { id: string, name: string, kind?: string, mimeType?: string }[];
 export async function ls(
-  {id,path}: 
+  {id,path}:
   { id: string, path?: null } | { path: string, id?: null }
 ):Promise< { id: string, contents: FileList } | null > {
   if (!id) {
@@ -216,9 +216,9 @@ export async function ls(
   if (!files) return { id,  contents: [] };
   const ret = {
     id,
-    contents: files.map(f => ({ 
-      id: f.id || '', 
-      name: f.name || '', 
+    contents: files.map(f => ({
+      id: f.id || '',
+      name: f.name || '',
       kind: f.kind || '',
       mimeType: f.mimeType || '',
     })),
@@ -268,10 +268,10 @@ export async function copyAllFilesFromFolderToExistingFolder({ sourceFolderid, d
   }
   let count = 0;
   const queue = dir.contents.map(f => limit(async () => {
-    try { 
+    try {
       // Drive has an oddity in ls-ing a folder that it returns a non-existent folder whose name is the part of the parent folder name
       // before any "-".  i.e. if the parent folder is "MUTABLE-ACCOUNTS", it returns one entry with name "MUTABLE".  The "kind" is set to
-      // "drive#file", but the mimeType is application/vnd.google-apps.folder.  This function doesn't recursively copy anyway, so we can 
+      // "drive#file", but the mimeType is application/vnd.google-apps.folder.  This function doesn't recursively copy anyway, so we can
       // hack a solution by just ignoring that mimeType
       if (f.mimeType === 'application/vnd.google-apps.folder') return;
       await (await client()).drive.files.copy({ fileId: f.id }, { name: f.name, parents: [ destinationFolderid ] });

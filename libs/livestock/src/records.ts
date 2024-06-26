@@ -34,7 +34,7 @@ export async function fetchRecords(client: client.Client): Promise<LivestockReco
     else              ret.incoming.records.push(r);
   }
 
-  // Treatment cards: 
+  // Treatment cards:
   const treatmentlist = lists.find(l => l.name === 'Treatments');
   if (!treatmentlist || !treatmentlist.cards) throw new Error('ERROR: could not find Treatement list in Livestock board');
   for (const c of treatmentlist.cards) {
@@ -43,7 +43,7 @@ export async function fetchRecords(client: client.Client): Promise<LivestockReco
     else              ret.treatments.records.push(r);
   }
 
-  // Dead cards: 
+  // Dead cards:
   const deadlist = lists.find(l => l.name === 'Dead');
   if (!deadlist || !deadlist.cards) throw new Error('ERROR: could not find Dead list in Livestock board');
   for (const c of deadlist.cards) {
@@ -89,11 +89,11 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     let matches = name.match(/^([0-9]{4}-[0-9]{1,2}-[0-9]{1,2}):?(.*)$/);
     if (!matches) {
       warn('WARNING: attempted to convert card name (',name,') to dead record, but day/tag was not matched');
-      return { 
-        cardName: c.name, 
-        id: c.id, 
-        idList: c.idList, 
-        error: 'WARNING: attempted to convert card name ('+name+') to dead record, but day/tag was not matched' 
+      return {
+        cardName: c.name,
+        id: c.id,
+        idList: c.idList,
+        error: 'WARNING: attempted to convert card name ('+name+') to dead record, but day/tag was not matched'
       };
     }
 
@@ -101,10 +101,10 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     const day = matches?.[1] || '1970-01-01';
     if (!(matches?.[1])) {
       warn('WARNING: attempted to convert card name (',name,') to dead record, but day was not matched');
-      return { 
-        cardName: c.name, 
-        id: c.id, 
-        idList: c.idList, 
+      return {
+        cardName: c.name,
+        id: c.id,
+        idList: c.idList,
         error: 'WARNING: attempted to convert card name ('+name+') to dead record, but day was not matched',
       };
     }
@@ -113,10 +113,10 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     let tags_and_pens_str = matches?.[2] || 'UNKNOWN';
     if (!(matches?.[2])) {
       warn('WARNING: attempted to convert card name (',name,') to dead record, but tag was not matched');
-      return { 
-        cardName: c.name, 
-        id: c.id, 
-        idList: c.idList, 
+      return {
+        cardName: c.name,
+        id: c.id,
+        idList: c.idList,
         error: 'WARNING: attempted to convert card name ('+name+') to dead record, but tag was not matched',
       };
     }
@@ -133,18 +133,18 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     tags_and_pens = tags_and_pens.map(tp => tp.trim());
     tags_and_pens = tags_and_pens.map(tp => ( tp==='NT' ? 'NOTAG1' : tp));
     // eliminate everything that isn't just tags
-    let tags = tags_and_pens.filter(t => 
+    let tags = tags_and_pens.filter(t =>
       !t.match(/^[NSB][0-9S]{1,2}$/i) && // N1, NS, S1, B3
       !t.match(/^OB[SN]?[NS]?$/) && // OBS, OBN, OB, OBNS
       !t.match(/^HB$/i) &&
       !t.match(/^HEIFER$/i) &&
-      !t.match(/^DRY( ?(LOT|COW))?$/i) && 
-      !t.match(/^DAIRY$/i) && 
-      !t.match(/^APRIL'?S?$/i) && 
+      !t.match(/^DRY( ?(LOT|COW))?$/i) &&
+      !t.match(/^DAIRY$/i) &&
+      !t.match(/^APRIL'?S?$/i) &&
       !t.match(/^WOODS$/i) &&
       !t.match(/^BARN ?[1-3]$/i) &&
       !t.match(/^dead/i) &&
-      !t.match(/^total/i) && 
+      !t.match(/^total/i) &&
       !t.match(/^and/i)
     );
     // fixup bad tags:
@@ -153,7 +153,7 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
     // parse all the tag strings into tag objects
     const tagObjs = tags.map(tagStrToObj);
     if (tagObjs.filter(t => !t).length > 0) { // if there are any null tags, call this an error
-      throw new Error('ERROR: could not map one of the tags ('+tags.join(',')+') to a tag object.');
+      throw new Error('ERROR: could not map one of the tags ('+JSON.stringify(tags)+') to a tag object.');
     }
     return {
       date: day,
@@ -161,13 +161,13 @@ export function deadCardToRecord(c: TrelloCard): DeadRecord | ErrorRecord {
       note,
       id: c.id,
       idList: c.idList,
-      cardName: c.name, 
+      cardName: c.name,
       dateLastActivity: c.dateLastActivity
     };
 
   // If anything goes wrong, just put an error record here:
   } catch(err: any) {
-    return { 
+    return {
       cardName: c.name,
       idList: c.idList,
       id: c.id,
@@ -188,13 +188,13 @@ export function incomingCardToRecord(c: TrelloCard): IncomingRecord | ErrorRecor
     if (!groupname) {
       return { ...c, cardName, error: 'Invalid groupname on card' };
     }
-    const ret: IncomingRecord = { 
-      date, 
-      groupname, 
-      cardName, 
-      id: c.id, 
-      idList: c.idList, 
-      dateLastActivity: c.dateLastActivity 
+    const ret: IncomingRecord = {
+      date,
+      groupname,
+      cardName,
+      id: c.id,
+      idList: c.idList,
+      dateLastActivity: c.dateLastActivity
     };
     let rest = matches?.[3];
     if (!rest) return ret;
@@ -241,24 +241,27 @@ export function treatmentCardToRecord(c: TrelloCard): TreatmentRecord | ErrorRec
     if (!treatmentmatches || treatmentmatches.length < 3) return { ...c, cardName, error: 'Invalid treatment string on card' };
     const treatment = treatmentmatches[1]!.trim();
     rest = treatmentmatches[2]!.trim();
+    // Replace all double spaces:
+    while (rest.match(/  /)) {
+      rest = rest.replace(/  /g,' ');
+    }
     const tags = rest.split(' ').map(tagStrToObj);
     if (tags.filter(t => !t).length > 0) { // if there are any null tags, call this an error
-      throw new Error('ERROR: could not map one of the tags ('+tags.join(',')+') to a tag object.');
+      const first_missing_index = tags.findIndex(t => !t);
+      throw new Error('ERROR: treatmentCardToRecord: could not map at least tag at index '+first_missing_index+' from ('+rest.split(' ')+') from entire list of tags ('+JSON.stringify(tags)+') to a tag object.');
     }
-    return { 
-      date, 
-      treatment, 
+    return {
+      date,
+      treatment,
       tags: (tags as Tag[]), // cast here b/c we already ensured no nulls with the filter above
       id: c.id,
       idList: c.idList,
-      cardName: c.name, 
+      cardName: c.name,
       dateLastActivity: c.dateLastActivity
     };
   } catch(e: any) {
     return { ...c, cardName, error: 'Uncaught error in treatmentCardToRecord: '+e.toString() };
   }
 };
-
-
 
 

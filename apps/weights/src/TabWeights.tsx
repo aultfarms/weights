@@ -5,6 +5,7 @@ import numeral from 'numeral';
 
 import './TabWeights.css';
 import * as livestock from '@aultfarms/livestock';
+import { Order } from './state/state';
 
 function truncateGroupName(str: string) {
   const parts = str.split(':');
@@ -27,6 +28,29 @@ export const TabWeights = observer(function TabWeights() {
 
   // have to reference rev to get redraw updates
   const tagcolors = state.records.rev ? actions.records().tagcolors : {};
+
+  let weights = state.weights.slice();
+  for (const order of state.order.slice().reverse()) {
+    weights = weights.sort((a,b) => {
+      switch(order) {
+        case 'row': return a.lineno - b.lineno;
+        case 'tag':
+          const c = a.tag.color.localeCompare(b.tag.color);
+          if (c) return c;
+          return a.tag.number - b.tag.number;
+        case 'weight': return a.weight - b.weight;
+        case 'group': return a.group.localeCompare(b.group);
+        case 'days': return a.days - b.days;
+        case 'rog': return a.rog - b.rog;
+        case 'sort': return a.sort.localeCompare(b.sort);
+      }
+    });
+  }
+  const firstorder = state.order[0];
+  function orderSelected(order: Order) {
+    if (firstorder === order) return { background: '#DDDDFF' };
+    return {};
+  }
   /*
   const extrarowtagactive = state.tagInput.row === state.weights.length;
   const extrarowweightactive = state.weightInput.row === state.weights.length;
@@ -37,17 +61,17 @@ export const TabWeights = observer(function TabWeights() {
       <table className="tabweightstable">
         <thead>
           <tr>
-            <th style={{width: "5%"}}>#</th>
-            <th style={{width: "25%"}}>Tag</th>
-            <th style={{width: "8%"}}>Weight</th>
-            <th style={{width: "22%"}}>Group</th>
-            <th style={{width: "8%"}}>Days</th>
-            <th style={{width: "8%"}}>RoG</th>
-            <th style={{width: "24%"}}>Sort</th>
+            <th style={{width: "5%", ...orderSelected('row') }} onClick={() => actions.changeOrder('row')}>#</th>
+            <th style={{width: "25%", ...orderSelected('tag')}} onClick={() => actions.changeOrder('tag')}>Tag</th>
+            <th style={{width: "8%", ...orderSelected('weight')}} onClick={() => actions.changeOrder('weight')}>Weight</th>
+            <th style={{width: "22%", ...orderSelected('group')}} onClick={() => actions.changeOrder('group')}>Group</th>
+            <th style={{width: "8%", ...orderSelected('days')}} onClick={() => actions.changeOrder('days')}>Days</th>
+            <th style={{width: "8%", ...orderSelected('rog')}} onClick={() => actions.changeOrder('rog')}>RoG</th>
+            <th style={{width: "24%", ...orderSelected('sort')}} onClick={() => actions.changeOrder('sort')}>Sort</th>
           </tr>
         </thead>
         <tbody>
-      { state.weights.map((r,i) => {
+      { weights.map((r,i) => {
         const color = tagcolors[r.tag.color] || 'BLACK';
         const tagactive = state.tagInput.row === i;
         const weightactive = state.weightInput.row === i;
@@ -56,7 +80,7 @@ export const TabWeights = observer(function TabWeights() {
           <td className='tabweightstablecol' align="center">
             { (i+1) }
           </td>
-          <td className={'tabweightstablecol ' + (tagactive ? 'tagactive ' : '')} 
+          <td className={'tabweightstablecol ' + (tagactive ? 'tagactive ' : '')}
               onClick={() => actions.moveTagInput(i)}
               id={tagactive ? 'tagScrollToMe' : 'tagDoNotScrollToMe' }>
             <div className="tabweightstagtext" style={{ color, borderColor: color }}>
@@ -67,7 +91,7 @@ export const TabWeights = observer(function TabWeights() {
               onClick={() => actions.moveWeightInput(i)}
               id={weightactive ? 'weightScrollToMe' : 'weightDoNotScrollToMe' }
               align="center">
-            { weightactive ? state.weightInput.weight * 10 : r.weight }
+            { weightactive ? state.weightInput.weight : r.weight }
           </td>
           <td className='tabweightstablecol' align="center">
             { truncateGroupName(r.group) || '' }
@@ -79,7 +103,7 @@ export const TabWeights = observer(function TabWeights() {
             { r.rog ? numeral(r.rog).format('0.00') : '' }
           </td>
           <td className='tabweightstablecol' align="center">
-            <select 
+            <select
               onChange={(evt) => actions.changeSort(i, evt.target.value)}
               value={ r.sort || 'SELL' }
             >
@@ -98,7 +122,7 @@ export const TabWeights = observer(function TabWeights() {
           <td className={'tabweightstablecol ' + (extrarowtagactive ? 'tagactive' : '') }
             onClick={() => actions.moveTagInput(state.weights.length)}
             id={extrarowtagactive ? 'tagScrollToMe' : 'tagDoNotScrollToMe' }>
-            { extrarowtagactive ? 
+            { extrarowtagactive ?
                 <div className="tabweightstagtext" style={{ color: extrarowcolor, borderColor: extrarowcolor }}>
                   {truncateColor(state.tagInput.tag.color) || '' } {state.tagInput.tag.number || ''}
                 </div>
@@ -127,4 +151,3 @@ export const TabWeights = observer(function TabWeights() {
     </div>
   );
 });
-

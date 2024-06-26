@@ -15,13 +15,13 @@ export const WeightInput = observer(function WeightInput() {
 
   const backspaceClicked = () => {
     let str = ''+state.weightInput.weight;
-    if (str.length > 0) str = str.slice(0,-1);
-    actions.changeWeight(+(str));
+    if (str.length > 0) str = str.slice(0,-2); // take off the zero plus the last digit
+    actions.changeWeight(+(str + '0')); // add the zero back in
   };
 
   const numberClicked = (key: number) => {
     const prev = state.weightInput.weight;
-    const number = !prev ? key : +(prev.toString() + key.toString());
+    const number = +(prev.toString().slice(0,-1) + key.toString() + '0');
     actions.changeWeight(number);
   };
 
@@ -32,11 +32,11 @@ export const WeightInput = observer(function WeightInput() {
         <input className="weightinputdisplayinput"
           size={8}
           disabled={true}
-          value={numeral(state.weightInput.weight*10).format('0,0') } />
-        lbs 
+          value={numeral(state.weightInput.weight).format('0,0') } />
+        lbs
       </div>
 
-      <Keypad 
+      <Keypad
         onNumber={numberClicked}
         onClear={() => actions.changeWeight(0)}
         onBackspace={backspaceClicked}

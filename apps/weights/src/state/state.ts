@@ -37,6 +37,7 @@ try {
 localStorage.setItem('weights-config', JSON.stringify(config));
 //----------------------------------------
 
+export type Order = 'row' | 'tag' | 'weight' | 'group' | 'days' | 'rog' | 'sort';
 export type State = {
   config: Config,
   isInitialized: boolean,
@@ -67,6 +68,7 @@ export type State = {
     pastyear: livestock.ComputedStats,
     all: livestock.ComputedStats,
   },
+  order: Order[],
 
   records: { rev: number }, // big data
   // Current year things:
@@ -114,6 +116,7 @@ export const state = observable<State>({
     pastyear: { sorts: {}, incoming: {}, sources: {}, ranges: {}, days: {}, months: {}, years: {}, },
     all:      { sorts: {}, incoming: {}, sources: {}, ranges: {}, days: {}, months: {}, years: {}, },
   },
+  order: [ 'row' ],
   records: { rev: 0 },
   weights: [],
   sheetinfo: { id: '', path: '', worksheetName: '' },
@@ -132,4 +135,3 @@ export const state = observable<State>({
 autorun(() => {
   localStorage.setItem('weights-config', JSON.stringify(state.config));
 });
-
