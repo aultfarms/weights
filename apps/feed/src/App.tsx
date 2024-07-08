@@ -20,9 +20,10 @@ import './App.css'
 import { firstSourceName } from './state/util';
 
 function sanitizeWeight(str: string): number {
-  const matches = str.match(/(([0-9]+[,.])?[0-9]*)$/);
-  const m = matches?.[1] || '';
-  return +(m.replace(/[,.]/g,'').trim()); // convert to number
+  //const matches = str.match(/(([0-9]+[,.])?[0-9]*)$/);
+  //const m = matches?.[1] || '';
+  //return +(m.replace(/[,.]/g,'').trim()); // convert to number
+  return +(str.replace(',',''));
 }
 
 export const App = observer(function App() {
