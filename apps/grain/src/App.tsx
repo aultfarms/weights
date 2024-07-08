@@ -24,9 +24,10 @@ import './App.css'
 const info = debug('af/grain#App:info');
 
 function sanitizeBushels(str: string): number {
-  const matches = str.match(/(([0-9]+[,.])?[0-9]*)$/);
-  const m = matches?.[1] || '';
-  return +(m.replace(/[,.]/g,'').trim()); // convert to number
+  //const matches = str.match(/(([0-9]+[,.])?[0-9]*)$/);
+  //const m = matches?.[1] || '';
+  //return +(m.replace(/[,.]/g,'').trim()); // convert to number
+  return +(str.replace(',',''));
 }
 
 export const App = observer(function App() {
