@@ -16,6 +16,13 @@ export const GoogleSheetsMimeType = "application/vnd.google-apps.spreadsheet";
 // From: https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number (lower-down post about typescript)
 const isNumeric = (num: unknown) => (typeof(num) === 'number' || typeof(num) === "string" && num.trim() !== '') && !isNaN(num as number);
 
+// Handy type to keep your spreadsheet info as you pass it around
+export type SpreadsheetInfo = {
+  id: string, // ID of the spreadsheet file in Google Drive
+  path: string, // original path+filename of the spreadsheet
+  worksheetName: string, // name of worksheet in the spreadsheet that you want to read/edit
+}
+
 async function sheets(): Promise<Sheets.Sheets> {
   // @ts-ignore
   return ((await client()).sheets as Sheets.Sheets);

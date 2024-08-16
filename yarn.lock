@@ -132,11 +132,11 @@ __metadata:
     "@types/bluebird": "npm:^3.5.38"
     "@types/debug": "npm:^4.1.7"
     "@types/deep-equal": "npm:^1.0.1"
-    "@types/gapi": "npm:^0.0.41"
-    "@types/gapi.auth2": "npm:^0.0.56"
-    "@types/gapi.client": "npm:^1.0.5"
-    "@types/gapi.client.drive": "npm:^3.0.13"
-    "@types/gapi.client.sheets": "npm:^4.0.20201029"
+    "@types/gapi": "npm:^0.0.47"
+    "@types/gapi.client": "npm:^1.0.8"
+    "@types/gapi.client.drive": "npm:^3.0.15"
+    "@types/gapi.client.sheets-v4": "npm:^0.0.4"
+    "@types/google.accounts": "npm:^0.0.14"
     "@types/moment": "npm:^2.13.0"
     "@types/node": "npm:^17.0.14"
     "@yarnpkg/sdks": "npm:^3.0.0-rc.42"
@@ -194,6 +194,39 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aultfarms/manure@workspace:libs/manure":
+  version: 0.0.0-use.local
+  resolution: "@aultfarms/manure@workspace:libs/manure"
+  dependencies:
+    "@aultfarms/google": "workspace:^"
+    "@aultfarms/trello": "workspace:^"
+    "@overleaf/o-error": "npm:^3.4.0"
+    "@rollup/plugin-commonjs": "npm:^24.0.1"
+    "@rollup/plugin-node-resolve": "npm:^15.0.1"
+    "@rollup/plugin-typescript": "npm:^11.0.0"
+    "@tsconfig/node16": "npm:^1.0.3"
+    "@types/debug": "npm:^4.1.7"
+    "@types/deep-equal": "npm:^1.0.1"
+    "@types/geojson": "npm:^7946.0.14"
+    "@types/node": "npm:^17.0.14"
+    "@yarnpkg/sdks": "npm:^3.0.0-rc.42"
+    concurrently: "npm:^8.0.1"
+    dayjs: "npm:^1.11.9"
+    debug: "npm:^4.3.4"
+    deep-equal: "npm:^2.2.0"
+    live-server: "npm:^1.2.2"
+    p-limit: "npm:^4.0.0"
+    p-reduce: "npm:^3.0.0"
+    rollup: "npm:^3.20.2"
+    rollup-plugin-dts: "npm:^5.3.0"
+    rollup-plugin-pnp-resolve: "npm:^2.0.0"
+    terser: "npm:^5.16.8"
+    ts-node: "npm:^10.9.1"
+    tslib: "npm:^2.5.0"
+    typescript: "npm:^5.0.3"
+  languageName: unknown
+  linkType: soft
+
 "@aultfarms/overmind@workspace:libs/overmind":
   version: 0.0.0-use.local
   resolution: "@aultfarms/overmind@workspace:libs/overmind"
@@ -208,6 +241,40 @@ __metadata:
     typescript: "npm:^5.0.3"
   peerDependencies:
     overmind: "*"
+  languageName: unknown
+  linkType: soft
+
+"@aultfarms/sheetutils@workspace:libs/sheetutils":
+  version: 0.0.0-use.local
+  resolution: "@aultfarms/sheetutils@workspace:libs/sheetutils"
+  dependencies:
+    "@aultfarms/google": "workspace:^"
+    "@aultfarms/trello": "workspace:^"
+    "@overleaf/o-error": "npm:^3.4.0"
+    "@rollup/plugin-commonjs": "npm:^24.0.1"
+    "@rollup/plugin-node-resolve": "npm:^15.0.1"
+    "@rollup/plugin-typescript": "npm:^11.0.0"
+    "@tsconfig/node16": "npm:^1.0.3"
+    "@types/debug": "npm:^4.1.7"
+    "@types/deep-equal": "npm:^1.0.1"
+    "@types/node": "npm:^17.0.14"
+    "@types/numeral": "npm:^2.0.2"
+    "@yarnpkg/sdks": "npm:^3.0.0-rc.42"
+    concurrently: "npm:^8.0.1"
+    dayjs: "npm:^1.11.9"
+    debug: "npm:^4.3.4"
+    deep-equal: "npm:^2.2.0"
+    live-server: "npm:^1.2.2"
+    numeral: "npm:^2.0.6"
+    p-limit: "npm:^4.0.0"
+    p-reduce: "npm:^3.0.0"
+    rollup: "npm:^3.20.2"
+    rollup-plugin-dts: "npm:^5.3.0"
+    rollup-plugin-pnp-resolve: "npm:^2.0.0"
+    terser: "npm:^5.16.8"
+    ts-node: "npm:^10.9.1"
+    tslib: "npm:^2.5.0"
+    typescript: "npm:^5.0.3"
   languageName: unknown
   linkType: soft
 
@@ -3651,12 +3718,42 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@maxim_mazurok/gapi.client.discovery-v1@npm:latest":
+  version: 0.1.20200806
+  resolution: "@maxim_mazurok/gapi.client.discovery-v1@npm:0.1.20200806"
+  dependencies:
+    "@types/gapi.client": "npm:*"
+    "@types/gapi.client.discovery-v1": "npm:*"
+  checksum: 10/390c49300f9c8a4feb5fc3faa1d37153d239f04b3289ff3698ec80f2105cacf046611f071870080ba52805cd544102d32693c182b95dae6793d950e66b674a4d
+  languageName: node
+  linkType: hard
+
+"@maxim_mazurok/gapi.client.drive-v3@npm:latest":
+  version: 0.0.20240805
+  resolution: "@maxim_mazurok/gapi.client.drive-v3@npm:0.0.20240805"
+  dependencies:
+    "@types/gapi.client": "npm:*"
+    "@types/gapi.client.discovery-v1": "npm:*"
+  checksum: 10/54f6b6ba1bb4896313291ec08bb86c29317813aa57b8a0ab36bf8515861104b8a99824bc81ff2caede55469084bda3b130194c3a17fabae03f907dc6723f8c03
+  languageName: node
+  linkType: hard
+
 "@maxim_mazurok/gapi.client.drive@npm:latest":
   version: 3.0.20220116
   resolution: "@maxim_mazurok/gapi.client.drive@npm:3.0.20220116"
   dependencies:
     "@types/gapi.client": "npm:*"
   checksum: 10/7e6e659b3a9e992cb353dddec0b362da1fb1a5d89a4b55cc0b83e60040a017f91717a542692cd08ccf3244b6765bf4bf22c22445318fc94e360c2151405904c1
+  languageName: node
+  linkType: hard
+
+"@maxim_mazurok/gapi.client.sheets-v4@npm:latest":
+  version: 0.0.20240730
+  resolution: "@maxim_mazurok/gapi.client.sheets-v4@npm:0.0.20240730"
+  dependencies:
+    "@types/gapi.client": "npm:*"
+    "@types/gapi.client.discovery-v1": "npm:*"
+  checksum: 10/25cbe364754af4668d50f7d3d4086482bb2ff84f39ed63c8d4c15af2483d32ef48003c03770a919fb479fe3b7cc251d694483ca386c8bbc0215900a22d7f1817
   languageName: node
   linkType: hard
 
@@ -4952,12 +5049,39 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/gapi.client.discovery-v1@npm:*":
+  version: 0.0.4
+  resolution: "@types/gapi.client.discovery-v1@npm:0.0.4"
+  dependencies:
+    "@maxim_mazurok/gapi.client.discovery-v1": "npm:latest"
+  checksum: 10/51d20e6cfbda250eb95f55ba563662ba9b71b97aee375cdc46179ff7cbc553082f45d6e4ce322767d121298a6e90bd7848e6c1c56c433217600627fbcc78f600
+  languageName: node
+  linkType: hard
+
 "@types/gapi.client.drive@npm:^3.0.13":
   version: 3.0.13
   resolution: "@types/gapi.client.drive@npm:3.0.13"
   dependencies:
     "@maxim_mazurok/gapi.client.drive": "npm:latest"
   checksum: 10/8bf8c347fe49d2bff83aa7d7245a76eb64520ea5ec9efa2db16202ec96e2008180c7f0364204553c6efa56e83f740dd80eb639bbc4e95e2557f2d42d56fe2945
+  languageName: node
+  linkType: hard
+
+"@types/gapi.client.drive@npm:^3.0.15":
+  version: 3.0.15
+  resolution: "@types/gapi.client.drive@npm:3.0.15"
+  dependencies:
+    "@maxim_mazurok/gapi.client.drive-v3": "npm:latest"
+  checksum: 10/0cdff3a24ff250eecfaa0a7c66e17e40731017adc6a30bb812f9a3d6775d6688868efa3bcef843d5f6ab7421b60ae968f981de0c05251941cbf464e3d8583d1e
+  languageName: node
+  linkType: hard
+
+"@types/gapi.client.sheets-v4@npm:^0.0.4":
+  version: 0.0.4
+  resolution: "@types/gapi.client.sheets-v4@npm:0.0.4"
+  dependencies:
+    "@maxim_mazurok/gapi.client.sheets-v4": "npm:latest"
+  checksum: 10/74c5a2681f9414ae8324f59ca4d9587e87d88d8c4a91718aa1d9afa8040e4c419deb4c497d10796021fd8f3919dda6374476a7c5b99ba34461d8417dfc932d5d
   languageName: node
   linkType: hard
 
@@ -4977,10 +5101,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/gapi.client@npm:^1.0.8":
+  version: 1.0.8
+  resolution: "@types/gapi.client@npm:1.0.8"
+  checksum: 10/3607c9592df9e66a6decdcce86366d3e6440b8bd7da39bee5fa05d01f165827f9e772eb1913b12797334d5f3e55c6cfe2d30c5ddd0d9037b02e823294a2e188b
+  languageName: node
+  linkType: hard
+
 "@types/gapi@npm:*, @types/gapi@npm:^0.0.41":
   version: 0.0.41
   resolution: "@types/gapi@npm:0.0.41"
   checksum: 10/19e0902f6358837a693124ee914078c468bccd5a2444295e820cac6a65f7bec20fdecd1c57c996b6acb0587d7436cd354ad64827cf60e596fde942ac8a98dff5
+  languageName: node
+  linkType: hard
+
+"@types/gapi@npm:^0.0.47":
+  version: 0.0.47
+  resolution: "@types/gapi@npm:0.0.47"
+  checksum: 10/b8104688ef132190cb661b461b912a3f6f07ce589eb90ab4bff4acdfaa9bbb8a6321be1119e865db89bf46dfc00cab2141764839535518cf63a8e2caa19f475e
+  languageName: node
+  linkType: hard
+
+"@types/geojson@npm:^7946.0.14":
+  version: 7946.0.14
+  resolution: "@types/geojson@npm:7946.0.14"
+  checksum: 10/ae511bee6488ae3bd5a3a3347aedb0371e997b14225b8983679284e22fa4ebd88627c6e3ff8b08bf4cc35068cb29310c89427311ffc9322c255615821a922e71
   languageName: node
   linkType: hard
 
@@ -5005,6 +5150,13 @@ __metadata:
     "@types/minimatch": "npm:*"
     "@types/node": "npm:*"
   checksum: 10/6ae717fedfdfdad25f3d5a568323926c64f52ef35897bcac8aca8e19bc50c0bd84630bbd063e5d52078b2137d8e7d3c26eabebd1a2f03ff350fff8a91e79fc19
+  languageName: node
+  linkType: hard
+
+"@types/google.accounts@npm:^0.0.14":
+  version: 0.0.14
+  resolution: "@types/google.accounts@npm:0.0.14"
+  checksum: 10/0332acd210eaad1904d28a9de2081da796cb8c22e4f61bbe0768729c71d1de1606355abc0615907505b9f4ac28694911b9722a6a4e6ee563c21f747e9e1c32b5
   languageName: node
   linkType: hard
 
@@ -5757,6 +5909,15 @@ __metadata:
   version: 1.2.0
   resolution: "@ungap/structured-clone@npm:1.2.0"
   checksum: 10/c6fe89a505e513a7592e1438280db1c075764793a2397877ff1351721fe8792a966a5359769e30242b3cd023f2efb9e63ca2ca88019d73b564488cc20e3eab12
+  languageName: node
+  linkType: hard
+
+"@vitejs/plugin-basic-ssl@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@vitejs/plugin-basic-ssl@npm:1.1.0"
+  peerDependencies:
+    vite: ^3.0.0 || ^4.0.0 || ^5.0.0
+  checksum: 10/2c0631d1202a1b5f198a96c761cbcdde3730cc03a9be565ea12c37b47c22dd22976dc4bd614a400c431a55be0270359cf59fbb0530e77fafc0e591b1f58858ef
   languageName: node
   linkType: hard
 
@@ -21507,6 +21668,7 @@ __metadata:
     "@types/numeral": "npm:^2.0.2"
     "@types/react": "npm:^18.0.31"
     "@types/react-dom": "npm:^18.0.11"
+    "@vitejs/plugin-basic-ssl": "npm:^1.1.0"
     "@vitejs/plugin-react": "npm:^3.1.0"
     chart.js: "npm:^4.2.1"
     dayjs: "npm:^1.11.7"

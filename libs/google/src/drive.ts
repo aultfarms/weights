@@ -1,6 +1,6 @@
 // Google Drive functions
 import debug from 'debug';
-import { client, auth2 } from './core';
+import { client } from './core';
 import oerror from '@overleaf/o-error';
 import { stringify } from 'q-i';
 // Note these are node-specific @googleapis libraries, but they have the
@@ -153,7 +153,8 @@ export async function findFileInFolder(
 }
 
 export async function getToken(): Promise<string> {
-  return (await auth2()).getAuthInstance().currentUser.get().getAuthResponse(true).access_token;
+//  return (await auth2()).getAuthInstance().currentUser.get().getAuthResponse(true).access_token;
+  return (await client()).getToken().access_token;
 }
 
 // If you want to download a spreadsheet as an xlsx, pass exportMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

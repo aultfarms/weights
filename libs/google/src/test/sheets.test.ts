@@ -53,7 +53,8 @@ export default async function sheets(g: Google) {
   }
 
   info('sheets: testing putRow on line 1001 (beyond existing rows)')
-  await g.sheets.putRow({ id, worksheetName, row: '1001', cols, rawVsUser: 'USER_ENTERED' });
+  const r4a = await g.sheets.putRow({ id, worksheetName, row: '1001', cols, rawVsUser: 'USER_ENTERED' });
+  if (!r4a || !deepequal(r4a,cols)) throw `putRow failed to return updated values (${JSON.stringify(r4)}) equal to passed values (${JSON.stringify(cols)})`
 
   info(`sheets: spreadsheetToJson`);
   let header = [ 'key1', 'key2', 'key3' ];
