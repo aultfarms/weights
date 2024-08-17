@@ -1,10 +1,9 @@
 .stats {
   display: flex;
   flex-direction: row;
-  /*align-items: center; */
   justify-content: space-around;
-  min-height: 140px; /* not sure why this has to be here */
-  max-height: 250px;
+  align-items: flex-start; /* You need this to avoid vertical table stretching */
+  flex: 1 0 35%;
   overflow-y: scroll;
 }
 

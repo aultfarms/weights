@@ -1,5 +1,6 @@
 .msg {
   display: flex;
+  flex: 0 0 auto;
   justify-content: center;
   min-height: 1em;
 }

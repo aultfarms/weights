@@ -11,11 +11,11 @@ import { Stats } from './Stats';
 import './WeightsPane.css';
 
 export const WeightsPane = observer(function WeightsPane() {
-  const ctx = React.useContext(context);
-  const { state } = ctx;
+  const _ctx = React.useContext(context);
+  //const { state } = ctx;
 
   return (
-    <div className='weightspane' style={{ height: state.window.orientation === 'landscape' ? '100vh' : '100vw' }}>
+    <div className='weightspane'>
       <Msg />
       <TabSelector />
       <Stats />

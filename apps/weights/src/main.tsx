@@ -3,9 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { context, initialContext } from './state';
 import { App } from './App';
 
+import './index.css';
+
 // @ts-ignore
 document.title += ` - ${__APP_VERSION__}`;
-
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
@@ -14,5 +15,4 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     </context.Provider>
   </React.StrictMode>
 );
-
 

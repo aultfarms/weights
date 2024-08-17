@@ -11,14 +11,16 @@
   border: 1px solid red;
 }
 
-.App {
-  height: 99%;
-  width: 99%;
-}
-
-body {
+html,body {
   font-family: sans-serif;
   font-size: 1em;
+  height: 100%;
+  margin: 0px;
+}
+
+#root {
+  height: 100%;
+  display: flex;
 }
 
 input {
@@ -39,4 +41,3 @@ option {
 div {
   user-select: none;
 }
-

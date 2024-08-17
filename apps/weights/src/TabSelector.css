@@ -3,7 +3,7 @@
 
 .tabselector {
   display: flex;
-  flex-shrink: 0;
+  flex: 0 0 auto;
   flex-direction: row;
 }
 

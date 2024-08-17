@@ -19,7 +19,7 @@ export const App = observer(function App() {
 
   const dir = state.window.orientation === 'landscape' ? 'row' : 'column';
   const inputdir = dir === 'row' ? 'column' : 'row'; // arrange input opposite main layout
-  const maxinputwidth = inputdir === 'row' ? '100%' : '25%';
+  const maxinputwidth = inputdir === 'row' ? '100%' : '15em';
 
   return (
     <HelmetProvider>
@@ -27,22 +27,11 @@ export const App = observer(function App() {
         <title>AF/Weights - v{pkg.version}</title>
       </Helmet>
       <div className="App">
-        <div className="container" style={{ flexDirection: dir}}>
-{/*          { state.isInitialized 
-          ? */}<React.Fragment> 
-              <WeightsPane />
-              <div className="inputs" style={{ flexDirection: inputdir, maxWidth: maxinputwidth }}>
-                <TagInput />
-                <div className="spacer"></div>
-                <WeightInput />
-              </div>
-            </React.Fragment>
-{/*          : <div>
-              Initializing...
-              <Errors/>
-            </div>
-          }
-*/}
+        <WeightsPane />
+        <div className="inputs" style={{ flexDirection: inputdir, maxWidth: maxinputwidth }}>
+          <TagInput />
+          <div className="spacer"> </div>
+          <WeightInput />
         </div>
       </div>
     </HelmetProvider>

@@ -35,60 +35,65 @@ function msToTokenExpirationWith5MinBuffer(t: CheckableToken) {
   return t.issued_at_ms + t.expires_in_ms - Date.now() - 5*60*1000;
 }
 
-let token_request_inflight = false;
+let tokenRequestPromise: Promise<void> | null = null;
 let time_of_last_request = 0;
 async function getAndSetNewTokenFromGoogle() {
-  if (token_request_inflight) {
-    info('WARNING: Already have a token request inflight, not requesting another one');
-    return;
+  if (tokenRequestPromise) {
+    info('Already have a request in flight, awaiting that first')
+    await tokenRequestPromise;
+    return;  // The previous request placed token in global scope
   }
-  token_request_inflight = true;
-  // if (token) {
-  //  info('Deauthorizing old token before requesting new one');
-  //  await deauthorize();
-  // }
-  const c = await client({ skipAuthorize: true });
-  if (!c) throw new Error('No Client');
-  const auth = await gisOAuth2({ skipAuthorize: true });
+  // Store this promise in global scope so other simulateneous requests can await it.
+  tokenRequestPromise = new Promise(async (resolve, reject) => {
+    try {
+      const c = await client({ skipAuthorize: true });
+      if (!c) throw new Error('No Client');
+      const auth = await gisOAuth2({ skipAuthorize: true });
 
-  // If you call getAndSetNewTokenFromGoogle too quickly back-to-back, you will get a "popup_closed" error
-  // and th popup window will never show.
-  const time_to_wait = 7000 - (Date.now() - time_of_last_request);
-  if (time_to_wait > 0) {
-    info('It has been less than 7 seconds since last token request, waiting '+(time_to_wait/1000)+' seconds more before requesting new token');
-    await new Promise(resolve => setTimeout(resolve, time_to_wait));
-  }
-
-  // Request the new token
-  const new_token = await new Promise<CheckableToken>((resolve, reject) => {
-    const issued_at_ms = Date.now();
-    const tokenClient = auth.initTokenClient({
-      client_id: gconfig.clientId,
-      scope: gconfig.scope,
-      error_callback: err => {
-        info('ERROR: received Error from tokenClient.  Error was: ', err);
-        reject(err);
-      },
-      callback: tokenResponse => {
-        if (tokenResponse && tokenResponse.access_token) {
-          // gis tokenclient is supposed to set the token on GAPI automatically
-          if (!c.getToken()) throw new Error('ERROR: after authenticating, GAPI client still has no token');
-          info('Successfully logged in user, have access token.  It is: ', tokenResponse);
-          localStorage.setItem('google-token', JSON.stringify(tokenResponse));
-          resolve({
-            ...tokenResponse,
-            expires_in_ms: +(tokenResponse.expires_in) * 1000,
-            issued_at_ms
-          });
-        }
+      // If you call getAndSetNewTokenFromGoogle too quickly back-to-back, you will get a "popup_closed" error
+      // and th popup window will never show.
+      const time_to_wait = 7000 - (Date.now() - time_of_last_request);
+      if (time_to_wait > 0) {
+        info('It has been less than 7 seconds since last token request, waiting '+(time_to_wait/1000)+' seconds more before requesting new token');
+        await new Promise(resolve => setTimeout(resolve, time_to_wait));
       }
-    });
-    // This call actually fires off the request
-    tokenClient.requestAccessToken(/*{ prompt: 'none' }*/);
+
+      // Request the new token
+      const new_token = await new Promise<CheckableToken>((resolveNewToken, rejectNewToken) => {
+        const issued_at_ms = Date.now();
+        const tokenClient = auth.initTokenClient({
+          client_id: gconfig.clientId,
+          scope: gconfig.scope,
+          error_callback: err => {
+            info('ERROR: received Error from tokenClient.  Error was: ', err);
+            rejectNewToken(err);
+          },
+          callback: tokenResponse => {
+            if (tokenResponse && tokenResponse.access_token) {
+              // gis tokenclient is supposed to set the token on GAPI automatically
+              if (!c.getToken()) throw new Error('ERROR: after authenticating, GAPI client still has no token');
+              info('Successfully logged in user, have access token.  It is: ', tokenResponse);
+              localStorage.setItem('google-token', JSON.stringify(tokenResponse));
+              resolveNewToken({
+                ...tokenResponse,
+                expires_in_ms: +(tokenResponse.expires_in) * 1000,
+                issued_at_ms
+              });
+            }
+          }
+        });
+        // This call actually fires off the request
+        tokenClient.requestAccessToken(/*{ prompt: 'none' }*/);
+      });
+      time_of_last_request = Date.now();
+      await setTokenAndScheduleExpirationCheck(new_token);
+      resolve();
+    } catch(e:any) {
+      reject(e);
+    }
   });
-  token_request_inflight = false;
-  time_of_last_request = Date.now();
-  await setTokenAndScheduleExpirationCheck(new_token);
+  await tokenRequestPromise;
+  tokenRequestPromise = null; // reset the global scope
   return;
 }
 

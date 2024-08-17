@@ -12,7 +12,7 @@ export const TabContainer = observer(function TabContainer() {
   const ctx = React.useContext(context);
   const { state } = ctx;
 
-  let ret = (<div className='tabscontainer'>Unknown Tab Type</div>);
+  let ret = (<div className='tabcontainer'>Unknown Tab Type</div>);
   switch(state.tabSelector.active) {
     case 'weights': ret = <TabWeights />;  break;
     case   'prefs': ret = <Prefs      />;  break;
@@ -21,4 +21,3 @@ export const TabContainer = observer(function TabContainer() {
   }
   return ret;
 });
-

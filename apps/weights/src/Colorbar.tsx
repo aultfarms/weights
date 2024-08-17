@@ -14,7 +14,7 @@ export const Colorbar = observer(function Colorbar() {
 
   function displayColorButton(c: string) {
     return (
-      <div key={'color'+c} 
+      <div key={'color'+c}
         className="colorbutton"
         onClick={() => actions.changeTag({ color: c })}
         style={{backgroundColor: colors[c] }}>
@@ -27,10 +27,9 @@ export const Colorbar = observer(function Colorbar() {
       {Object.keys(colors).map(displayColorButton)}
       <div key={'colorNOTAG'}
         className="colorbutton"
-        onClick={() => actions.changeTag({ color: 'NOTAG'})}
-        style={{backgroundColor: '#CCCCCC'}}>
+        onClick={() => actions.changeTag({ color: 'NOTAG', number: 1 })}
+        style={{backgroundColor: '#CCCCCC', color: 'red', fontFamily: 'sans-serif' }}>N
       </div>
     </div>
   );
 });
-
