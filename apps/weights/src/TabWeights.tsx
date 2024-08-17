@@ -113,39 +113,11 @@ export const TabWeights = observer(function TabWeights() {
 
         </tr>})
       }
-      {/*
-      {
-        <tr key="extrarow" className='tabweightstablerow'>
-          <td className='tabweightstablecol' align="center">
-            { (state.weights.length+1) }
-          </td>
-          <td className={'tabweightstablecol ' + (extrarowtagactive ? 'tagactive' : '') }
-            onClick={() => actions.moveTagInput(state.weights.length)}
-            id={extrarowtagactive ? 'tagScrollToMe' : 'tagDoNotScrollToMe' }>
-            { extrarowtagactive ?
-                <div className="tabweightstagtext" style={{ color: extrarowcolor, borderColor: extrarowcolor }}>
-                  {truncateColor(state.tagInput.tag.color) || '' } {state.tagInput.tag.number || ''}
-                </div>
-              : ' '
-            }
-          </td>
-          <td className={'tabweightstablecol ' + (extrarowweightactive ? 'weightactive' : '') }
-            onClick={() => actions.moveWeightInput(state.weights.length)}
-            id={extrarowweightactive ? 'weightScrollToMe' : 'weightDoNotScrollToMe' }>
-            { extrarowweightactive ? state.weightInput.weight * 10 : '' }
-          </td>
-          <td className={'tabweightstablecol'}>
-          </td>
-          <td className={'tabweightstablecol'}>
-          </td>
-          <td className={'tabweightstablecol'}>
-          </td>
-          <td className={'tabweightstablecol'}>
-          </td>
-
-        </tr>
-      }
-      */}
+        { /* You need this extra row for scrolling because the action doesn't get the view redraw
+             triggered before needing to scroll to the new row.
+          */
+        }
+        <tr key="extrarow" style={{ height: '3em', border: 'none' }} id="extraRowScrollToMe"><td> </td></tr>
       </tbody>
       </table>
     </div>

@@ -5,6 +5,11 @@ const info = debug('af/google#auth:info');
 
 // The new switch to Google Identity Services stinks.  Tokens have lifetime of 1 hour, and
 // there are no refreh tokens.  So I will track expiration and set a timeout to fix it.
+//
+// Since I added a call to authorize() from the load() function, which is called by client() and gisOAuth2(),
+// in this file only you have to tell it NOT to call authorize when you grab the client, otherwise you get
+// infinite recursion.
+//
 export type CheckableToken = {
   access_token: string,
   expires_in_ms: number,
@@ -42,9 +47,9 @@ async function getAndSetNewTokenFromGoogle() {
   //  info('Deauthorizing old token before requesting new one');
   //  await deauthorize();
   // }
-  const c = await client();
+  const c = await client({ skipAuthorize: true });
   if (!c) throw new Error('No Client');
-  const auth = await gisOAuth2();
+  const auth = await gisOAuth2({ skipAuthorize: true });
 
   // If you call getAndSetNewTokenFromGoogle too quickly back-to-back, you will get a "popup_closed" error
   // and th popup window will never show.
@@ -53,7 +58,6 @@ async function getAndSetNewTokenFromGoogle() {
     info('It has been less than 7 seconds since last token request, waiting '+(time_to_wait/1000)+' seconds more before requesting new token');
     await new Promise(resolve => setTimeout(resolve, time_to_wait));
   }
-  time_of_last_request = Date.now();
 
   // Request the new token
   const new_token = await new Promise<CheckableToken>((resolve, reject) => {
@@ -83,6 +87,7 @@ async function getAndSetNewTokenFromGoogle() {
     tokenClient.requestAccessToken(/*{ prompt: 'none' }*/);
   });
   token_request_inflight = false;
+  time_of_last_request = Date.now();
   await setTokenAndScheduleExpirationCheck(new_token);
   return;
 }
@@ -91,7 +96,7 @@ async function setTokenAndScheduleExpirationCheck(t: CheckableToken) {
   token = t;
   localStorage.setItem('google-token', JSON.stringify(t));
   // Make sure GAPI has the token too:
-  (await client()).setToken(t);
+  (await client({ skipAuthorize: true })).setToken(t);
   let expiration_ms = msToTokenExpirationWith5MinBuffer(t);
   if (expiration_ms < 0) {
     info('setTokenAndScheduleExpirationCheck: token you are setting is expired, requesting new token')
@@ -134,9 +139,15 @@ export async function authorize(opts?: { forceReloadFromLocalStorage?: boolean }
   return 'token_already_valid';
 };
 
+export async function isAuthorized() {
+  if (!token) return false;
+  if (msToTokenExpirationWith5MinBuffer(token) < 0) return false;
+  return true;
+}
+
 export async function deauthorize() {
-  const c = await client();
-  const g = await gisOAuth2();
+  const c = await client({ skipAuthorize: true });
+  const g = await gisOAuth2({ skipAuthorize: true });
 
   const cred = c.getToken();
   if (cred) {

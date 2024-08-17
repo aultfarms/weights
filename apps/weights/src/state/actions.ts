@@ -14,8 +14,13 @@ const limit = pLimit(4); // allows up to 4 simultaneous promises
 //------------------------------------------------------
 // Help for scrolling:
 export const scrollToTag = action('scrollToTag', () => {
-  const el = document.getElementById('tagScrollToMe');
-  if (el) el.scrollIntoView();
+  document.getElementById('tagScrollToMe')?.scrollIntoView();
+  // If we're editing a new row at the bottom, a lot of the time the row isn't in the
+  // DOM yet when we have the event to scroll to it.  So just scroll the extra bottom row
+  // into view.
+  if (state.tagInput.row >= state.weights.length) {
+    document.getElementById('extraRowScrollToMe')?.scrollIntoView();
+  }
 });
 export const scrollToWeight = action('scrollToWeight', () => {
   const el = document.getElementById('weightScrollToMe');
@@ -232,7 +237,7 @@ export const appendNewRow = action('appendNewRow', () => {
   state.weights.push({
     lineno: state.maxlineno+1,
     weighdate: state.date,
-    tag: { color: '', number: 0 }, // copy
+    tag: { color: state.tagInput.tag.color || '', number: 0 }, // copy
     weight: 0,
     adj_wt: 0,
     group: '',

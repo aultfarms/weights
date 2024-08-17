@@ -1,12 +1,9 @@
 /// <reference types="gapi" />
 /// <reference types="gapi.client" />
 import debug from 'debug';
-// Sadly, gapi-script library did not work for me, I had to grab the thing from google myself
-// and then follow how gapi-script did it to get it loading statically w/ types
-// load window.gapi
-// import "./gapi.js";
-// Now grab the window.gapi
-//let gapiStatic: typeof gapi | null = null;
+import { isAuthorized, authorize } from './auth';
+
+// When you await client(), it will automatically ensure they are loaded for you and you are authorized with a token
 
 const trace = debug('af/google#drive/core:trace');
 const info = debug('af/google#drive/core:info');
@@ -59,9 +56,11 @@ async function loadGISScript() {
   });
 }
 
+export type LoadOpts = { skipAuthorize?: boolean };
 let _client: typeof gapi.client | null = null;
 let _gisOAuth2: typeof google.accounts.oauth2 | null = null;
-async function load() {
+async function load(opts?: LoadOpts) {
+  const { skipAuthorize } = opts || {};
   if (_client) return;
   // There are two libraries to load:
   // - gapi (which lets you load sheets and drive), and
@@ -87,16 +86,22 @@ async function load() {
   // Once this is loaded, then use authorize() in auth.ts to login (sets the token in gapi.client)
   await loadGISScript();
   _gisOAuth2 = google.accounts.oauth2;
+
+  info('GAPI loaded');
+  if (!skipAuthorize || !isAuthorized()) {
+    info('Google is not yet authorized, authorizing...')
+    await authorize();
+  }
 }
 
-export async function client() {
-  if (!_client) await load();
+export async function client(opts?: LoadOpts) {
+  if (!_client) await load(opts);
   if (!_client) throw new Error('GAPI client was null even after loading');
   return _client;
 };
 
-export async function gisOAuth2() {
-  if (!_gisOAuth2) await load();
+export async function gisOAuth2(opts?: LoadOpts) {
+  if (!_gisOAuth2) await load(opts);
   if (!_gisOAuth2) throw new Error('ERROR: gisOAuth2 was null even after loading');
   return _gisOAuth2;
 };
