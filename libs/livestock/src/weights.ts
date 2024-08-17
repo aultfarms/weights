@@ -13,10 +13,10 @@ const warn = debug('af/livestock#weights:warn');
 export let adjFactor = 1.02;
 export function setAdjFactor(a: number) { adjFactor = a; }
 
-export const header = [ 
-  'weighdate', 'color', 'number', 'weight', 'adj_wt', 
-  'group', 'in_date', 'days', 'lbs_gain', 
-  'rog', 'sort' 
+export const header = [
+  'weighdate', 'color', 'number', 'weight', 'adj_wt',
+  'group', 'in_date', 'days', 'lbs_gain',
+  'rog', 'sort'
 ];
 
 export const sorts = [
@@ -169,7 +169,7 @@ function updateGroupStat(group: string, weight: WeightRecord, stats: GroupWeight
 
 
 // I need to figure out stats.  These are inter-related.
-// We have sorts, today, this month, this year, but we also 
+// We have sorts, today, this month, this year, but we also
 // can just sort up everything by the day, month, year and let the
 // caller decide which is "today" and "this month".  BUT,
 // the sorts will have to be for each day, month, and year.
@@ -230,7 +230,7 @@ export function computeRow({ row, records, recheckTagGroup }: { row: WeightRecor
   let incoming = records.incoming.records.find(r => r.groupname === row.group);
   if (!incoming || recheckTagGroup) incoming = groupForTag(records, row.tag, row.weighdate) || undefined; // can't forget asOfDateString here for tag search context
   if (!incoming) {
-    if (recheckTagGroup && row.tag.color === 'NOTAG') {
+    if (recheckTagGroup || row.tag.color === 'NOTAG') {
       // Tag got changed from something that had a group name to something without a group
       // So reset the rest of the numbers
       if (row.in_date)  { changed = true; row.in_date = ''; }
@@ -270,7 +270,7 @@ export function computeRow({ row, records, recheckTagGroup }: { row: WeightRecor
   }
   if (!incoming.weight) {
     warn('ERROR: incoming group (',incoming.groupname, ') from card (',incoming.cardName, ') has no weight!');
-  } else { 
+  } else {
     // Can only compute gain if we actually have a weight
     if (row.adj_wt) {
       const lbs_gain = row.adj_wt - incoming.weight
