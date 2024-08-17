@@ -8,13 +8,17 @@ import { TagBar } from './TagBar.js';
 
 import './TagInput.css';
 
+let localnumber = 0;
 export const TagInput = observer(function TagInput() {
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
 
+  localnumber = state.tagInput.tag.number;
+
   const numberClicked = (key: number) => {
-    const prev = state.tagInput.tag.number || 0;
+    const prev = localnumber || state.tagInput.tag.number || 0;
     const number = prev*10 + key;// ? key : +(prev.toString() + key.toString());
+    localnumber = number;
     actions.changeTag({ number });
   };
 
