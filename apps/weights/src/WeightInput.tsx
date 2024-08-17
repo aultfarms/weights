@@ -20,8 +20,8 @@ export const WeightInput = observer(function WeightInput() {
   };
 
   const numberClicked = (key: number) => {
-    const prev = state.weightInput.weight;
-    const number = +(prev.toString().slice(0,-1) + key.toString() + '0');
+    const prev = state.weightInput.weight || 0;
+    const number = 10*(prev + key);//  +(prev.toString().slice(0,-1) + key.toString() + '0');
     actions.changeWeight(number);
   };
 

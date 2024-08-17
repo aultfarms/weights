@@ -13,8 +13,8 @@ export const TagInput = observer(function TagInput() {
   const { state, actions } = ctx;
 
   const numberClicked = (key: number) => {
-    const prev = state.tagInput.tag.number;
-    const number = !prev ? key : +(prev.toString() + key.toString());
+    const prev = state.tagInput.tag.number || 0;
+    const number = prev*10 + key;// ? key : +(prev.toString() + key.toString());
     actions.changeTag({ number });
   };
 
