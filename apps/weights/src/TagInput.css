@@ -7,9 +7,10 @@
 .taginputbuttonscontainer {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   text-align: center;
+  height: 3em;
 }
 
 .taginputrowbutton {
