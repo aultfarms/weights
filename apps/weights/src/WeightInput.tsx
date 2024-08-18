@@ -7,11 +7,14 @@ import { Keypad } from './Keypad.js';
 
 import './WeightInput.css';
 
+let localweight = 0;
 export const WeightInput = observer(function WeightInput() {
   const ctx = React.useContext(context);
   const { state, actions } = ctx;
 
   const canSave = state.isInitialized && state.weightInput.weight > 0;
+
+  localweight = state.weightInput.weight || 0; // trying to speed up and synchronize fast button presses on keypad
 
   const backspaceClicked = () => {
     let str = ''+state.weightInput.weight;
@@ -20,8 +23,9 @@ export const WeightInput = observer(function WeightInput() {
   };
 
   const numberClicked = (key: number) => {
-    const prev = state.weightInput.weight || 0;
+    const prev = localweight || state.weightInput.weight || 0;
     const number = 10*(prev + key);//  +(prev.toString().slice(0,-1) + key.toString() + '0');
+    localweight = number;
     actions.changeWeight(number);
   };
 
