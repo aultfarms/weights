@@ -23,7 +23,7 @@ function sanitizeWeight(str: string): number {
   //const matches = str.match(/(([0-9]+[,.])?[0-9]*)$/);
   //const m = matches?.[1] || '';
   //return +(m.replace(/[,.]/g,'').trim()); // convert to number
-  return +(str.replace(',',''));
+  return +(str.replace(/^[^0-9.]*/g,''));
 }
 
 export const App = observer(function App() {

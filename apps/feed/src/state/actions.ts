@@ -45,7 +45,10 @@ export const changeRecord = action('changeRecord', (vals: PartialFeedRecord) => 
       // Reset the load number in the dropdown to the first one for this source
       newLoadNumberMode(false);
       const avail = state.availableNumbersForCurrentSource[0];
-      changeRecord({ loadNumber: avail?.name || '' });
+      changeRecord({
+        loadNumber: avail?.name || '',
+        id: avail?.id, // also need to set the card id to the first card
+      });
     }
   }
 
@@ -66,7 +69,11 @@ export const newLoadNumberMode = action('newLoadNumberMode', (newval: boolean, n
   // When newLoadNumberMode is first started, pre-load the loadNumber text box with
   // the first (primary) name for the source
   if (newval) {
-    changeRecord({ loadNumber: newsource || state.record.source });
+    // Also, need to make sure the card id is cleared
+    changeRecord({
+      loadNumber: newsource || state.record.source,
+      id: '',
+    });
   }
   state.newLoadNumberMode = newval;
 });
