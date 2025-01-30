@@ -1,17 +1,34 @@
+(async () => {
 // This is a quick script to sum up the total bushels in the grain hauling board.
 const Promise = require('bluebird');
 Promise.longStackTraces();
 const _ = require('lodash');
-const Trello = require('node-trello');
+//const Trello = require('node-trello');
 const moment = require('moment');
 const debug = require('debug');
 const info = debug('dead-trello:info');
 const trace = debug('dead-trello:trace');
 const warn = debug('dead-trello:warn');
 
+const fetch = (await import('node-fetch')).default;
+
 const token = require('/Users/aultac/.trello/token.js');
 
-const t = Promise.promisifyAll(new Trello(token.devKey, token.token));
+//const t = Promise.promisifyAll(new Trello(token.devKey, token.token));
+
+async function getAsync(trello_url, { fields }) {
+  let url = `https://api.trello.com/${trello_url}?key=${token.devKey}&token=${token.token}`;
+  if (fields) {
+    url += `&fields=${fields}`;
+  }
+  // Promise.resovle converts to bluebird promise
+  return Promise.resolve(fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json'
+    },
+  }).then(res => res.json()));
+}
 
 const config = {
   board: { name: 'Livestock' },
@@ -34,7 +51,7 @@ const config = {
 const rangeContainsTag = (r, tag) => {
   return (
     tag.color === r.start.color &&
-    tag.number >= r.start.number && 
+    tag.number >= r.start.number &&
     tag.number <= r.end.number
   );
 }
@@ -52,20 +69,20 @@ const groupContainsTag = (group,tag) => {
 // going to break the bank.
 //
 // The simplest algorithm is one that assumes there is only one
-// of each combo on-site at any given time.  Therefore, when a 
+// of each combo on-site at any given time.  Therefore, when a
 // new group comes in and gets tagged, they supercede any previous
 // version of that tag.  So the "latest" copy of the tag is always
 // the "correct" one for "today".
 //
 // Unfortunately, sometimes our scripts may want to compute historic death
-// loss and things like that.  "historic" means sometimes we're looking in 
-// a date range that is not "today".  Therefore, we have to uglify this 
+// loss and things like that.  "historic" means sometimes we're looking in
+// a date range that is not "today".  Therefore, we have to uglify this
 // function definition by adding a third optional parameter of "asOfDate"
 // which is the ballpark date of interest: i.e. it will take the tag number
 // as of that day.
 const groupForTag = (groups,tag,asOfDateString=false) => {
   // If the tag already has a "groupname" key, just return that:
-  if (tag && tag.groupname) 
+  if (tag && tag.groupname)
     return groups.find(g => g.groupname === tag.groupname) || false;
 
   const allfound = groups.filter(g => groupContainsTag(g,tag));
@@ -80,7 +97,7 @@ const groupForTag = (groups,tag,asOfDateString=false) => {
   }
   // string comparison below from https://stackoverflow.com/questions/1179366/is-there-a-javascript-strcmp:
   filteredToDate.sort((g1,g2) => (g1.date < g2.date ? -1 : +(g1.date > g2.date)));
-  // default lexical sorting will put oldest on top, newest on bottom.  
+  // default lexical sorting will put oldest on top, newest on bottom.
   // Need to take the newest one that is prior to the reference date
   return filteredToDate[filteredToDate.length-1] || false;
 };
@@ -94,10 +111,10 @@ const tagStrToObj = (cardname) => (str) => {
     if (!groupmatches[2]) {
       warn('WARNING: attempted to convert string ', str, 'to tag, but color was invalid.  Matches = ', groupmatches,'.  Card was: ', cardname);
     }
-    return { 
-      groupname: groupmatches[1], 
-      color: groupmatches[2] || 'UNKNOWNCOLOR', 
-      number: +(groupmatches[3] || 1) 
+    return {
+      groupname: groupmatches[1],
+      color: groupmatches[2] || 'UNKNOWNCOLOR',
+      number: +(groupmatches[3] || 1)
     };
   }
   // Otherwise, it is just a color/number combo:
@@ -106,8 +123,8 @@ const tagStrToObj = (cardname) => (str) => {
   if (!matches[1] || !matches[2]) {
     warn('WARNING: attempted to convert string ', str, 'to tag (not a group tag), but had invalid matches.  Matches = ', matches, '.  Card was: ', cardname);
   }
-  return { 
-    color: matches[1] || 'UNKNOWNCOLOR', 
+  return {
+    color: matches[1] || 'UNKNOWNCOLOR',
     number: +(matches[2] || 1),
   };
 }
@@ -178,7 +195,7 @@ const incomingCardToRecord = c => {
   }
   ret.id = c.id;
   ret.idList = c.idList;
-  ret.cardName = c.name; 
+  ret.cardName = c.name;
   ret.dateLastActivity = c.dateLastActivity;
   return ret;
 };
@@ -225,18 +242,18 @@ const deadCardToRecord = (c) => {
     tags_and_pens = tags_and_pens.map(tp => tp.trim());
     tags_and_pens = tags_and_pens.map(tp => ( tp==='NT' ? 'NOTAG1' : tp));
     // eliminate everything that isn't just tags
-    let tags = tags_and_pens.filter(t => 
+    let tags = tags_and_pens.filter(t =>
       !t.match(/^[NSB][0-9S]{1,2}$/i) && // N1, NS, S1, B3
       !t.match(/^OB[SN]?[NS]?$/) && // OBS, OBN, OB, OBNS
       !t.match(/^HB$/i) &&
       !t.match(/^HEIFER$/i) &&
-      !t.match(/^DRY( ?(LOT|COW))?$/i) && 
-      !t.match(/^DAIRY$/i) && 
-      !t.match(/^APRIL'?S?$/i) && 
+      !t.match(/^DRY( ?(LOT|COW))?$/i) &&
+      !t.match(/^DAIRY$/i) &&
+      !t.match(/^APRIL'?S?$/i) &&
       !t.match(/^WOODS$/i) &&
       !t.match(/^BARN ?[1-3]$/i) &&
       !t.match(/^dead/i) &&
-      !t.match(/^total/i) && 
+      !t.match(/^total/i) &&
       !t.match(/^and/i)
     );
     // fixup bad tags:
@@ -250,13 +267,13 @@ const deadCardToRecord = (c) => {
       note,
       id: c.id,
       idList: c.idList,
-      cardName: c.name, 
+      cardName: c.name,
       dateLastActivity: c.dateLastActivity
     };
 
   // If anything goes wrong, just put an error record here:
   } catch(err) {
-    return { 
+    return {
       cardName: c.name,
       idList: c.idList,
       id: c.id,
@@ -265,20 +282,18 @@ const deadCardToRecord = (c) => {
   }
 };
 
-
-
-
 // Get board info:
-t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
-.filter(b => !b.closed)
+const boards = await getAsync('/1/members/me/boards', { fields: 'name,id,closed' });
+await Promise.filter(boards, b => !b.closed)
 .filter(b => b.name === 'Livestock')
 .then(gb => config.board.id = gb[0].id)
-.tap(() => trace(`Found board id: ${config.board.id}`))
+.tap(() => trace(`Found board id: ${config.board.id}`));
 
 // Get lists info:
-.then(() => t.getAsync(`/1/boards/${config.board.id}/lists`, { fields: 'name,id,closed' }))
-.filter(l => !l.closed)
+const lists = await getAsync(`/1/boards/${config.board.id}/lists`, { fields: 'name,id,closed' });
+await Promise.filter(lists,l => !l.closed)
 .then(lists => {
+  config.lists = lists;
   for (const l of lists) {
     if (l.name === 'Incoming') {
       config.incoming = { list: l };
@@ -293,8 +308,8 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
 .tap(() => trace(`Found lists: ${JSON.stringify(config.lists,false,'  ')}`))
 
 // Get cards for board, sort into lists:
-.then(() => t.getAsync(`/1/boards/${config.board.id}/cards`, { fields: 'name,id,closed,idList' }))
-.filter(c => !c.closed)
+const cards = await getAsync(`/1/boards/${config.board.id}/cards`, { fields: 'name,id,closed,idList' });
+await Promise.filter(cards, c => !c.closed)
 .then(cards => {
   for (const c of cards) {
     if (c.idList === config.incoming.list.id) {
@@ -349,4 +364,4 @@ t.getAsync('/1/members/me/boards', { fields: 'name,id,closed' })
   */
 })
 
-
+})();
