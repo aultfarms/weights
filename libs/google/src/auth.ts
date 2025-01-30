@@ -22,14 +22,21 @@ export function assertCheckableToken(t:any): asserts t is CheckableToken {
   if (typeof t.issued_at_ms !== 'number') throw new Error('ERROR: token issued_at_ms must be a number');
 }
 
+let checkTimer: ReturnType<typeof setInterval> | null = null;
 let token: CheckableToken | null = null;
 async function checkTokenAndRefreshIfExpired() {
   let ms_to_expiration = -1;
   if (token) ms_to_expiration = msToTokenExpirationWith5MinBuffer(token);
-  if (ms_to_expiration < 0) { // if it's going to expire in less than 5 minutes, refresh it now
+  if (ms_to_expiration < 0 && !document.hidden) { // if it's going to expire in less than 5 minutes, refresh it now unless browser is not in foreground
+    if (checkTimer) {
+      clearInterval(checkTimer);
+      checkTimer = null;
+      // Note the getAndSetNewTokenFromGoogle call will re-setup the interval timer
+    }
     // Refresh the token, recompute ms_to_expiration
     await getAndSetNewTokenFromGoogle(); // sets global token variable
   }
+  // If browser is hidden right now, then the next second check will pick it back up whenever it comes back.
 }
 function msToTokenExpirationWith5MinBuffer(t: CheckableToken) {
   return t.issued_at_ms + t.expires_in_ms - Date.now() - 5*60*1000;
@@ -109,7 +116,10 @@ async function setTokenAndScheduleExpirationCheck(t: CheckableToken) {
     return;
   }
   // Otherwise, schedule the expiration check for this token
-  setTimeout(checkTokenAndRefreshIfExpired, msToTokenExpirationWith5MinBuffer(t));
+  // Changed this to just keep a timer checking every second.
+  if (!checkTimer) {
+    checkTimer = setInterval(checkTokenAndRefreshIfExpired, 1000); // We're going to just check this every second instead of only when we think it is expired.
+  }
 }
 
 //--------------------------------------------
@@ -154,6 +164,10 @@ export async function deauthorize() {
   const c = await client({ skipAuthorize: true });
   const g = await gisOAuth2({ skipAuthorize: true });
 
+  if (checkTimer) {
+    clearInterval(checkTimer);
+    checkTimer = null;
+  }
   const cred = c.getToken();
   if (cred) {
     await new Promise<void>(resolve => {

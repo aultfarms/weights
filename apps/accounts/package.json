@@ -1,7 +1,7 @@
 {
   "name": "accounts",
   "homepage": ".",
-  "version": "3.0.14",
+  "version": "3.1.1",
   "private": true,
   "dependencies": {
     "@aultfarms/accounts": "workspace:^",
