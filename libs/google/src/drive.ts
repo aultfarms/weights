@@ -60,9 +60,14 @@ export async function ensurePath({
     });
   }
   trace('google.ensurePath: found ',name,', going down rest of path ',rest.join('/'));
+  // Is this a shortcut instead of an actual folder?  If so, we need the ID of the target, not the ID of the shortcut
+  let nextid = found.id;
+  if (found.mimeType === 'application/vnd.google-apps.shortcut') {
+    nextid = found.shortcutDetails?.targetId || nextid;
+  }
   return ensurePath({
     path: rest.join('/'),
-    id: found.id,
+    id: nextid,
   });
 };
 

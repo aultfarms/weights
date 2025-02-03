@@ -342,9 +342,9 @@ await Promise.filter(cards, c => !c.closed)
       console.log(' NO DEAD ANIMALS IN THIS GROUP!');
       continue;
     }
-    const sorted = i.dead.sort((a,b) => (moment(a, 'YYYY-MM-DD') - moment(b.date, 'YYYY-MM-DD')));
+    i.dead.sort((a,b) => (moment(a.date, 'YYYY-MM-DD').unix() - moment(b.date, 'YYYY-MM-DD').unix()));
     let count = 1;
-    for (const d of sorted) {
+    for (const d of i.dead) {
       console.log(d.date, '\t', count++, '\t',d.tag.color+d.tag.number);
     }
   }
