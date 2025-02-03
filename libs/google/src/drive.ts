@@ -64,6 +64,9 @@ export async function ensurePath({
   let nextid = found.id;
   if (found.mimeType === 'application/vnd.google-apps.shortcut') {
     nextid = found.shortcutDetails?.targetId || nextid;
+    trace(name, ' is a shortcut, using targetId: ', nextid);
+  } else {
+    trace(name, ' is a regular folder/file, using id: ', nextid);
   }
   return ensurePath({
     path: rest.join('/'),
