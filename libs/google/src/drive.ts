@@ -64,7 +64,7 @@ export async function ensurePath({
   let nextid = found.id;
   if (found.mimeType === 'application/vnd.google-apps.shortcut') {
     nextid = found.shortcutDetails?.targetId || nextid;
-    trace(name, ' is a shortcut, using targetId: ', nextid);
+    trace(name, ' is a shortcut, using targetId: ', nextid, ', and this is the entire file object: ', found);
   } else {
     trace(name, ' is a regular folder/file, using id: ', nextid);
   }
@@ -132,12 +132,14 @@ export async function findFileInFolder(
       q: `name='${name}' and trashed=false and '${id}' in parents`,
       //fileId: id,
       spaces: 'drive',
+      fields: 'files(id,name,kind,mimeType,shortcutDetails)',
     });
   } catch(e) {
     try {
       res = await c.drive.files.list({
         q: `'${id}' in parents`,
         spaces: 'drive',
+        fields: 'files(id,name,kind,mimeType,shortcutDetails)',
       });
       const allfiles = (res?.result as Drive.Schema$FileList)?.files;
       throw oerror.tag(e as Error, `af/google#findFileInFolder: Failed to find file with name ${name} and has parent id ${id}.  All files in parent are: ${stringify(allfiles)}`);
