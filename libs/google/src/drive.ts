@@ -145,19 +145,20 @@ export async function findFileInFolder(
       throw oerror.tag(e2 as Error, `af/google#drive/findFileInFolder: failed to find file with name ${name} and child of id ${id}, and failed to list all available files for that parent`);
     }
   }
-  let files = (res?.result as Drive.Schema$FileList)?.files;
-  if (files && files.length > 1) {
+  const allfiles = (res?.result as Drive.Schema$FileList)?.files;
+  let foundfiles = allfiles;
+  if (allfiles && allfiles.length > 1) {
     // Their search is case-insensitve so it will return all matches with same case.
-    files = files.filter(f => f.name === name); // do our own case-sensitive search
-    if (files.length > 1) {
-      warn('findFileInFolder: WARNING: Found '+files.length+' files with name ', name, ': ', files);
+    foundfiles = allfiles.filter(f => f.name === name); // do our own case-sensitive search
+    if (foundfiles.length > 1) {
+      warn('findFileInFolder: WARNING: Found '+foundfiles.length+' files with name ', name, ': ', foundfiles);
     }
   }
-  if (!files || files.length < 1 || !files[0]) {
-    trace('findFileInFolder: WARNING: Did not find folder', name);
+  if (!foundfiles || foundfiles.length < 1 || !foundfiles[0]) {
+    trace('findFileInFolder: WARNING: Did not find folder', name, '.  The files returned were: ', allfiles);
     return null;
   }
-  return files[0];
+  return foundfiles[0];
 }
 
 export async function getToken(): Promise<string> {
