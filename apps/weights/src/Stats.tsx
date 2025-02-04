@@ -48,6 +48,7 @@ export const Stats = observer(function Stats() {
       obj.lbsGain += s.lbsGain;
       obj.adj_wt += s.adj_wt;
       obj.days += s.days;
+      obj.notags += s.notags;
     }
     return renderStatsObj(displayName, obj);
   }
