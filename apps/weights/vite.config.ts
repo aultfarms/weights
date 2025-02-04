@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/af-monorepo/',
+  base: '/weights/',
   plugins: [react(), /*basicSsl()*/],
   server: {
     open: true,
