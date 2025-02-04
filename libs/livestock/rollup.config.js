@@ -3,14 +3,14 @@ import commonjs from '@rollup/plugin-commonjs';
 //import dts from 'rollup-plugin-dts';
 import { defineConfig } from 'rollup';
 
-const plugins = [ resolve({ 
+const plugins = [ resolve({
   preferBuiltins: false,  // you need this one to avoid using node resolutions
   browser: true           // you need this to make sure node things in universal modules don't get included
 }), commonjs() ];
 
 const watch = {
   buildDelay: 200, // delay build until 100 ms after last change
-  include: "dist/**/*.js",
+  include: ["dist/**/*.js", "../google/dist/**/*.js", "../trello/dist/**/*.js"],
   exclude: [ "dist/index.mjs", "dist/test/index.mjs", "dist/index.umd.js" ],
 };
 
@@ -57,6 +57,6 @@ export default defineConfig([
       format: "umd",
     },
     watch: false,
-  }   
+  }
 */
 ]);

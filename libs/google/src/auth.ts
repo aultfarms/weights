@@ -1,7 +1,9 @@
 import debug from 'debug';
 import { client, gisOAuth2, gconfig } from './core';
+import { delay } from 'bluebird';
 
 const info = debug('af/google#auth:info');
+const trace = debug('af/google#auth:trace');
 
 // The new switch to Google Identity Services stinks.  Tokens have lifetime of 1 hour, and
 // there are no refreh tokens.  So I will track expiration and set a timeout to fix it.
@@ -51,6 +53,7 @@ async function getAndSetNewTokenFromGoogle() {
     return;  // The previous request placed token in global scope
   }
   // Store this promise in global scope so other simulateneous requests can await it.
+  trace('Creating new token request promise');
   tokenRequestPromise = new Promise(async (resolve, reject) => {
     try {
       const c = await client({ skipAuthorize: true });
@@ -76,6 +79,7 @@ async function getAndSetNewTokenFromGoogle() {
             rejectNewToken(err);
           },
           callback: tokenResponse => {
+            trace('tokenResponse callback called');
             if (tokenResponse && tokenResponse.access_token) {
               // gis tokenclient is supposed to set the token on GAPI automatically
               if (!c.getToken()) throw new Error('ERROR: after authenticating, GAPI client still has no token');
@@ -90,6 +94,7 @@ async function getAndSetNewTokenFromGoogle() {
           }
         });
         // This call actually fires off the request
+        trace('Firing it off...');
         tokenClient.requestAccessToken(/*{ prompt: 'none' }*/);
       });
       time_of_last_request = Date.now();
