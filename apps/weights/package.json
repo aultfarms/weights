@@ -1,6 +1,6 @@
 {
   "name": "weights",
-  "homepage": "af-monorepo",
+  "homepage": "weights",
   "version": "4.0.2",
   "private": true,
   "dependencies": {
